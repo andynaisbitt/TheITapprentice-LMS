@@ -1,0 +1,68 @@
+{
+  "name": "fastreactcms-frontend",
+  "version": "1.0.0",
+  "description": "FastReactCMS Frontend - Modern, production-ready blog and CMS platform built with React and TypeScript",
+  "private": true,
+  "type": "module",
+  "author": {
+    "name": "FastReactCMS Contributors",
+    "url": "https://github.com/yourusername/fastreactcms"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/fastreactcms.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/fastreactcms/issues"
+  },
+  "homepage": "https://github.com/yourusername/fastreactcms#readme",
+  "keywords": [
+    "react",
+    "typescript",
+    "vite",
+    "cms",
+    "blog",
+    "fastapi",
+    "tailwindcss",
+    "headless-cms",
+    "blog-platform",
+    "content-management"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
+  },
+  "dependencies": {
+    "@headlessui/react": "^1.7.17",
+    "@heroicons/react": "^2.0.18",
+    "@tailwindcss/forms": "^0.5.10",
+    "@tailwindcss/typography": "^0.5.19",
+    "axios": "^1.6.2",
+    "date-fns": "^2.30.0",
+    "framer-motion": "^12.23.25",
+    "lucide-react": "^0.292.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-helmet-async": "^2.0.4",
+    "react-markdown": "^10.1.0",
+    "react-router-dom": "^6.20.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "@typescript-eslint/eslint-plugin": "^6.14.0",
+    "@typescript-eslint/parser": "^6.14.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.16",
+    "eslint": "^8.55.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.5",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.3.6",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.8"
+  }
+}
