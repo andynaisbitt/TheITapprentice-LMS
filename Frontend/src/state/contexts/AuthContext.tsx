@@ -12,6 +12,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isAdmin: boolean;
   isLoading: boolean;
+  loading: boolean; // Alias for isLoading (compatibility)
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   register: (data: RegisterData) => Promise<void>;  // NEW
@@ -135,6 +136,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isAuthenticated: !!user,
     isAdmin: user?.is_admin || false,
     isLoading,
+    loading: isLoading, // Alias for compatibility
     login,
     logout,
     register,

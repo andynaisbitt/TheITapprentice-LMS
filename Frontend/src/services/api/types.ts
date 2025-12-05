@@ -281,7 +281,7 @@ export interface BlogPost {
   meta_description: string;
   meta_keywords: string;
   canonical_url: string | null;
-  featured_image: string | null;
+  featured_image: string | null | undefined;
   featured_image_alt: string | null;
   featured_image_caption: string | null;
   published: boolean;
@@ -293,6 +293,7 @@ export interface BlogPost {
   author?: User;
   view_count: number;
   read_time_minutes: number;
+  category?: Category; // Single category for legacy compatibility
   tags: Tag[];
   categories: Category[];
   created_at: string;
@@ -350,6 +351,7 @@ export interface BlogPostListResponse {
 export interface BlogPostFilters {
   page?: number;
   page_size?: number;
+  per_page?: number; // Alternative name for page_size
   search?: string;
   category_id?: number;
   tag?: string;

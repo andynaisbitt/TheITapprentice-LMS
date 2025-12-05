@@ -16,22 +16,22 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks }) => {
   const renderBlock = (block: ContentBlock, index: number) => {
     switch (block.type) {
       case 'hero':
-        return <HeroBlock key={index} data={block.data} />;
+        return <HeroBlock key={index} data={block.data as any} />;
 
       case 'text':
-        return <TextBlock key={index} data={block.data} />;
+        return <TextBlock key={index} data={block.data as any} />;
 
       case 'stats':
-        return <StatsBlock key={index} data={block.data} />;
+        return <StatsBlock key={index} data={block.data as any} />;
 
       case 'cta':
-        return <CTABlock key={index} data={block.data} />;
+        return <CTABlock key={index} data={block.data as any} />;
 
       case 'featureGrid':
-        return <FeatureGridBlock key={index} data={block.data} />;
+        return <FeatureGridBlock key={index} data={block.data as any} />;
 
       case 'techStack':
-        return <TechStackBlock key={index} data={block.data} />;
+        return <TechStackBlock key={index} data={block.data as any} />;
 
       // Add more block types as needed
       case 'image':
