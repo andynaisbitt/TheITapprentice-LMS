@@ -18,8 +18,8 @@ interface BlogPost {
   author_name?: string;
   read_time_minutes?: number;
   view_count?: number;
-  categories?: Array<{ id: number; name: string; slug: string; color?: string; icon?: string }>;
-  tags?: Array<{ id: number; name: string; slug: string; color?: string }>;
+  categories?: Array<{ id: number; name: string; slug: string; color?: string | null; icon?: string | null }>;
+  tags?: Array<{ id: number; name: string; slug: string; color?: string | null }>;
 }
 
 interface Category {
@@ -300,7 +300,7 @@ export const BlogList: React.FC = () => {
 
                       {/* Meta */}
                       <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                        <span>{formatDate(post.published_at)}</span>
+                        <span>{post.published_at ? formatDate(post.published_at) : 'Draft'}</span>
                         {post.read_time_minutes && <span>{post.read_time_minutes} min read</span>}
                       </div>
                     </div>

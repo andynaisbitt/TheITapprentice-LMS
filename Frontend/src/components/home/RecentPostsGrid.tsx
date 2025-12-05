@@ -17,7 +17,7 @@ interface RecentPost {
   excerpt: string;
   featured_image?: string | null;
   published_at: string | null;
-  categories: Array<{ id: number; name: string; color?: string; icon?: string }>;
+  categories: Array<{ id: number; name: string; color?: string | null; icon?: string | null }>;
   view_count?: number;
 }
 
@@ -152,7 +152,7 @@ export const RecentPostsGrid: React.FC = () => {
               <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mb-3">
                 <div className="flex items-center gap-1">
                   <Calendar size={14} />
-                  <span>{formatDate(post.published_at)}</span>
+                  <span>{post.published_at ? formatDate(post.published_at) : 'Draft'}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Clock size={14} />

@@ -17,7 +17,7 @@ interface FeaturedPost {
   excerpt: string;
   featured_image?: string | null;
   published_at: string | null;
-  categories: Array<{ id: number; name: string; color?: string }>;
+  categories: Array<{ id: number; name: string; color?: string | null; icon?: string | null }>;
   view_count?: number;
 }
 
@@ -181,7 +181,7 @@ export const FeaturedCarousel: React.FC = () => {
                 >
                   <div className="flex items-center gap-1.5">
                     <Calendar size={16} />
-                    <span>{formatDate(currentPost.published_at)}</span>
+                    <span>{currentPost.published_at ? formatDate(currentPost.published_at) : 'Draft'}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Clock size={16} />
