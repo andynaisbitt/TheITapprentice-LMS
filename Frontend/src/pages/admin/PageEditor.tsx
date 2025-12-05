@@ -1,13 +1,17 @@
 // Frontend/src/pages/admin/PageEditor.tsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { CheckCircle, Edit, ExternalLink, ArrowLeft, Trash2, ChevronUp, ChevronDown, Image as ImageIcon } from 'lucide-react';
 import { pagesApi, Page, PageCreate, ContentBlock } from '../../services/api/pages.api';
+import { adminBlogApi } from '../../services/api';
 
 export const PageEditor: React.FC = () => {
   const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [formData, setFormData] = useState<PageCreate>({
     slug: '',
     title: '',
@@ -53,12 +57,11 @@ export const PageEditor: React.FC = () => {
 
       if (id) {
         await pagesApi.admin.update(parseInt(id), formData);
-        alert('Page updated successfully!');
       } else {
         await pagesApi.admin.create(formData);
-        alert('Page created successfully!');
-        navigate('/admin/pages');
       }
+
+      setShowSuccessModal(true);
     } catch (err: any) {
       console.error('Save failed:', err);
       alert(err.response?.data?.detail || 'Failed to save page');
@@ -67,13 +70,47 @@ export const PageEditor: React.FC = () => {
     }
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, blockIndex: number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      alert('Invalid file type. Please upload JPEG, PNG, GIF, or WebP images.');
+      return;
+    }
+
+    // Validate file size (10MB max)
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert('File too large. Maximum size is 10MB.');
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      const result = await adminBlogApi.uploadImage(file);
+
+      // Update the image block with the uploaded URL
+      updateBlockData(blockIndex, { ...formData.blocks[blockIndex].data, url: result.url });
+
+      alert(`Image uploaded successfully!`);
+    } catch (err: any) {
+      console.error('Image upload failed:', err);
+      alert(`Upload failed: ${err.response?.data?.detail || err.message}`);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const addBlock = (type: string) => {
     const defaultData: Record<string, any> = {
-      hero: { title: 'Hero Title', subtitle: 'Hero subtitle' },
+      hero: { title: 'Hero Title', subtitle: 'Hero subtitle', backgroundImage: '' },
       text: { content: '# Heading\n\nYour content here...', alignment: 'left', maxWidth: 'lg' },
       stats: { title: 'Our Stats', stats: [{ label: 'Users', value: '10k', suffix: '+' }] },
-      cta: { title: 'Get Started', primaryButton: { text: 'Sign Up', link: '/signup' } },
-      image: { url: '', alt: '', caption: '' },
+      cta: { title: 'Get Started', description: '', primaryButton: { text: 'Sign Up', link: '/signup' }, secondaryButton: { text: '', link: '' } },
+      image: { url: '', alt: '', caption: '', width: 'full' },
     };
 
     const newBlock: ContentBlock = {
@@ -88,13 +125,15 @@ export const PageEditor: React.FC = () => {
   };
 
   const removeBlock = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      blocks: prev.blocks.filter((_, i) => i !== index),
-    }));
+    if (confirm('Are you sure you want to remove this block?')) {
+      setFormData(prev => ({
+        ...prev,
+        blocks: prev.blocks.filter((_, i) => i !== index),
+      }));
+    }
   };
 
-  const updateBlock = (index: number, data: any) => {
+  const updateBlockData = (index: number, data: any) => {
     setFormData(prev => ({
       ...prev,
       blocks: prev.blocks.map((block, i) =>
@@ -113,219 +152,641 @@ export const PageEditor: React.FC = () => {
     setFormData(prev => ({ ...prev, blocks: newBlocks }));
   };
 
+  const renderBlockEditor = (block: ContentBlock, index: number) => {
+    const data = block.data;
+
+    switch (block.type) {
+      case 'hero':
+        return (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Title
+              </label>
+              <input
+                type="text"
+                value={data.title || ''}
+                onChange={(e) => updateBlockData(index, { ...data, title: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="Hero Title"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Subtitle
+              </label>
+              <input
+                type="text"
+                value={data.subtitle || ''}
+                onChange={(e) => updateBlockData(index, { ...data, subtitle: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="Hero subtitle"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Background Image URL (optional)
+              </label>
+              <input
+                type="text"
+                value={data.backgroundImage || ''}
+                onChange={(e) => updateBlockData(index, { ...data, backgroundImage: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="https://example.com/image.jpg"
+              />
+            </div>
+          </div>
+        );
+
+      case 'text':
+        return (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Content (Markdown supported)
+              </label>
+              <textarea
+                value={data.content || ''}
+                onChange={(e) => updateBlockData(index, { ...data, content: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm"
+                rows={10}
+                placeholder="# Heading&#10;&#10;Your content here..."
+              />
+              <p className="text-xs text-gray-500 mt-1">Supports Markdown formatting</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Alignment
+                </label>
+                <select
+                  value={data.alignment || 'left'}
+                  onChange={(e) => updateBlockData(index, { ...data, alignment: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                >
+                  <option value="left">Left</option>
+                  <option value="center">Center</option>
+                  <option value="right">Right</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Max Width
+                </label>
+                <select
+                  value={data.maxWidth || 'lg'}
+                  onChange={(e) => updateBlockData(index, { ...data, maxWidth: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                >
+                  <option value="sm">Small</option>
+                  <option value="md">Medium</option>
+                  <option value="lg">Large</option>
+                  <option value="xl">Extra Large</option>
+                  <option value="full">Full Width</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'image':
+        return (
+          <div className="space-y-3">
+            {data.url ? (
+              <div className="space-y-2">
+                <img
+                  src={data.url}
+                  alt={data.alt || 'Preview'}
+                  className="w-full rounded-lg border border-gray-300 dark:border-gray-600 max-h-64 object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => updateBlockData(index, { ...data, url: '' })}
+                  className="text-sm text-red-600 dark:text-red-400 hover:text-red-700"
+                >
+                  Remove image
+                </button>
+              </div>
+            ) : (
+              <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleImageUpload(e, index)}
+                  className="hidden"
+                  id={`image-upload-${index}`}
+                  disabled={isUploading}
+                />
+                <label
+                  htmlFor={`image-upload-${index}`}
+                  className={`cursor-pointer text-sm flex items-center justify-center gap-2 ${
+                    isUploading
+                      ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                      : 'text-blue-600 dark:text-blue-400 hover:text-blue-700'
+                  }`}
+                >
+                  <ImageIcon size={20} />
+                  {isUploading ? 'Uploading...' : 'Upload Image'}
+                </label>
+              </div>
+            )}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Image URL (or upload above)
+              </label>
+              <input
+                type="text"
+                value={data.url || ''}
+                onChange={(e) => updateBlockData(index, { ...data, url: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="https://example.com/image.jpg"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Alt Text (for SEO)
+              </label>
+              <input
+                type="text"
+                value={data.alt || ''}
+                onChange={(e) => updateBlockData(index, { ...data, alt: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="Image description"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Caption (optional)
+              </label>
+              <input
+                type="text"
+                value={data.caption || ''}
+                onChange={(e) => updateBlockData(index, { ...data, caption: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="Optional caption"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Width
+              </label>
+              <select
+                value={data.width || 'full'}
+                onChange={(e) => updateBlockData(index, { ...data, width: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              >
+                <option value="sm">Small</option>
+                <option value="md">Medium</option>
+                <option value="lg">Large</option>
+                <option value="full">Full Width</option>
+              </select>
+            </div>
+          </div>
+        );
+
+      case 'cta':
+        return (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Title
+              </label>
+              <input
+                type="text"
+                value={data.title || ''}
+                onChange={(e) => updateBlockData(index, { ...data, title: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="Get Started"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Description (optional)
+              </label>
+              <textarea
+                value={data.description || ''}
+                onChange={(e) => updateBlockData(index, { ...data, description: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                rows={3}
+                placeholder="Optional description text"
+              />
+            </div>
+            <div className="border-t pt-3">
+              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Primary Button</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    Button Text
+                  </label>
+                  <input
+                    type="text"
+                    value={data.primaryButton?.text || ''}
+                    onChange={(e) => updateBlockData(index, {
+                      ...data,
+                      primaryButton: { ...data.primaryButton, text: e.target.value }
+                    })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                    placeholder="Sign Up"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    Link URL
+                  </label>
+                  <input
+                    type="text"
+                    value={data.primaryButton?.link || ''}
+                    onChange={(e) => updateBlockData(index, {
+                      ...data,
+                      primaryButton: { ...data.primaryButton, link: e.target.value }
+                    })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                    placeholder="/signup"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="border-t pt-3">
+              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Secondary Button (optional)</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    Button Text
+                  </label>
+                  <input
+                    type="text"
+                    value={data.secondaryButton?.text || ''}
+                    onChange={(e) => updateBlockData(index, {
+                      ...data,
+                      secondaryButton: { ...data.secondaryButton, text: e.target.value }
+                    })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                    placeholder="Learn More"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    Link URL
+                  </label>
+                  <input
+                    type="text"
+                    value={data.secondaryButton?.link || ''}
+                    onChange={(e) => updateBlockData(index, {
+                      ...data,
+                      secondaryButton: { ...data.secondaryButton, link: e.target.value }
+                    })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                    placeholder="/about"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'stats':
+        return (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Section Title
+              </label>
+              <input
+                type="text"
+                value={data.title || ''}
+                onChange={(e) => updateBlockData(index, { ...data, title: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="Our Stats"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Stats (JSON format)
+              </label>
+              <textarea
+                value={JSON.stringify(data.stats || [], null, 2)}
+                onChange={(e) => {
+                  try {
+                    const stats = JSON.parse(e.target.value);
+                    updateBlockData(index, { ...data, stats });
+                  } catch (err) {
+                    // Invalid JSON, ignore
+                  }
+                }}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white font-mono text-sm"
+                rows={8}
+                placeholder='[{"label": "Users", "value": "10k", "suffix": "+"}]'
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Format: [&#123;"label": "Users", "value": "10k", "suffix": "+"&#125;]
+              </p>
+            </div>
+          </div>
+        );
+
+      default:
+        return (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Block Data (JSON)
+            </label>
+            <textarea
+              value={JSON.stringify(data, null, 2)}
+              onChange={(e) => {
+                try {
+                  const newData = JSON.parse(e.target.value);
+                  updateBlockData(index, newData);
+                } catch (err) {
+                  // Invalid JSON, ignore
+                }
+              }}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white font-mono text-sm"
+              rows={6}
+            />
+          </div>
+        );
+    }
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading page...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          {id ? 'Edit Page' : 'Create Page'}
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400">
-          Build your page with content blocks
-        </p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-8">
-        {/* Basic Info */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 space-y-4">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-            Basic Information
-          </h2>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Slug (URL)
-            </label>
-            <input
-              type="text"
-              value={formData.slug}
-              onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              placeholder="about-us"
-              required
-            />
-            <p className="text-sm text-gray-500 mt-1">Will be accessible at /pages/{formData.slug}</p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Page Title
-            </label>
-            <input
-              type="text"
-              value={formData.title}
-              onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              placeholder="About Us"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Meta Title (SEO)
-            </label>
-            <input
-              type="text"
-              value={formData.meta_title}
-              onChange={(e) => setFormData(prev => ({ ...prev, meta_title: e.target.value }))}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              placeholder="About Us | FastReactCMS"
-              maxLength={60}
-            />
-            <p className="text-sm text-gray-500 mt-1">{formData.meta_title?.length || 0}/60 characters</p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Meta Description (SEO)
-            </label>
-            <textarea
-              value={formData.meta_description}
-              onChange={(e) => setFormData(prev => ({ ...prev, meta_description: e.target.value }))}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              placeholder="Learn more about our company and mission..."
-              rows={3}
-              maxLength={160}
-            />
-            <p className="text-sm text-gray-500 mt-1">{formData.meta_description?.length || 0}/160 characters</p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="published"
-              checked={formData.published}
-              onChange={(e) => setFormData(prev => ({ ...prev, published: e.target.checked }))}
-              className="w-4 h-4 text-blue-600"
-            />
-            <label htmlFor="published" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Published (visible to public)
-            </label>
-          </div>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            {id ? 'Edit Page' : 'Create Page'}
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            Build your page with content blocks
+          </p>
         </div>
 
-        {/* Content Blocks */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-              Content Blocks
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Basic Info */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 space-y-4">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+              Basic Information
             </h2>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => addBlock('hero')}
-                className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                + Hero
-              </button>
-              <button
-                type="button"
-                onClick={() => addBlock('text')}
-                className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
-              >
-                + Text
-              </button>
-              <button
-                type="button"
-                onClick={() => addBlock('stats')}
-                className="px-3 py-1 text-sm bg-purple-600 text-white rounded hover:bg-purple-700"
-              >
-                + Stats
-              </button>
-              <button
-                type="button"
-                onClick={() => addBlock('cta')}
-                className="px-3 py-1 text-sm bg-orange-600 text-white rounded hover:bg-orange-700"
-              >
-                + CTA
-              </button>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Slug (URL) <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.slug}
+                onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="about-us"
+                required
+              />
+              <p className="text-sm text-gray-500 mt-1">Will be accessible at /pages/{formData.slug}</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Page Title <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.title}
+                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="About Us"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Meta Title (SEO)
+              </label>
+              <input
+                type="text"
+                value={formData.meta_title}
+                onChange={(e) => setFormData(prev => ({ ...prev, meta_title: e.target.value }))}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="About Us | FastReactCMS"
+                maxLength={60}
+              />
+              <p className="text-sm text-gray-500 mt-1">{formData.meta_title?.length || 0}/60 characters</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Meta Description (SEO)
+              </label>
+              <textarea
+                value={formData.meta_description}
+                onChange={(e) => setFormData(prev => ({ ...prev, meta_description: e.target.value }))}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="Learn more about our company and mission..."
+                rows={3}
+                maxLength={160}
+              />
+              <p className="text-sm text-gray-500 mt-1">{formData.meta_description?.length || 0}/160 characters</p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="published"
+                checked={formData.published}
+                onChange={(e) => setFormData(prev => ({ ...prev, published: e.target.checked }))}
+                className="w-5 h-5 text-blue-600 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 checked:bg-blue-600 checked:border-blue-600"
+              />
+              <label htmlFor="published" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Published (visible to public)
+              </label>
             </div>
           </div>
 
-          {formData.blocks.length === 0 && (
-            <p className="text-center text-gray-500 py-12">
-              No blocks yet. Add your first block above!
-            </p>
-          )}
-
-          <div className="space-y-4">
-            {formData.blocks.map((block, index) => (
-              <div key={index} className="border border-gray-300 dark:border-gray-600 rounded-lg p-4">
-                <div className="flex justify-between items-center mb-4">
-                  <span className="font-semibold text-gray-900 dark:text-white capitalize">
-                    {block.type} Block
-                  </span>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => moveBlock(index, 'up')}
-                      disabled={index === 0}
-                      className="px-2 py-1 text-sm bg-gray-200 dark:bg-gray-700 rounded disabled:opacity-50"
-                    >
-                      ↑
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => moveBlock(index, 'down')}
-                      disabled={index === formData.blocks.length - 1}
-                      className="px-2 py-1 text-sm bg-gray-200 dark:bg-gray-700 rounded disabled:opacity-50"
-                    >
-                      ↓
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => removeBlock(index)}
-                      className="px-2 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </div>
-
-                <textarea
-                  value={JSON.stringify(block.data, null, 2)}
-                  onChange={(e) => {
-                    try {
-                      const data = JSON.parse(e.target.value);
-                      updateBlock(index, data);
-                    } catch (err) {
-                      // Invalid JSON, ignore
-                    }
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white font-mono text-sm"
-                  rows={6}
-                />
+          {/* Content Blocks */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+            <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                Content Blocks ({formData.blocks.length})
+              </h2>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => addBlock('hero')}
+                  className="px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                >
+                  + Hero
+                </button>
+                <button
+                  type="button"
+                  onClick={() => addBlock('text')}
+                  className="px-3 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium"
+                >
+                  + Text
+                </button>
+                <button
+                  type="button"
+                  onClick={() => addBlock('image')}
+                  className="px-3 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium"
+                >
+                  + Image
+                </button>
+                <button
+                  type="button"
+                  onClick={() => addBlock('stats')}
+                  className="px-3 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
+                >
+                  + Stats
+                </button>
+                <button
+                  type="button"
+                  onClick={() => addBlock('cta')}
+                  className="px-3 py-2 text-sm bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-medium"
+                >
+                  + CTA
+                </button>
               </div>
-            ))}
+            </div>
+
+            {formData.blocks.length === 0 && (
+              <div className="text-center py-12 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
+                <p className="text-gray-500 dark:text-gray-400 mb-4">No blocks yet. Add your first block above!</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">Choose from Hero, Text, Image, Stats, or CTA blocks</p>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              {formData.blocks.map((block, index) => (
+                <div key={index} className="border-2 border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900">
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="font-semibold text-gray-900 dark:text-white capitalize text-lg flex items-center gap-2">
+                      {block.type === 'hero' && '🎯'}
+                      {block.type === 'text' && '📝'}
+                      {block.type === 'image' && '🖼️'}
+                      {block.type === 'stats' && '📊'}
+                      {block.type === 'cta' && '🎬'}
+                      {block.type} Block
+                    </span>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => moveBlock(index, 'up')}
+                        disabled={index === 0}
+                        className="p-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                        title="Move up"
+                      >
+                        <ChevronUp size={18} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveBlock(index, 'down')}
+                        disabled={index === formData.blocks.length - 1}
+                        className="p-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                        title="Move down"
+                      >
+                        <ChevronDown size={18} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeBlock(index)}
+                        className="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                        title="Remove block"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {renderBlockEditor(block, index)}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Submit */}
+          <div className="flex gap-4 sticky bottom-4 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition"
+            >
+              {saving ? 'Saving...' : id ? 'Update Page' : 'Create Page'}
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/admin/pages')}
+              className="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition font-semibold"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-8 text-center">
+            <div className="mb-6">
+              <div className="w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="text-green-600 dark:text-green-400" size={32} />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                Success!
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                Your page has been {id ? 'updated' : 'created'} successfully.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              {/* Continue Editing - Primary Action */}
+              <button
+                onClick={() => {
+                  setShowSuccessModal(false);
+                }}
+                className="w-full px-6 py-3 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition font-medium flex items-center justify-center gap-2"
+              >
+                <Edit size={20} />
+                Continue Editing
+              </button>
+
+              {/* Preview in New Tab - Only if published */}
+              {formData.slug && formData.published && (
+                <button
+                  onClick={() => {
+                    window.open(`/pages/${formData.slug}`, '_blank');
+                  }}
+                  className="w-full px-6 py-3 bg-green-600 dark:bg-green-500 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition font-medium flex items-center justify-center gap-2"
+                >
+                  <ExternalLink size={20} />
+                  Preview in New Tab
+                </button>
+              )}
+
+              {/* Back to Pages List */}
+              <button
+                onClick={() => {
+                  setShowSuccessModal(false);
+                  navigate('/admin/pages');
+                }}
+                className="w-full px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition font-medium flex items-center justify-center gap-2"
+              >
+                <ArrowLeft size={20} />
+                Back to Pages
+              </button>
+            </div>
           </div>
         </div>
-
-        {/* Submit */}
-        <div className="flex gap-4">
-          <button
-            type="submit"
-            disabled={saving}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-semibold"
-          >
-            {saving ? 'Saving...' : id ? 'Update Page' : 'Create Page'}
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/admin/pages')}
-            className="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
+      )}
     </div>
   );
 };
