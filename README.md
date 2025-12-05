@@ -12,14 +12,21 @@
 
 ## Screenshots
 
-> **Coming Soon!** We'll add screenshots showcasing:
 > - Admin Dashboard
+<img width="1250" height="976" alt="image" src="https://github.com/user-attachments/assets/a913dc86-a4be-4d4e-936c-e1e31dba9466" />
+
 > - Blog Editor with Markdown Preview
-> - Theme Customization Panel
+<img width="1229" height="1312" alt="image" src="https://github.com/user-attachments/assets/4acd5dc2-c74a-42de-b979-07f41a2b9d26" />
+
+> - Theme Customization Panel + Dark Mode Interface
+<img width="2469" height="1327" alt="image" src="https://github.com/user-attachments/assets/88b1ea6d-606d-4dd3-ab1f-febf2d061217" />
+
 > - Dynamic Page Builder
+<img width="1266" height="1267" alt="image" src="https://github.com/user-attachments/assets/652cc3ea-f0ad-4e32-bccc-f64caf65bf89" />
+
 > - Category & Tag Management
-> - Mobile Responsive Design
-> - Dark Mode Interface
+<img width="1269" height="1038" alt="image" src="https://github.com/user-attachments/assets/21261c28-0e3e-4624-8a4f-610349c08ca7" />
+
 
 **Want to contribute screenshots?** Fork the repo, take screenshots, and submit a PR!
 
