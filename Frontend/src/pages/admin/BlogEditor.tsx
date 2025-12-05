@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { CheckCircle, Eye, ArrowLeft } from 'lucide-react';
 import {
   adminBlogApi,
   adminCategoryApi,
@@ -48,6 +49,7 @@ export const BlogEditor: React.FC = () => {
   // UI state
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [error, setError] = useState('');
   const [showMediaLibrary, setShowMediaLibrary] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
@@ -330,7 +332,7 @@ export const BlogEditor: React.FC = () => {
       }
 
       setHasUnsavedChanges(false);
-      navigate('/admin');
+      setShowSuccessModal(true);
     } catch (err: any) {
       console.error('Blog post save error:', err);
 
@@ -689,7 +691,7 @@ export const BlogEditor: React.FC = () => {
 
               <div>
                 <label htmlFor="featured_image_alt" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Alt Text
+                  Alt Text <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -698,13 +700,16 @@ export const BlogEditor: React.FC = () => {
                   value={formData.featured_image_alt}
                   onChange={handleChange}
                   className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                  placeholder="Image description"
+                  placeholder="Describe the image for accessibility and SEO"
                 />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Improves SEO and accessibility. Describe what the image shows.
+                </p>
               </div>
 
               <div>
                 <label htmlFor="featured_image_caption" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Caption
+                  Caption (Optional)
                 </label>
                 <input
                   type="text"
@@ -713,8 +718,11 @@ export const BlogEditor: React.FC = () => {
                   value={formData.featured_image_caption}
                   onChange={handleChange}
                   className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                  placeholder="Optional caption"
+                  placeholder="Optional caption displayed under the image"
                 />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Text displayed below the image (optional).
+                </p>
               </div>
             </div>
 
@@ -804,6 +812,50 @@ export const BlogEditor: React.FC = () => {
           </div>
         </form>
       </div>
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-8 text-center">
+            <div className="mb-6">
+              <div className="w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="text-green-600 dark:text-green-400" size={32} />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                Success!
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                Your post has been {isEditMode ? 'updated' : 'created'} successfully.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              {formData.slug && formData.published && (
+                <button
+                  onClick={() => {
+                    setShowSuccessModal(false);
+                    navigate(`/blog/${formData.slug}`);
+                  }}
+                  className="w-full px-6 py-3 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition font-medium flex items-center justify-center gap-2"
+                >
+                  <Eye size={20} />
+                  View Post
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  setShowSuccessModal(false);
+                  navigate('/admin');
+                }}
+                className="w-full px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition font-medium flex items-center justify-center gap-2"
+              >
+                <ArrowLeft size={20} />
+                Back to Admin
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
