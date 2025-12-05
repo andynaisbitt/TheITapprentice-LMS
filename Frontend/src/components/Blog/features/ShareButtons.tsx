@@ -103,7 +103,7 @@ const ShareButtons: React.FC<ShareButtonsProps> = ({
             />
             <div className="absolute top-full right-0 mt-2 w-48 bg-background border border-border rounded-lg shadow-lg z-20">
               <div className="p-2">
-                {typeof navigator !== 'undefined' && navigator.share && (
+                {typeof navigator !== 'undefined' && 'share' in navigator && (
                   <button
                     onClick={handleNativeShare}
                     className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-accent transition-colors"
@@ -169,7 +169,7 @@ const ShareButtons: React.FC<ShareButtonsProps> = ({
       </h4>
       
       <div className="grid grid-cols-2 gap-2">
-        {typeof navigator !== 'undefined' && navigator.share && (
+        {typeof navigator !== 'undefined' && 'share' in navigator && (
           <button
             onClick={handleNativeShare}
             className="flex items-center gap-2 px-3 py-2 text-sm border border-border rounded-lg hover:bg-accent transition-colors"
