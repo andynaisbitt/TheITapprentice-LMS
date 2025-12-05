@@ -180,7 +180,7 @@ export const PageEditor: React.FC = () => {
               placeholder="About Us | FastReactCMS"
               maxLength={60}
             />
-            <p className="text-sm text-gray-500 mt-1">{formData.meta_title.length}/60 characters</p>
+            <p className="text-sm text-gray-500 mt-1">{formData.meta_title?.length || 0}/60 characters</p>
           </div>
 
           <div>
@@ -195,7 +195,7 @@ export const PageEditor: React.FC = () => {
               rows={3}
               maxLength={160}
             />
-            <p className="text-sm text-gray-500 mt-1">{formData.meta_description.length}/160 characters</p>
+            <p className="text-sm text-gray-500 mt-1">{formData.meta_description?.length || 0}/160 characters</p>
           </div>
 
           <div className="flex items-center gap-2">
