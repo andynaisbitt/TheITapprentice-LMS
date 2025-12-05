@@ -28,9 +28,11 @@ export const CookieConsent: React.FC = () => {
   });
 
   useEffect(() => {
-    // Show banner if no consent decision made
+    // Show banner if no consent decision made, hide if consent exists
     if (hasConsent === null) {
       setShowBanner(true);
+    } else if (hasConsent === true) {
+      setShowBanner(false);
     }
   }, [hasConsent]);
 

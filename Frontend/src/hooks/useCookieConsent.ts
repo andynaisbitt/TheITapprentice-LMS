@@ -22,45 +22,60 @@ interface ConsentData {
 const STORAGE_KEY = 'cookie_consent';
 const CONSENT_VERSION = '1.0'; // Increment when privacy policy changes
 
-export const useCookieConsent = () => {
-  const [hasConsent, setHasConsent] = useState<boolean | null>(null);
-  const [preferences, setPreferences] = useState<CookiePreferences>({
-    necessary: true,
-    analytics: false,
-    marketing: false,
-    functional: false,
-  });
-
-  useEffect(() => {
-    // Load existing consent on mount
-    loadConsent();
-  }, []);
-
-  const loadConsent = () => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (!stored) {
-        setHasConsent(null);
-        return;
-      }
-
-      const data: ConsentData = JSON.parse(stored);
-
-      // Check if consent is for current policy version
-      if (data.version !== CONSENT_VERSION) {
-        // Policy changed, require new consent
-        setHasConsent(null);
-        localStorage.removeItem(STORAGE_KEY);
-        return;
-      }
-
-      setPreferences(data.preferences);
-      setHasConsent(true);
-    } catch (error) {
-      console.error('Error loading cookie consent:', error);
-      setHasConsent(null);
+// Initialize state from localStorage immediately (before component renders)
+const getInitialConsent = (): { hasConsent: boolean | null; preferences: CookiePreferences } => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) {
+      return {
+        hasConsent: null,
+        preferences: {
+          necessary: true,
+          analytics: false,
+          marketing: false,
+          functional: false,
+        },
+      };
     }
-  };
+
+    const data: ConsentData = JSON.parse(stored);
+
+    // Check if consent is for current policy version
+    if (data.version !== CONSENT_VERSION) {
+      localStorage.removeItem(STORAGE_KEY);
+      return {
+        hasConsent: null,
+        preferences: {
+          necessary: true,
+          analytics: false,
+          marketing: false,
+          functional: false,
+        },
+      };
+    }
+
+    return {
+      hasConsent: true,
+      preferences: data.preferences,
+    };
+  } catch (error) {
+    console.error('Error loading cookie consent:', error);
+    return {
+      hasConsent: null,
+      preferences: {
+        necessary: true,
+        analytics: false,
+        marketing: false,
+        functional: false,
+      },
+    };
+  }
+};
+
+export const useCookieConsent = () => {
+  const initialState = getInitialConsent();
+  const [hasConsent, setHasConsent] = useState<boolean | null>(initialState.hasConsent);
+  const [preferences, setPreferences] = useState<CookiePreferences>(initialState.preferences);
 
   const saveConsent = (prefs: CookiePreferences) => {
     const data: ConsentData = {
