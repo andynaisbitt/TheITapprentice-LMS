@@ -245,12 +245,12 @@ export const Footer: React.FC = () => {
               <Link to="/terms" className="hover:text-white transition">
                 Terms
               </Link>
-              <Link to="/sitemap" className="hover:text-white transition">
+              <a href="/sitemap.xml" target="_blank" rel="noopener noreferrer" className="hover:text-white transition">
                 Sitemap
-              </Link>
-              <Link to="/rss" className="hover:text-white transition">
+              </a>
+              <a href="/rss.xml" target="_blank" rel="noopener noreferrer" className="hover:text-white transition">
                 RSS Feed
-              </Link>
+              </a>
             </div>
           </div>
         </div>

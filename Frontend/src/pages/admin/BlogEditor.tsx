@@ -595,7 +595,7 @@ export const BlogEditor: React.FC = () => {
                   name="published"
                   checked={formData.published}
                   onChange={handleChange}
-                  className="w-5 h-5 text-blue-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                  className="w-5 h-5 text-blue-600 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 checked:bg-blue-600 checked:border-blue-600"
                 />
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Publish immediately
@@ -622,7 +622,7 @@ export const BlogEditor: React.FC = () => {
                   name="is_featured"
                   checked={formData.is_featured}
                   onChange={handleChange}
-                  className="w-5 h-5 text-blue-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                  className="w-5 h-5 text-blue-600 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 checked:bg-blue-600 checked:border-blue-600"
                 />
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Featured post
@@ -635,7 +635,7 @@ export const BlogEditor: React.FC = () => {
                   name="allow_comments"
                   checked={formData.allow_comments}
                   onChange={handleChange}
-                  className="w-5 h-5 text-blue-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                  className="w-5 h-5 text-blue-600 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 checked:bg-blue-600 checked:border-blue-600"
                 />
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Allow comments
@@ -730,7 +730,7 @@ export const BlogEditor: React.FC = () => {
                       type="checkbox"
                       checked={formData.category_ids.includes(category.id)}
                       onChange={() => handleCategoryToggle(category.id)}
-                      className="w-4 h-4 text-blue-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                      className="w-4 h-4 text-blue-600 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 checked:bg-blue-600 checked:border-blue-600"
                     />
                     <span className="text-sm text-gray-700 dark:text-gray-300">
                       {category.name}

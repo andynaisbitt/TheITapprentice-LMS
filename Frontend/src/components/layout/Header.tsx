@@ -141,7 +141,8 @@ export const Header: React.FC = () => {
     );
   };
 
-  const renderMobileNavItem = (item: MenuItem, level: number = 0) => {
+  // Mobile nav item component - moved outside to fix React hooks error
+  const MobileNavItem: React.FC<{ item: MenuItem; level?: number }> = ({ item, level = 0 }) => {
     const hasChildren = item.children && item.children.length > 0;
     const [isExpanded, setIsExpanded] = useState(false);
 
@@ -385,7 +386,7 @@ export const Header: React.FC = () => {
         {isMobileMenuOpen && (
           <div className="md:hidden border-t border-gray-200 dark:border-slate-800 py-4">
             <div className="flex flex-col space-y-4">
-              {headerItems.map((item) => renderMobileNavItem(item))}
+              {headerItems.map((item) => <MobileNavItem key={item.id} item={item} />)}
             </div>
           </div>
         )}
