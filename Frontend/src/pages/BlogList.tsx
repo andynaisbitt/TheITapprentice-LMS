@@ -13,8 +13,8 @@ interface BlogPost {
   title: string;
   slug: string;
   excerpt?: string;
-  featured_image?: string;
-  published_at: string;
+  featured_image?: string | null;
+  published_at: string | null;
   author_name?: string;
   read_time_minutes?: number;
   view_count?: number;

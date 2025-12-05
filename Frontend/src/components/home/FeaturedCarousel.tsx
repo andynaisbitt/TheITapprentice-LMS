@@ -16,7 +16,7 @@ interface FeaturedPost {
   slug: string;
   excerpt: string;
   featured_image?: string | null;
-  published_at: string;
+  published_at: string | null;
   categories: Array<{ id: number; name: string; color?: string }>;
   view_count?: number;
 }
