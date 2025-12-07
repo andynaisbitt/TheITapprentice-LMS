@@ -6,11 +6,12 @@ from datetime import datetime
 from xml.etree.ElementTree import Element, SubElement, tostring
 from app.core.database import get_db
 from app.api.v1.services.blog.models import BlogPost
+from app.api.v1.services.theme.models import ThemeSettings
 
 router = APIRouter()
 
 
-def generate_rss_feed(posts: list, site_url: str = "http://localhost:5174") -> str:
+def generate_rss_feed(posts: list, site_url: str = "http://localhost:5174", site_name: str = "BlogCMS", site_description: str = "Latest blog posts") -> str:
     """Generate RSS 2.0 feed from blog posts"""
 
     # Create RSS root element
@@ -22,9 +23,9 @@ def generate_rss_feed(posts: list, site_url: str = "http://localhost:5174") -> s
     channel = SubElement(rss, 'channel')
 
     # Channel metadata
-    SubElement(channel, 'title').text = 'BlogCMS'
+    SubElement(channel, 'title').text = site_name
     SubElement(channel, 'link').text = site_url
-    SubElement(channel, 'description').text = 'Latest blog posts from BlogCMS'
+    SubElement(channel, 'description').text = site_description
     SubElement(channel, 'language').text = 'en-us'
     SubElement(channel, 'lastBuildDate').text = datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S +0000')
 
@@ -77,6 +78,12 @@ def generate_rss_feed(posts: list, site_url: str = "http://localhost:5174") -> s
 def get_rss_feed(db: Session = Depends(get_db)):
     """Generate RSS feed for published blog posts"""
 
+    # Get site settings
+    settings = db.query(ThemeSettings).filter(ThemeSettings.id == 1).first()
+    site_url = settings.site_url if settings else "https://yourdomain.com"
+    site_name = settings.site_name if settings else "BlogCMS"
+    site_description = settings.site_description if settings else "Latest blog posts"
+
     # Get latest 50 published posts
     # Use coalesce to handle null published_at values, falling back to created_at
     from sqlalchemy import func
@@ -87,7 +94,7 @@ def get_rss_feed(db: Session = Depends(get_db)):
         func.coalesce(BlogPost.published_at, BlogPost.created_at).desc()
     ).limit(50).all()
 
-    rss_content = generate_rss_feed(posts)
+    rss_content = generate_rss_feed(posts, site_url=site_url, site_name=site_name, site_description=site_description)
 
     return Response(
         content=rss_content,

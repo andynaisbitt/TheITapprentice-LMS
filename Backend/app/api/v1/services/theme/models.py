@@ -42,6 +42,8 @@ class ThemeSettings(Base):
 
     # Site info
     site_name = Column(String(100), default="BlogCMS")
+    site_url = Column(String(255), default="https://yourdomain.com")
+    site_description = Column(String(500), default="Latest blog posts")
     tagline = Column(String(200), nullable=True)
 
     # Advanced settings (JSON)

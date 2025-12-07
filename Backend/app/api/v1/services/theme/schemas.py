@@ -23,6 +23,8 @@ class ThemeSettingsBase(BaseModel):
     logo_url: Optional[str] = Field(None, max_length=255)
     logo_dark_url: Optional[str] = Field(None, max_length=255)
     site_name: str = Field(default="BlogCMS", max_length=100)
+    site_url: str = Field(default="https://yourdomain.com", max_length=255)
+    site_description: str = Field(default="Latest blog posts", max_length=500)
     tagline: Optional[str] = Field(None, max_length=200)
     advanced_settings: Optional[Dict[str, Any]] = Field(default_factory=dict)
 
@@ -45,6 +47,8 @@ class ThemeSettingsUpdate(BaseModel):
     logo_url: Optional[str] = Field(None, max_length=255)
     logo_dark_url: Optional[str] = Field(None, max_length=255)
     site_name: Optional[str] = Field(None, max_length=100)
+    site_url: Optional[str] = Field(None, max_length=255)
+    site_description: Optional[str] = Field(None, max_length=500)
     tagline: Optional[str] = Field(None, max_length=200)
     advanced_settings: Optional[Dict[str, Any]] = None
 
