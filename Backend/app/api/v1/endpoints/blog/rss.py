@@ -42,7 +42,13 @@ def generate_rss_feed(posts: list, site_url: str = "http://localhost:5174") -> s
         SubElement(item, 'title').text = post.title
         SubElement(item, 'link').text = f'{site_url}/blog/{post.slug}'
         SubElement(item, 'guid', isPermaLink='true').text = f'{site_url}/blog/{post.slug}'
-        SubElement(item, 'pubDate').text = post.published_at.strftime('%a, %d %b %Y %H:%M:%S +0000')
+
+        # Handle null published_at
+        if post.published_at:
+            SubElement(item, 'pubDate').text = post.published_at.strftime('%a, %d %b %Y %H:%M:%S +0000')
+        else:
+            # Use created_at as fallback
+            SubElement(item, 'pubDate').text = post.created_at.strftime('%a, %d %b %Y %H:%M:%S +0000')
 
         if post.excerpt:
             SubElement(item, 'description').text = post.excerpt
