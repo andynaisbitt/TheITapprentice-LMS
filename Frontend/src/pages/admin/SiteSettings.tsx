@@ -51,6 +51,16 @@ interface SiteSettings {
 
   // Branding
   show_powered_by: boolean;
+
+  // Newsletter & Email
+  newsletter_enabled: boolean;
+  smtp_host: string;
+  smtp_port: number;
+  smtp_username: string;
+  smtp_password: string;
+  smtp_use_tls: boolean;
+  smtp_from_email: string;
+  smtp_from_name: string;
 }
 
 const defaultSettings: SiteSettings = {
@@ -83,6 +93,16 @@ const defaultSettings: SiteSettings = {
   logo_url: '',
   logo_dark_url: '',
   show_powered_by: true,
+
+  // Newsletter & Email defaults
+  newsletter_enabled: true,
+  smtp_host: '',
+  smtp_port: 587,
+  smtp_username: '',
+  smtp_password: '',
+  smtp_use_tls: true,
+  smtp_from_email: '',
+  smtp_from_name: '',
 };
 
 export const SiteSettings: React.FC = () => {
@@ -91,7 +111,7 @@ export const SiteSettings: React.FC = () => {
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'analytics' | 'seo' | 'homepage' | 'social' | 'contact' | 'branding'>('homepage');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'seo' | 'homepage' | 'social' | 'contact' | 'branding' | 'email'>('homepage');
   const [uploadingLogo, setUploadingLogo] = useState<'light' | 'dark' | null>(null);
 
   // Fetch settings from API on mount
@@ -224,6 +244,7 @@ export const SiteSettings: React.FC = () => {
     { id: 'analytics', label: 'Analytics & Ads', icon: '📊' },
     { id: 'social', label: 'Social Media', icon: '🌐' },
     { id: 'contact', label: 'Contact Info', icon: '📧' },
+    { id: 'email', label: 'Email & Newsletter', icon: '✉️' },
   ] as const;
 
   if (loading && !settings.site_title) {
@@ -840,6 +861,186 @@ VITE_ADSENSE_CLIENT_ID=${settings.google_adsense_client_id || 'ca-pub-XXXXXXXXXX
                     placeholder="support@yourdomain.com"
                     className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
+                </div>
+              </motion.div>
+            )}
+
+            {/* Email & Newsletter Tab */}
+            {activeTab === 'email' && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="space-y-6"
+              >
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+                  <h3 className="font-medium text-blue-900 dark:text-blue-300 mb-2">
+                    ✉️ Email & Newsletter Settings
+                  </h3>
+                  <p className="text-sm text-blue-800 dark:text-blue-400">
+                    Configure SMTP settings for newsletter emails and enable/disable newsletter subscriptions
+                  </p>
+                </div>
+
+                {/* Newsletter Toggle */}
+                <div className="border-b border-gray-200 dark:border-slate-700 pb-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Enable Newsletter
+                      </label>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Show newsletter subscription form in the footer
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleChange('newsletter_enabled', !settings.newsletter_enabled)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        settings.newsletter_enabled
+                          ? 'bg-blue-600 dark:bg-blue-700'
+                          : 'bg-gray-300 dark:bg-slate-600'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          settings.newsletter_enabled ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                {/* SMTP Configuration */}
+                <div className="border-t border-gray-200 dark:border-slate-700 pt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                    SMTP Configuration
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    Configure email sending (supports SendGrid, Mailgun, SMTP, etc.)
+                  </p>
+
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          SMTP Host
+                        </label>
+                        <input
+                          type="text"
+                          value={settings.smtp_host}
+                          onChange={(e) => handleChange('smtp_host', e.target.value)}
+                          placeholder="smtp.sendgrid.net"
+                          className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Port
+                        </label>
+                        <input
+                          type="number"
+                          value={settings.smtp_port}
+                          onChange={(e) => handleChange('smtp_port', parseInt(e.target.value) || 587)}
+                          placeholder="587"
+                          className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          SMTP Username
+                        </label>
+                        <input
+                          type="text"
+                          value={settings.smtp_username}
+                          onChange={(e) => handleChange('smtp_username', e.target.value)}
+                          placeholder="apikey"
+                          className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          SMTP Password / API Key
+                        </label>
+                        <input
+                          type="password"
+                          value={settings.smtp_password}
+                          onChange={(e) => handleChange('smtp_password', e.target.value)}
+                          placeholder="••••••••"
+                          className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          From Email
+                        </label>
+                        <input
+                          type="email"
+                          value={settings.smtp_from_email}
+                          onChange={(e) => handleChange('smtp_from_email', e.target.value)}
+                          placeholder="newsletter@yourdomain.com"
+                          className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          From Name
+                        </label>
+                        <input
+                          type="text"
+                          value={settings.smtp_from_name}
+                          onChange={(e) => handleChange('smtp_from_name', e.target.value)}
+                          placeholder="Your Blog Name"
+                          className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between bg-gray-50 dark:bg-slate-700/50 p-4 rounded-lg">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Use TLS
+                        </label>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Recommended for secure connections
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleChange('smtp_use_tls', !settings.smtp_use_tls)}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          settings.smtp_use_tls
+                            ? 'bg-blue-600 dark:bg-blue-700'
+                            : 'bg-gray-300 dark:bg-slate-600'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            settings.smtp_use_tls ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick Setup Guide */}
+                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                  <h3 className="font-medium text-green-900 dark:text-green-300 mb-2">
+                    Quick Setup for SendGrid
+                  </h3>
+                  <ul className="text-sm text-green-800 dark:text-green-400 space-y-1 list-disc list-inside">
+                    <li>Host: <code className="bg-green-100 dark:bg-green-900 px-1 rounded">smtp.sendgrid.net</code></li>
+                    <li>Port: <code className="bg-green-100 dark:bg-green-900 px-1 rounded">587</code></li>
+                    <li>Username: <code className="bg-green-100 dark:bg-green-900 px-1 rounded">apikey</code></li>
+                    <li>Password: Your SendGrid API Key</li>
+                    <li>Use TLS: Enabled</li>
+                  </ul>
                 </div>
               </motion.div>
             )}

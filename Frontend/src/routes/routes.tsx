@@ -16,6 +16,7 @@ const AdminDashboard = lazy(() => import('../pages/admin/AdminDashboard'));
 const SiteSettings = lazy(() => import('../pages/admin/SiteSettings'));
 const NavigationManager = lazy(() => import('../pages/admin/NavigationManager'));
 const ThemeCustomizer = lazy(() => import('../pages/admin/ThemeCustomizer'));
+const Newsletter = lazy(() => import('../pages/admin/Newsletter'));
 const Privacy = lazy(() => import('../pages/Privacy'));
 const Terms = lazy(() => import('../pages/Terms'));
 const About = lazy(() => import('../pages/About'));
@@ -202,6 +203,16 @@ export const AppRoutes = () => {
             <ProtectedRoute>
               <Layout hideFooter>
                 <NavigationManager />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/newsletter"
+          element={
+            <ProtectedRoute>
+              <Layout hideFooter>
+                <Newsletter />
               </Layout>
             </ProtectedRoute>
           }

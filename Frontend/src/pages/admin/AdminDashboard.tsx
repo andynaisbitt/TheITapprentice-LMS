@@ -651,6 +651,37 @@ export const AdminDashboard: React.FC = () => {
           </button>
 
           <button
+            onClick={() => navigate('/admin/newsletter')}
+            className="p-4 bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-900/20 dark:to-teal-800/20 rounded-lg hover:shadow-lg transition-shadow text-left"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-teal-500 rounded-lg">
+                <svg
+                  className="w-6 h-6 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 dark:text-white">
+                  Newsletter
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Email subscribers
+                </p>
+              </div>
+            </div>
+          </button>
+
+          <button
             onClick={() => navigate('/admin/settings')}
             className="p-4 bg-gradient-to-br from-purple-500 to-purple-600 dark:from-purple-600 dark:to-purple-700 rounded-lg hover:shadow-lg transition cursor-pointer text-left"
           >
