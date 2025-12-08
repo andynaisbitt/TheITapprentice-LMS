@@ -47,6 +47,16 @@ class SiteSettingsBase(BaseModel):
     # Branding
     show_powered_by: bool = Field(default=True)
 
+    # Newsletter & Email
+    newsletter_enabled: bool = Field(default=True)
+    smtp_host: Optional[str] = Field(None, max_length=255)
+    smtp_port: int = Field(default=587)
+    smtp_username: Optional[str] = Field(None, max_length=255)
+    smtp_password: Optional[str] = Field(None, max_length=255)
+    smtp_use_tls: bool = Field(default=True)
+    smtp_from_email: Optional[str] = Field(None, max_length=255)
+    smtp_from_name: Optional[str] = Field(None, max_length=255)
+
 
 class SiteSettingsUpdate(BaseModel):
     """Schema for updating site settings (all fields optional)"""
@@ -89,6 +99,16 @@ class SiteSettingsUpdate(BaseModel):
 
     # Branding
     show_powered_by: Optional[bool] = Field(None)
+
+    # Newsletter & Email
+    newsletter_enabled: Optional[bool] = Field(None)
+    smtp_host: Optional[str] = Field(None, max_length=255)
+    smtp_port: Optional[int] = Field(None)
+    smtp_username: Optional[str] = Field(None, max_length=255)
+    smtp_password: Optional[str] = Field(None, max_length=255)
+    smtp_use_tls: Optional[bool] = Field(None)
+    smtp_from_email: Optional[str] = Field(None, max_length=255)
+    smtp_from_name: Optional[str] = Field(None, max_length=255)
 
 
 class SiteSettingsResponse(SiteSettingsBase):

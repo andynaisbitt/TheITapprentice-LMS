@@ -26,6 +26,8 @@ from app.api.v1.endpoints.theme.public import router as theme_public_router
 from app.api.v1.endpoints.theme.admin import router as theme_admin_router
 from app.api.v1.endpoints.site_settings.admin import router as site_settings_admin_router
 from app.api.v1.endpoints.site_settings.public import router as site_settings_public_router
+from app.api.v1.endpoints.newsletter.public import router as newsletter_public_router
+from app.api.v1.endpoints.newsletter.admin import router as newsletter_admin_router
 
 # Create tables (for development only - use Alembic in production)
 if settings.ENVIRONMENT == "development":
@@ -67,6 +69,8 @@ app.include_router(theme_public_router, prefix="/api/v1", tags=["Theme - Public"
 app.include_router(theme_admin_router, prefix="/api/v1", tags=["Theme - Admin"])
 app.include_router(site_settings_public_router, prefix="/api/v1", tags=["Site Settings - Public"])
 app.include_router(site_settings_admin_router, prefix="/api/v1", tags=["Site Settings - Admin"])
+app.include_router(newsletter_public_router, prefix="/api/v1", tags=["Newsletter - Public"])
+app.include_router(newsletter_admin_router, prefix="/api/v1", tags=["Newsletter - Admin"])
 app.include_router(rss_router, prefix="/api/v1", tags=["RSS/Sitemap"])
 app.include_router(sitemap_router, prefix="/api/v1", tags=["RSS/Sitemap"])
 
