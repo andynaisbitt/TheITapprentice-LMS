@@ -70,8 +70,9 @@ function BlogPostsList() {
   const loadData = async () => {
     try {
       setLoading(true);
+      // Try without filters first to see if that's the issue
       const [postsData, categoriesData] = await Promise.all([
-        adminBlogApi.getAllPosts({ page: 1, page_size: 1000 }),
+        adminBlogApi.getAllPosts(),
         adminCategoryApi.getAll(),
       ]);
       console.log('Loaded posts:', postsData);
@@ -79,9 +80,10 @@ function BlogPostsList() {
       console.log('Posts count:', postsData.posts?.length || 0);
       setPosts(postsData.posts || []);
       setCategories(categoriesData || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load data:', error);
-      alert('Failed to load blog posts. Check console for details.');
+      console.error('Error response:', error.response);
+      alert(`Failed to load blog posts. Error: ${error.response?.data?.detail || error.message}`);
     } finally {
       setLoading(false);
     }
