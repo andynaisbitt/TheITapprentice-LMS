@@ -78,39 +78,46 @@ export const HeroSection: React.FC = () => {
           </motion.div>
 
           {/* Stats - Only show if at least one stat is set */}
-          {(settings.statsArticles || settings.statsReaders || settings.statsFree) && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.5 }}
-              className="mt-16 grid grid-cols-3 gap-8 max-w-2xl mx-auto"
-            >
-              {settings.statsArticles && (
-                <div className="text-center">
-                  <div className="text-3xl sm:text-4xl font-bold text-white mb-1">
-                    {settings.statsArticles}
+          {(() => {
+            const statsCount = [settings.statsArticles, settings.statsReaders, settings.statsFree].filter(Boolean).length;
+            if (statsCount === 0) return null;
+
+            return (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.5 }}
+                className={`mt-16 grid gap-8 max-w-2xl mx-auto ${
+                  statsCount === 1 ? 'grid-cols-1' : statsCount === 2 ? 'grid-cols-2' : 'grid-cols-3'
+                }`}
+              >
+                {settings.statsArticles && (
+                  <div className="text-center">
+                    <div className="text-3xl sm:text-4xl font-bold text-white mb-1">
+                      {settings.statsArticles}
+                    </div>
+                    <div className="text-sm text-blue-200">Articles</div>
                   </div>
-                  <div className="text-sm text-blue-200">Articles</div>
-                </div>
-              )}
-              {settings.statsReaders && (
-                <div className="text-center">
-                  <div className="text-3xl sm:text-4xl font-bold text-white mb-1">
-                    {settings.statsReaders}
+                )}
+                {settings.statsReaders && (
+                  <div className="text-center">
+                    <div className="text-3xl sm:text-4xl font-bold text-white mb-1">
+                      {settings.statsReaders}
+                    </div>
+                    <div className="text-sm text-blue-200">Readers</div>
                   </div>
-                  <div className="text-sm text-blue-200">Readers</div>
-                </div>
-              )}
-              {settings.statsFree && (
-                <div className="text-center">
-                  <div className="text-3xl sm:text-4xl font-bold text-white mb-1">
-                    {settings.statsFree}
+                )}
+                {settings.statsFree && (
+                  <div className="text-center">
+                    <div className="text-3xl sm:text-4xl font-bold text-white mb-1">
+                      {settings.statsFree}
+                    </div>
+                    <div className="text-sm text-blue-200">Free</div>
                   </div>
-                  <div className="text-sm text-blue-200">Free</div>
-                </div>
-              )}
-            </motion.div>
-          )}
+                )}
+              </motion.div>
+            );
+          })()}
         </div>
       </div>
 
