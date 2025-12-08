@@ -55,6 +55,16 @@ class SiteSettings(Base):
     # Branding
     show_powered_by = Column(Boolean, default=True, nullable=True)
 
+    # Newsletter & Email
+    newsletter_enabled = Column(Boolean, default=True, nullable=True)
+    smtp_host = Column(String(255), nullable=True)
+    smtp_port = Column(Integer, default=587, nullable=True)
+    smtp_username = Column(String(255), nullable=True)
+    smtp_password = Column(String(255), nullable=True)
+    smtp_use_tls = Column(Boolean, default=True, nullable=True)
+    smtp_from_email = Column(String(255), nullable=True)
+    smtp_from_name = Column(String(255), nullable=True)
+
     # Timestamps
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
 
