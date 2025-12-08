@@ -7,6 +7,9 @@
 import React, { useEffect } from 'react';
 import { Header } from './Header';
 import { Footer } from './Footer';
+import { NewsletterModal } from '../NewsletterModal';
+import { useNewsletterModal } from '../../hooks/useNewsletterModal';
+import { useSiteSettings } from '../../hooks/useSiteSettings';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -30,6 +33,9 @@ export const Layout: React.FC<LayoutProps> = ({
   hideFooter = false,
   fullWidth = false,
 }) => {
+  const { isOpen, closeModal } = useNewsletterModal();
+  const { settings } = useSiteSettings();
+
   // Initialize dark mode from localStorage on mount
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
@@ -56,6 +62,11 @@ export const Layout: React.FC<LayoutProps> = ({
       </main>
 
       {!hideFooter && <Footer />}
+
+      {/* Newsletter Modal - Only render if newsletter is enabled */}
+      {settings.newsletterEnabled && (
+        <NewsletterModal isOpen={isOpen} onClose={closeModal} />
+      )}
     </div>
   );
 };

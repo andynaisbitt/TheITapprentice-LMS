@@ -9,6 +9,8 @@ import { Link } from 'react-router-dom';
 import { blogApi } from '../../services/api';
 import { navigationApi, MenuItem } from '../../services/api/navigation.api';
 import { useSiteSettings } from '../../hooks/useSiteSettings';
+import { openNewsletterModal } from '../../hooks/useNewsletterModal';
+import { Mail } from 'lucide-react';
 
 interface Category {
   id: number;
@@ -302,6 +304,16 @@ export const Footer: React.FC = () => {
               )}
             </div>
             <div className="flex items-center space-x-6 text-sm text-gray-400">
+              {/* Newsletter Modal Button - Show if newsletter enabled but hidden from footer */}
+              {settings.newsletterEnabled && (
+                <button
+                  onClick={openNewsletterModal}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-medium text-sm"
+                >
+                  <Mail size={16} />
+                  Subscribe
+                </button>
+              )}
               <Link to="/privacy" className="hover:text-white transition">
                 Privacy
               </Link>
