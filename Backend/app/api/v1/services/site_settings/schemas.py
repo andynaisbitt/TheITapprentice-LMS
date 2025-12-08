@@ -44,6 +44,9 @@ class SiteSettingsBase(BaseModel):
     logo_url: Optional[str] = Field(None, max_length=255)
     logo_dark_url: Optional[str] = Field(None, max_length=255)
 
+    # Branding
+    show_powered_by: bool = Field(default=True)
+
 
 class SiteSettingsUpdate(BaseModel):
     """Schema for updating site settings (all fields optional)"""
@@ -83,6 +86,9 @@ class SiteSettingsUpdate(BaseModel):
     # Logo
     logo_url: Optional[str] = Field(None, max_length=255)
     logo_dark_url: Optional[str] = Field(None, max_length=255)
+
+    # Branding
+    show_powered_by: Optional[bool] = Field(None)
 
 
 class SiteSettingsResponse(SiteSettingsBase):

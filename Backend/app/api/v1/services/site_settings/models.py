@@ -1,6 +1,6 @@
 # Backend/app/api/v1/services/site_settings/models.py
 """Site settings model for SEO, analytics, and site configuration"""
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, Boolean
 from sqlalchemy.sql import func
 from app.core.database import Base
 
@@ -51,6 +51,9 @@ class SiteSettings(Base):
     # Logo
     logo_url = Column(String(255), nullable=True)
     logo_dark_url = Column(String(255), nullable=True)
+
+    # Branding
+    show_powered_by = Column(Boolean, default=True, nullable=True)
 
     # Timestamps
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())

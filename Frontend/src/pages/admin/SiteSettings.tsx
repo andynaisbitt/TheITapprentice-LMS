@@ -48,6 +48,9 @@ interface SiteSettings {
   // Logo
   logo_url: string;
   logo_dark_url: string;
+
+  // Branding
+  show_powered_by: boolean;
 }
 
 const defaultSettings: SiteSettings = {
@@ -79,6 +82,7 @@ const defaultSettings: SiteSettings = {
   site_url: 'https://yourdomain.com',
   logo_url: '',
   logo_dark_url: '',
+  show_powered_by: true,
 };
 
 export const SiteSettings: React.FC = () => {
@@ -713,6 +717,34 @@ VITE_ADSENSE_CLIENT_ID=${settings.google_adsense_client_id || 'ca-pub-XXXXXXXXXX
                     </div>
                   </div>
                 )}
+
+                <div className="border-t border-gray-200 dark:border-slate-700 pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Show "Powered by FastReactCMS"
+                      </label>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Display attribution in the footer (supports open source!)
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleChange('show_powered_by', !settings.show_powered_by)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        settings.show_powered_by
+                          ? 'bg-blue-600 dark:bg-blue-700'
+                          : 'bg-gray-300 dark:bg-slate-600'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          settings.show_powered_by ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
               </motion.div>
             )}
 

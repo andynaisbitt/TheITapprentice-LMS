@@ -75,14 +75,25 @@ export const Footer: React.FC = () => {
           {/* About Section */}
           <div>
             <div className="flex items-center space-x-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xl">F</span>
-              </div>
-              <span className="text-xl font-bold text-white">FastReactCMS</span>
+              {settings.logoUrl ? (
+                <img
+                  src={settings.logoUrl}
+                  alt={settings.siteTitle}
+                  className="h-10 w-auto"
+                />
+              ) : (
+                <>
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
+                    <span className="text-white font-bold text-xl">
+                      {settings.siteTitle.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <span className="text-xl font-bold text-white">{settings.siteTitle}</span>
+                </>
+              )}
             </div>
             <p className="text-sm text-gray-400 leading-relaxed">
-              A modern, SEO-optimized blog platform built with React and FastAPI.
-              Share your knowledge with the world.
+              {settings.metaDescription}
             </p>
             <div className="mt-6 flex space-x-4">
               {/* Social Media Icons - Only show if URL is configured */}
@@ -245,9 +256,24 @@ export const Footer: React.FC = () => {
       <div className="border-t border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-            <p className="text-sm text-gray-400">
-              © {currentYear} FastReactCMS. All rights reserved.
-            </p>
+            <div className="flex flex-col items-center md:items-start space-y-1">
+              <p className="text-sm text-gray-400">
+                © {currentYear} {settings.siteTitle}. All rights reserved.
+              </p>
+              {settings.showPoweredBy && (
+                <p className="text-xs text-gray-500">
+                  Powered by{' '}
+                  <a
+                    href="https://github.com/yourusername/fastreactcms"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-blue-400 transition"
+                  >
+                    FastReactCMS
+                  </a>
+                </p>
+              )}
+            </div>
             <div className="flex items-center space-x-6 text-sm text-gray-400">
               <Link to="/privacy" className="hover:text-white transition">
                 Privacy

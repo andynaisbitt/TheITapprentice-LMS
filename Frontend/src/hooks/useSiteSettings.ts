@@ -48,6 +48,9 @@ export interface SiteSettings {
   // Logo
   logoUrl: string;
   logoDarkUrl: string;
+
+  // Branding
+  showPoweredBy: boolean;
 }
 
 const defaultSettings: SiteSettings = {
@@ -79,6 +82,7 @@ const defaultSettings: SiteSettings = {
   siteUrl: 'https://yourdomain.com',
   logoUrl: '',
   logoDarkUrl: '',
+  showPoweredBy: true,
 };
 
 /**
@@ -109,6 +113,7 @@ const convertToCamelCase = (apiSettings: any): SiteSettings => {
     siteUrl: apiSettings.site_url || defaultSettings.siteUrl,
     logoUrl: apiSettings.logo_url || '',
     logoDarkUrl: apiSettings.logo_dark_url || '',
+    showPoweredBy: apiSettings.show_powered_by !== undefined ? apiSettings.show_powered_by : true,
   };
 };
 
