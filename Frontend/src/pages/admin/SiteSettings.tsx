@@ -68,10 +68,10 @@ const defaultSettings: SiteSettings = {
   hero_cta_primary: 'Explore Articles',
   hero_cta_secondary: 'Learn More',
 
-  // Stats (empty to hide)
+  // Stats (empty to hide entire stats section)
   stats_articles: '',
   stats_readers: '',
-  stats_free: '100% Free',
+  stats_free: '',
 
   twitter_handle: '',
   facebook_url: '',

@@ -33,10 +33,10 @@ class SiteSettings(Base):
     hero_cta_primary = Column(String(100), default="Explore Articles")
     hero_cta_secondary = Column(String(100), default="Learn More")
 
-    # Homepage Stats
+    # Homepage Stats (all optional - leave blank to hide)
     stats_articles = Column(String(20), nullable=True)
     stats_readers = Column(String(20), nullable=True)
-    stats_free = Column(String(20), default="100% Free")
+    stats_free = Column(String(20), nullable=True)
 
     # Social Media
     twitter_handle = Column(String(100), nullable=True)

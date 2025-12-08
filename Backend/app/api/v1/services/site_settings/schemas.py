@@ -25,10 +25,10 @@ class SiteSettingsBase(BaseModel):
     hero_cta_primary: str = Field(default="Explore Articles", max_length=100)
     hero_cta_secondary: str = Field(default="Learn More", max_length=100)
 
-    # Homepage Stats
+    # Homepage Stats (all optional - leave blank to hide stats section)
     stats_articles: Optional[str] = Field(None, max_length=20)
     stats_readers: Optional[str] = Field(None, max_length=20)
-    stats_free: str = Field(default="100% Free", max_length=20)
+    stats_free: Optional[str] = Field(None, max_length=20)
 
     # Social Media
     twitter_handle: Optional[str] = Field(None, max_length=100)

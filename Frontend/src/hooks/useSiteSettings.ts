@@ -68,10 +68,10 @@ const defaultSettings: SiteSettings = {
   heroCTAPrimary: 'Explore Articles',
   heroCTASecondary: 'Learn More',
 
-  // Stats (empty to hide)
+  // Stats (empty to hide entire section)
   statsArticles: '',
   statsReaders: '',
-  statsFree: '100% Free',
+  statsFree: '',
 
   twitterHandle: '',
   facebookUrl: '',
@@ -103,7 +103,7 @@ const convertToCamelCase = (apiSettings: any): SiteSettings => {
     heroCTASecondary: apiSettings.hero_cta_secondary || defaultSettings.heroCTASecondary,
     statsArticles: apiSettings.stats_articles || '',
     statsReaders: apiSettings.stats_readers || '',
-    statsFree: apiSettings.stats_free || defaultSettings.statsFree,
+    statsFree: apiSettings.stats_free || '',
     twitterHandle: apiSettings.twitter_handle || '',
     facebookUrl: apiSettings.facebook_url || '',
     linkedinUrl: apiSettings.linkedin_url || '',
