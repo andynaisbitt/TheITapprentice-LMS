@@ -51,6 +51,16 @@ export interface SiteSettings {
 
   // Branding
   showPoweredBy: boolean;
+
+  // Newsletter & Email
+  newsletterEnabled: boolean;
+  smtpHost: string;
+  smtpPort: number;
+  smtpUsername: string;
+  smtpPassword: string;
+  smtpUseTls: boolean;
+  smtpFromEmail: string;
+  smtpFromName: string;
 }
 
 const defaultSettings: SiteSettings = {
@@ -83,6 +93,14 @@ const defaultSettings: SiteSettings = {
   logoUrl: '',
   logoDarkUrl: '',
   showPoweredBy: true,
+  newsletterEnabled: true,
+  smtpHost: '',
+  smtpPort: 587,
+  smtpUsername: '',
+  smtpPassword: '',
+  smtpUseTls: true,
+  smtpFromEmail: '',
+  smtpFromName: '',
 };
 
 /**
@@ -114,6 +132,14 @@ const convertToCamelCase = (apiSettings: any): SiteSettings => {
     logoUrl: apiSettings.logo_url || '',
     logoDarkUrl: apiSettings.logo_dark_url || '',
     showPoweredBy: apiSettings.show_powered_by !== undefined ? apiSettings.show_powered_by : true,
+    newsletterEnabled: apiSettings.newsletter_enabled !== undefined ? apiSettings.newsletter_enabled : true,
+    smtpHost: apiSettings.smtp_host || '',
+    smtpPort: apiSettings.smtp_port || 587,
+    smtpUsername: apiSettings.smtp_username || '',
+    smtpPassword: apiSettings.smtp_password || '',
+    smtpUseTls: apiSettings.smtp_use_tls !== undefined ? apiSettings.smtp_use_tls : true,
+    smtpFromEmail: apiSettings.smtp_from_email || '',
+    smtpFromName: apiSettings.smtp_from_name || '',
   };
 };
 

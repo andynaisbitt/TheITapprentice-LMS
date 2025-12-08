@@ -56,13 +56,34 @@ export const Footer: React.FC = () => {
     loadData();
   }, []);
 
-  const handleNewsletterSubmit = (e: React.FormEvent) => {
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement newsletter subscription API
-    console.log('Newsletter subscription:', email);
-    setSubscribed(true);
-    setEmail('');
-    setTimeout(() => setSubscribed(false), 3000);
+
+    if (!email) return;
+
+    try {
+      const response = await fetch('/api/v1/newsletter/subscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setSubscribed(true);
+        setEmail('');
+        setTimeout(() => setSubscribed(false), 5000);
+      } else {
+        console.error('Newsletter subscription failed:', data.detail);
+        alert(data.detail || 'Subscription failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Newsletter subscription error:', error);
+      alert('Failed to subscribe. Please try again later.');
+    }
   };
 
   const currentYear = new Date().getFullYear();
@@ -221,34 +242,36 @@ export const Footer: React.FC = () => {
             )}
           </div>
 
-          {/* Newsletter */}
-          <div>
-            <h3 className="text-white font-semibold text-lg mb-4">Newsletter</h3>
-            <p className="text-sm text-gray-400 mb-4">
-              Subscribe to get the latest posts delivered directly to your inbox.
-            </p>
-            <form onSubmit={handleNewsletterSubmit} className="space-y-2">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Your email address"
-                required
-                className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition text-sm"
-              />
-              <button
-                type="submit"
-                className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-medium text-sm"
-              >
-                Subscribe
-              </button>
-              {subscribed && (
-                <p className="text-sm text-green-400">
-                  ✓ Thank you for subscribing!
-                </p>
-              )}
-            </form>
-          </div>
+          {/* Newsletter - Only show if enabled */}
+          {settings.newsletterEnabled && (
+            <div>
+              <h3 className="text-white font-semibold text-lg mb-4">Newsletter</h3>
+              <p className="text-sm text-gray-400 mb-4">
+                Subscribe to get the latest posts delivered directly to your inbox.
+              </p>
+              <form onSubmit={handleNewsletterSubmit} className="space-y-2">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Your email address"
+                  required
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition text-sm"
+                />
+                <button
+                  type="submit"
+                  className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-medium text-sm"
+                >
+                  Subscribe
+                </button>
+                {subscribed && (
+                  <p className="text-sm text-green-400">
+                    ✓ Thank you for subscribing!
+                  </p>
+                )}
+              </form>
+            </div>
+          )}
         </div>
       </div>
 
