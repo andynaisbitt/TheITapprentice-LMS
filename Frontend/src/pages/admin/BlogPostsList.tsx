@@ -6,7 +6,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { blogApi, adminBlogApi, adminCategoryApi } from '../../services/api';
+import { adminBlogApi, adminCategoryApi } from '../../services/api';
 import type { Category } from '../../services/api/admin-category.api';
 import {
   Plus,
@@ -71,13 +71,17 @@ function BlogPostsList() {
     try {
       setLoading(true);
       const [postsData, categoriesData] = await Promise.all([
-        blogApi.getPosts({ page: 1, page_size: 1000 }),
+        adminBlogApi.getAllPosts({ page: 1, page_size: 1000 }),
         adminCategoryApi.getAll(),
       ]);
+      console.log('Loaded posts:', postsData);
+      console.log('Posts array:', postsData.posts);
+      console.log('Posts count:', postsData.posts?.length || 0);
       setPosts(postsData.posts || []);
       setCategories(categoriesData || []);
     } catch (error) {
       console.error('Failed to load data:', error);
+      alert('Failed to load blog posts. Check console for details.');
     } finally {
       setLoading(false);
     }

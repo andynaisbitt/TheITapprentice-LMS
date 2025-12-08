@@ -92,7 +92,11 @@ export const Footer: React.FC = () => {
     <footer className="bg-gray-900 dark:bg-black text-gray-300">
       {/* Main Footer Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className={`grid grid-cols-1 gap-8 ${
+          settings.newsletterEnabled
+            ? 'md:grid-cols-2 lg:grid-cols-4'
+            : 'md:grid-cols-3 lg:grid-cols-3 max-w-5xl mx-auto'
+        }`}>
           {/* About Section */}
           <div>
             <div className="flex items-center space-x-3 mb-4">
