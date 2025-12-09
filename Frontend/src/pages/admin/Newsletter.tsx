@@ -2,11 +2,13 @@
 /**
  * Newsletter Subscribers Management Page
  * View, manage, and send newsletters to subscribers
+ * Mobile-optimized with search and compact layout
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { Search, X } from 'lucide-react';
 
 interface Subscriber {
   id: number;
@@ -21,10 +23,10 @@ export const Newsletter: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [selectedSubscribers, setSelectedSubscribers] = useState<number[]>([]);
   const [showSendModal, setShowSendModal] = useState(false);
   const [newsletter, setNewsletter] = useState({ subject: '', body: '' });
   const [sending, setSending] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Fetch subscribers on mount
   useEffect(() => {
@@ -44,7 +46,6 @@ export const Newsletter: React.FC = () => {
       }
 
       const data = await response.json();
-      console.log('Subscribers API response:', data);
 
       // Ensure data is an array
       if (Array.isArray(data)) {
@@ -65,7 +66,7 @@ export const Newsletter: React.FC = () => {
   };
 
   const handleDelete = async (id: number, email: string) => {
-    if (!confirm(`Are you sure you want to remove ${email} from the newsletter?`)) {
+    if (!confirm(`Remove ${email}?`)) {
       return;
     }
 
@@ -80,11 +81,11 @@ export const Newsletter: React.FC = () => {
       }
 
       setSubscribers(subscribers.filter(s => s.id !== id));
-      setSuccess(`${email} has been removed from the newsletter.`);
+      setSuccess(`${email} removed`);
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       console.error('Error removing subscriber:', err);
-      setError('Failed to remove subscriber. Please try again.');
+      setError('Failed to remove subscriber');
       setTimeout(() => setError(null), 3000);
     }
   };
@@ -117,17 +118,24 @@ export const Newsletter: React.FC = () => {
         throw new Error(data.detail || 'Failed to send newsletter');
       }
 
-      setSuccess(`Newsletter sent to ${data.sent} subscribers! ${data.failed} failed.`);
+      setSuccess(`Sent to ${data.sent} subscribers!`);
       setShowSendModal(false);
       setNewsletter({ subject: '', body: '' });
       setTimeout(() => setSuccess(null), 5000);
     } catch (err: any) {
       console.error('Error sending newsletter:', err);
-      setError(err.message || 'Failed to send newsletter. Please check SMTP settings.');
+      setError(err.message || 'Failed to send. Check SMTP settings.');
     } finally {
       setSending(false);
     }
   };
+
+  // Filtered subscribers based on search
+  const filteredSubscribers = useMemo(() => {
+    if (!searchQuery.trim()) return subscribers;
+    const query = searchQuery.toLowerCase();
+    return subscribers.filter(s => s.email.toLowerCase().includes(query));
+  }, [subscribers, searchQuery]);
 
   const activeSubscribers = Array.isArray(subscribers) ? subscribers.filter(s => s.is_active) : [];
 
@@ -136,35 +144,35 @@ export const Newsletter: React.FC = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading subscribers...</p>
+          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-            Newsletter Subscribers
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-3 sm:py-6">
+      <div className="max-w-6xl mx-auto px-3 sm:px-6">
+        {/* Compact Header */}
+        <div className="mb-3 sm:mb-6">
+          <h1 className="text-xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">
+            Newsletter
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Manage your newsletter subscribers and send updates
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+            {subscribers.length} subscriber{subscribers.length !== 1 ? 's' : ''}
           </p>
         </div>
 
-        {/* Error/Success Banner */}
+        {/* Error/Success Alerts - Compact */}
         <AnimatePresence>
           {error && (
             <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mb-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-2 sm:p-3"
             >
-              <p className="text-red-800 dark:text-red-300 font-medium">
+              <p className="text-xs sm:text-sm text-red-800 dark:text-red-300">
                 ⚠️ {error}
               </p>
             </motion.div>
@@ -172,83 +180,113 @@ export const Newsletter: React.FC = () => {
 
           {success && (
             <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="mb-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mb-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-2 sm:p-3"
             >
-              <p className="text-green-800 dark:text-green-300 font-medium">
+              <p className="text-xs sm:text-sm text-green-800 dark:text-green-300">
                 ✓ {success}
               </p>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Stats Cards - Compact for Mobile */}
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md border border-gray-200 dark:border-slate-700 p-4 mb-6">
-          <div className="grid grid-cols-3 gap-4">
-            <div className="text-center">
-              <p className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">{subscribers.length}</p>
-              <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mt-1">Total</p>
+        {/* Ultra-Compact Stats + Actions Row */}
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-2 sm:p-3 mb-3">
+          {/* Stats - Single Row */}
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-3">
+            <div className="text-center py-1">
+              <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{subscribers.length}</p>
+              <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400">Total</p>
             </div>
-            <div className="text-center border-l border-r border-gray-200 dark:border-slate-700">
-              <p className="text-2xl md:text-3xl font-bold text-green-600 dark:text-green-400">{activeSubscribers.length}</p>
-              <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mt-1">Active</p>
+            <div className="text-center py-1 border-l border-r border-gray-200 dark:border-slate-600">
+              <p className="text-lg sm:text-2xl font-bold text-green-600 dark:text-green-400">{activeSubscribers.length}</p>
+              <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400">Active</p>
             </div>
-            <div className="text-center">
-              <p className="text-2xl md:text-3xl font-bold text-gray-600 dark:text-gray-400">
+            <div className="text-center py-1">
+              <p className="text-lg sm:text-2xl font-bold text-gray-500 dark:text-gray-400">
                 {subscribers.length - activeSubscribers.length}
               </p>
-              <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mt-1">Inactive</p>
+              <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400">Inactive</p>
             </div>
+          </div>
+
+          {/* Actions - Compact Row */}
+          <div className="flex gap-1.5 sm:gap-2">
+            <button
+              onClick={() => setShowSendModal(true)}
+              disabled={activeSubscribers.length === 0}
+              className="flex-1 px-2 sm:px-3 py-1.5 sm:py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
+            >
+              <span className="hidden xs:inline">📧 </span>Send
+            </button>
+            <button
+              onClick={fetchSubscribers}
+              className="px-2 sm:px-3 py-1.5 sm:py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-slate-600 rounded-md hover:bg-gray-100 dark:hover:bg-slate-700 transition text-xs sm:text-sm"
+              title="Refresh"
+            >
+              🔄
+            </button>
+            <button
+              onClick={() => navigate('/admin/settings')}
+              className="px-2 sm:px-3 py-1.5 sm:py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-slate-600 rounded-md hover:bg-gray-100 dark:hover:bg-slate-700 transition text-xs sm:text-sm"
+              title="Settings"
+            >
+              ⚙️
+            </button>
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="mb-6 flex flex-wrap gap-2">
-          <button
-            onClick={() => setShowSendModal(true)}
-            disabled={activeSubscribers.length === 0}
-            className="flex-1 sm:flex-none px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-          >
-            📧 Send
-          </button>
-          <button
-            onClick={fetchSubscribers}
-            className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition text-sm"
-          >
-            🔄
-          </button>
-          <button
-            onClick={() => navigate('/admin/settings')}
-            className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition text-sm"
-          >
-            ⚙️
-          </button>
+        {/* Search Bar - Sticky on Mobile */}
+        <div className="sticky top-0 z-10 bg-gray-50 dark:bg-slate-900 pb-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search subscribers..."
+              className="w-full pl-9 pr-9 py-2 sm:py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg text-sm text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-200 dark:hover:bg-slate-700 rounded"
+              >
+                <X size={14} className="text-gray-400" />
+              </button>
+            )}
+          </div>
+          {searchQuery && (
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5">
+              {filteredSubscribers.length} of {subscribers.length} shown
+            </p>
+          )}
         </div>
 
-        {/* Subscribers List - Mobile Friendly Cards */}
-        <div className="space-y-3">
-          {subscribers.length === 0 ? (
-            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md border border-gray-200 dark:border-slate-700 p-12 text-center">
-              <p className="text-gray-500 dark:text-gray-400">
-                No subscribers yet. The newsletter form will appear in the footer when enabled.
+        {/* Subscribers List - Ultra Compact Cards */}
+        <div className="space-y-1.5 sm:space-y-2">
+          {filteredSubscribers.length === 0 ? (
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-8 sm:p-12 text-center">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {searchQuery ? 'No subscribers found' : 'No subscribers yet'}
               </p>
             </div>
           ) : (
-            subscribers.map((subscriber) => (
+            filteredSubscribers.map((subscriber) => (
               <div
                 key={subscriber.id}
-                className="bg-white dark:bg-slate-800 rounded-lg shadow border border-gray-200 dark:border-slate-700 p-4 hover:shadow-md transition"
+                className="bg-white dark:bg-slate-800 rounded-md shadow-sm border border-gray-200 dark:border-slate-700 p-2 sm:p-3 hover:shadow transition"
               >
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center justify-between gap-2">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                    <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                       {subscriber.email}
                     </p>
-                    <div className="flex items-center gap-3 mt-2">
+                    <div className="flex items-center gap-2 mt-1">
                       <span
-                        className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                        className={`inline-flex px-1.5 py-0.5 text-[10px] sm:text-xs font-medium rounded ${
                           subscriber.is_active
                             ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
                             : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300'
@@ -256,18 +294,18 @@ export const Newsletter: React.FC = () => {
                       >
                         {subscriber.is_active ? 'Active' : 'Inactive'}
                       </span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                      <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
                         {new Date(subscriber.subscribed_at).toLocaleDateString('en-US', {
-                          year: 'numeric',
                           month: 'short',
-                          day: 'numeric'
+                          day: 'numeric',
+                          year: '2-digit'
                         })}
                       </span>
                     </div>
                   </div>
                   <button
                     onClick={() => handleDelete(subscriber.id, subscriber.email)}
-                    className="flex-shrink-0 px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
+                    className="flex-shrink-0 px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition"
                   >
                     Remove
                   </button>
@@ -277,13 +315,13 @@ export const Newsletter: React.FC = () => {
           )}
         </div>
 
-        {/* Back Button */}
-        <div className="mt-6">
+        {/* Back Button - Compact */}
+        <div className="mt-4 sm:mt-6">
           <button
             onClick={() => navigate('/admin')}
-            className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition"
+            className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition"
           >
-            ← Back to Dashboard
+            ← Back
           </button>
         </div>
       </div>
@@ -291,60 +329,60 @@ export const Newsletter: React.FC = () => {
       {/* Send Newsletter Modal */}
       <AnimatePresence>
         {showSendModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-3 sm:p-4 z-50">
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-gray-200 dark:border-slate-700 max-w-2xl w-full p-6"
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-gray-200 dark:border-slate-700 max-w-2xl w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto"
             >
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2 sm:mb-4">
                 Send Newsletter
               </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-                This will send an email to all {activeSubscribers.length} active subscribers
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-4 sm:mb-6">
+                Send to {activeSubscribers.length} active subscriber{activeSubscribers.length !== 1 ? 's' : ''}
               </p>
 
-              <div className="space-y-4 mb-6">
+              <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
                     Subject
                   </label>
                   <input
                     type="text"
                     value={newsletter.subject}
                     onChange={(e) => setNewsletter({ ...newsletter, subject: e.target.value })}
-                    placeholder="Your newsletter subject..."
-                    className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Newsletter subject..."
+                    className="w-full px-3 sm:px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-sm sm:text-base text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Body (HTML supported)
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
+                    Body <span className="text-gray-500">(HTML supported)</span>
                   </label>
                   <textarea
                     value={newsletter.body}
                     onChange={(e) => setNewsletter({ ...newsletter, body: e.target.value })}
-                    rows={10}
-                    placeholder="Your newsletter content... (HTML is supported)"
-                    className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                    rows={8}
+                    placeholder="Newsletter content... (HTML is supported)"
+                    className="w-full px-3 sm:px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"
                   />
                 </div>
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex gap-2 sm:gap-3">
                 <button
                   onClick={() => setShowSendModal(false)}
                   disabled={sending}
-                  className="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition"
+                  className="flex-1 px-3 sm:px-4 py-2 text-sm sm:text-base text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSendNewsletter}
                   disabled={sending || !newsletter.subject.trim() || !newsletter.body.trim()}
-                  className="flex-1 px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="flex-1 px-3 sm:px-4 py-2 text-sm sm:text-base bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {sending ? (
                     <>
@@ -352,7 +390,9 @@ export const Newsletter: React.FC = () => {
                       Sending...
                     </>
                   ) : (
-                    `📧 Send to ${activeSubscribers.length} subscribers`
+                    <>
+                      📧 <span className="hidden xs:inline">Send to</span> {activeSubscribers.length}
+                    </>
                   )}
                 </button>
               </div>
