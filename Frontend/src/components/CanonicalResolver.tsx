@@ -39,11 +39,30 @@ export const CanonicalResolver: React.FC = () => {
         return;
       }
 
+      // Excluded paths that should NOT be checked as canonical URLs
+      // These are handled by specific routes and should never trigger the resolver
+      const excludedPaths = [
+        'login',
+        'admin',
+        'unsubscribe',
+        'blog',
+        'pages',
+        'privacy',
+        'terms',
+        'about',
+        'contact',
+      ];
+
+      // If this is an excluded path, immediately show 404
+      if (excludedPaths.includes(possibleCanonical.toLowerCase())) {
+        setError('Page not found');
+        setLoading(false);
+        return;
+      }
+
       try {
         // Construct the full canonical URL
         const canonicalUrl = `${window.location.origin}/${possibleCanonical}`;
-
-        console.log('[CanonicalResolver] Attempting to resolve:', canonicalUrl);
 
         // Query the unified content lookup API
         const response = await apiClient.get<ContentLookupResponse>(
@@ -53,16 +72,12 @@ export const CanonicalResolver: React.FC = () => {
 
         const { type, slug } = response.data;
 
-        console.log('[CanonicalResolver] Found content:', { type, slug });
-
         // Construct the target URL based on content type
         const targetUrl = type === 'post' ? `/blog/${slug}` : `/pages/${slug}`;
 
         // Set redirect URL (will trigger Navigate component)
         setRedirectUrl(targetUrl);
       } catch (err: any) {
-        console.error('[CanonicalResolver] Lookup failed:', err);
-
         // If 404, this is not a canonical URL - show 404
         if (err.response?.status === 404) {
           setError('Page not found');
@@ -79,7 +94,6 @@ export const CanonicalResolver: React.FC = () => {
 
   // If we found a redirect URL, navigate to it
   if (redirectUrl) {
-    console.log('[CanonicalResolver] Redirecting to:', redirectUrl);
     return <Navigate to={redirectUrl} replace />;
   }
 
