@@ -9,6 +9,7 @@ import { Link } from 'react-router-dom';
 import { blogApi } from '../../services/api';
 import { ChevronLeft, ChevronRight, Calendar, Clock, ArrowRight } from 'lucide-react';
 import { resolveImageUrl } from '../../utils/imageUrl';
+import { CarouselSkeleton } from './skeletons/CarouselSkeleton';
 
 interface FeaturedPost {
   id: number;
@@ -26,9 +27,20 @@ export const FeaturedCarousel: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [direction, setDirection] = useState(0);
+  const [reducedMotion, setReducedMotion] = useState(false);
 
   useEffect(() => {
     loadFeaturedPosts();
+  }, []);
+
+  // Check for reduced motion preference
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setReducedMotion(mediaQuery.matches);
+
+    const handleChange = () => setReducedMotion(mediaQuery.matches);
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
   const loadFeaturedPosts = async () => {
@@ -52,10 +64,10 @@ export const FeaturedCarousel: React.FC = () => {
     setCurrentIndex((prev) => (prev - 1 + posts.length) % posts.length);
   };
 
-  // Auto-play carousel
+  // Auto-play carousel (7 seconds for smoother experience)
   useEffect(() => {
     if (posts.length === 0) return;
-    const interval = setInterval(nextSlide, 5000);
+    const interval = setInterval(nextSlide, 7000);
     return () => clearInterval(interval);
   }, [posts.length]);
 
@@ -68,30 +80,30 @@ export const FeaturedCarousel: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <div className="bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 rounded-2xl h-96 animate-pulse"></div>
-    );
+    return <CarouselSkeleton />;
   }
 
   if (posts.length === 0) {
     return null;
   }
 
-  const slideVariants = {
-    enter: (direction: number) => ({
-      x: direction > 0 ? 1000 : -1000,
+  // Crossfade animation variants for smooth transitions
+  const crossfadeVariants = {
+    enter: {
       opacity: 0,
-    }),
-    center: {
-      zIndex: 1,
-      x: 0,
-      opacity: 1,
-    },
-    exit: (direction: number) => ({
+      scale: 1.05, // Subtle zoom for elegance
       zIndex: 0,
-      x: direction < 0 ? 1000 : -1000,
+    },
+    center: {
+      opacity: 1,
+      scale: 1,
+      zIndex: 1,
+    },
+    exit: {
       opacity: 0,
-    }),
+      scale: 0.95, // Subtle zoom out
+      zIndex: 0,
+    },
   };
 
   const currentPost = posts[currentIndex];
@@ -99,18 +111,18 @@ export const FeaturedCarousel: React.FC = () => {
   return (
     <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-gray-800 dark:to-gray-900 shadow-2xl">
       <div className="relative lg:h-[600px]">
-        <AnimatePresence initial={false} custom={direction}>
+        <AnimatePresence initial={false} mode="sync">
           <motion.div
             key={currentIndex}
-            custom={direction}
-            variants={slideVariants}
+            variants={crossfadeVariants}
             initial="enter"
             animate="center"
             exit="exit"
             transition={{
-              x: { type: 'spring', stiffness: 300, damping: 30 },
-              opacity: { duration: 0.2 },
+              duration: reducedMotion ? 0 : 0.8,
+              ease: [0.42, 0, 0.58, 1], // easeInOut cubic bezier
             }}
+            style={{ willChange: 'opacity, transform' }}
             className="lg:absolute lg:inset-0"
           >
             <div className="grid grid-cols-1 lg:grid-cols-2 lg:h-full">
