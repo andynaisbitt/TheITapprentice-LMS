@@ -4,6 +4,7 @@ import { AuthProvider } from './state/contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AppRoutes } from './routes/routes';
 import { GoogleAnalytics } from './components/analytics/GoogleAnalytics';
+import { GoogleAdSense } from './components/analytics/GoogleAdSense';
 import { CookieConsent } from './components/CookieConsent';
 import { DynamicTitle } from './components/DynamicTitle';
 import { FaviconManager } from './components/FaviconManager';
@@ -24,6 +25,7 @@ function App() {
             <DynamicTitle />
             <FaviconManager />
             <GoogleAnalytics />
+            <GoogleAdSense />
             <CookieConsent />
             <AppRoutes />
           </AuthProvider>

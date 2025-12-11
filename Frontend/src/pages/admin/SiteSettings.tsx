@@ -873,17 +873,19 @@ export const SiteSettings: React.FC = () => {
 
                 <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                   <h3 className="font-medium text-blue-900 dark:text-blue-300 mb-2">
-                    Important: Environment Variables Required
+                    ✅ Auto Ads Enabled
                   </h3>
                   <p className="text-sm text-blue-800 dark:text-blue-400 mb-3">
-                    After saving, add these to your <code className="bg-blue-100 dark:bg-blue-900 px-1 rounded">Frontend/.env</code> file:
+                    Once you save your AdSense Client ID, Auto Ads will be automatically enabled across all pages.
                   </p>
-                  <pre className="bg-white dark:bg-slate-800 p-3 rounded text-xs overflow-x-auto">
-{`VITE_GA_MEASUREMENT_ID=${settings.google_analytics_id || 'G-XXXXXXXXXX'}
-VITE_ADSENSE_CLIENT_ID=${settings.google_adsense_client_id || 'ca-pub-XXXXXXXXXXXXXXXX'}`}
-                  </pre>
-                  <p className="text-sm text-blue-800 dark:text-blue-400 mt-2">
-                    Then rebuild: <code className="bg-blue-100 dark:bg-blue-900 px-1 rounded">npm run build</code>
+                  <ul className="text-sm text-blue-800 dark:text-blue-400 space-y-1 list-disc list-inside">
+                    <li>Google will automatically place ads on your site</li>
+                    <li>Fully integrated with GDPR cookie consent</li>
+                    <li>CSP-compliant and secure</li>
+                    <li>No additional setup required</li>
+                  </ul>
+                  <p className="text-xs text-blue-700 dark:text-blue-500 mt-3">
+                    Note: It may take 24-48 hours for Google to start showing ads after enabling Auto Ads in your AdSense account.
                   </p>
                 </div>
               </motion.div>
