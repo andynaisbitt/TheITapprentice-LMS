@@ -39,12 +39,14 @@ FastReactCMS combines the best of modern web development with a developer-first 
 ### Core Features
 - **Modern Tech Stack** - React 18 + TypeScript + FastAPI + PostgreSQL
 - **Lightning Fast** - Vite builds, optimized queries, and smart caching
-- **SEO Optimized** - Built-in meta tags, RSS feeds, sitemaps, and schema markup
+- **SEO Optimized** - Canonical URLs, SSR for crawlers, meta tags, RSS feeds, sitemaps, and schema markup
+- **Hybrid SSR** - Fast SPA for users, server-rendered HTML for search engines and social media crawlers
 - **Dynamic Pages** - Modular block system for building custom pages without code
 - **Theme Customization** - Real-time color and typography controls
 - **Dark Mode** - Beautiful dark theme across the entire platform
 - **Mobile-First** - Responsive design that works on every device
 - **Homepage Builder** - Fully customizable homepage with hero, carousel, categories, and stats sections
+- **SEO Diagnostic Tool** - Built-in 9-test SEO analyzer for all content
 
 ### Content Management
 - **Rich Blog Editor** - Markdown support, image uploads, and SEO optimization
@@ -578,7 +580,7 @@ We take all security reports seriously and will respond promptly.
 - ✅ Blog system with categories and tags
 - ✅ Dynamic page builder with modular blocks
 - ✅ Theme customization (colors, typography, navigation)
-- ✅ SEO optimization (meta tags, slugs, RSS feeds, sitemap)
+- ✅ SEO optimization (meta tags, slugs, RSS feeds, sitemap, canonical URLs)
 - ✅ Admin panel with content management
 - ✅ User authentication (JWT + HTTP-only cookies)
 - ✅ Security hardening (CSRF, bcrypt, rate limiting, SVG XSS prevention)
@@ -587,6 +589,7 @@ We take all security reports seriously and will respond promptly.
 - ✅ Dark mode support
 - ✅ Image upload and management (PNG, JPG, WebP, SVG)
 - ✅ Markdown support for content
+- ✅ Server-side rendering for search engine crawlers
 
 **Newsletter System (v1.3):**
 - ✅ Email newsletter subscription system
@@ -599,12 +602,23 @@ We take all security reports seriously and will respond promptly.
 
 **Homepage Customization (v1.4):**
 - ✅ Fully customizable hero section (title, subtitle, badge, CTAs)
-- ✅ Homepage stats display (configurable or hidden)
-- ✅ Featured carousel with crossfade transitions and autoplay
-- ✅ Categories showcase with customizable limits
-- ✅ Recent posts grid with flexible layouts
-- ✅ Toggle sections on/off via admin panel
-- ✅ Mobile-optimized homepage layout
+- ✅ Homepage stats display (articles, readers, "100% free" badges - configurable or hidden)
+- ✅ Featured carousel with crossfade transitions and autoplay (7-second intervals)
+- ✅ Categories showcase with customizable limits (1-20 categories)
+- ✅ Recent posts grid with flexible layouts (1-50 posts)
+- ✅ Toggle sections on/off via admin panel (hero, carousel, categories, recent posts)
+- ✅ Mobile-optimized homepage layout with responsive breakpoints
+- ✅ Carousel performance optimization (reduced re-renders, smooth transitions)
+
+**SEO & Social Media (v1.4):**
+- ✅ **Canonical URL System** - Custom short URLs for posts and pages (e.g., `/RAM-Price-Spikes`)
+- ✅ **Server-Side Rendering (SSR)** - Hybrid approach for crawlers only
+  - Regular users → Fast SPA (603 bytes)
+  - Crawlers (Googlebot, Facebookbot, LinkedIn) → SSR with meta tags (2,876 bytes)
+- ✅ **Social Media Previews** - Proper Open Graph and Twitter Card meta tags
+- ✅ **SEO Diagnostic Tool** - 9 automated tests (meta tags, headings, images, links, etc.)
+- ✅ **Comprehensive Meta Tags** - Homepage and blog posts fully optimized
+- ✅ **Performance Optimized SSR** - LRU cache (100 pages, 1-hour TTL), <50ms cached, <200ms uncached
 
 **Branding & Assets (v1.4):**
 - ✅ Logo upload system (light & dark mode variants)
@@ -612,9 +626,26 @@ We take all security reports seriously and will respond promptly.
 - ✅ SVG upload support with XSS security validation
 - ✅ Favicon management through admin panel
 - ✅ Default minimalist wizard/apprentice favicons included
+- ✅ Database-driven branding (no .env files needed)
+
+**Mobile UX Improvements (v1.4):**
+- ✅ Mobile-first blog post redesign with optimized typography
+- ✅ Blog post sidebar optimization for tablets and mobile
+- ✅ Responsive navigation with mobile hamburger menu
+- ✅ Touch-friendly admin interface
+
+**Analytics & Monetization (v1.4):**
+- ✅ CSP-compliant Google Analytics 4 integration
+- ✅ CSP-compliant Google AdSense integration
+- ✅ ID validation prevents injection attacks
+- ✅ No `innerHTML` usage (security hardened)
+- ✅ DNT (Do Not Track) respect
+- ✅ GDPR-compliant settings
+- ✅ Database-driven configuration (update without rebuilds)
+- ✅ Multiple ad unit types (article, sidebar, banner)
 
 **Recent Updates:**
-- v1.4 (Dec 2025): Favicon upload, homepage customization, logo upload, CSP-compliant analytics
+- v1.4 (Dec 2025): Canonical URLs + SSR, favicon upload, homepage customization, logo upload, CSP-compliant analytics, SEO diagnostics, mobile UX improvements (77 commits)
 - v1.3 (Dec 2025): Newsletter system with complete subscriber management
 - v1.2 (Dec 2025): Mobile UX improvements across admin panel
 - v1.1 (Dec 2025): Production deployment fixes and optimizations
