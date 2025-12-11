@@ -46,8 +46,8 @@ export const Login: React.FC = () => {
     try {
       await login(formData.email, formData.password);
       
-      // Redirect based on where they came from or to dashboard
-      const from = location.state?.from?.pathname || '/dashboard';
+      // Redirect based on where they came from or to admin dashboard
+      const from = location.state?.from?.pathname || '/admin';
       navigate(from, { replace: true });
     } catch (err: any) {
       console.error('Login error:', err);

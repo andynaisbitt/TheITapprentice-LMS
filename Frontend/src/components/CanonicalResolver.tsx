@@ -44,6 +44,7 @@ export const CanonicalResolver: React.FC = () => {
       const excludedPaths = [
         'login',
         'admin',
+        'dashboard',
         'unsubscribe',
         'blog',
         'pages',

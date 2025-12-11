@@ -142,18 +142,34 @@ export const BlogPostView: React.FC = () => {
 
           {/* Post Header */}
           <header className="mb-8">
-            <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400 mb-4">
-              <time dateTime={post.published_at || post.created_at}>
-                {new Date(post.published_at || post.created_at).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
-              </time>
-              <span>•</span>
-              <span>{post.read_time_minutes} min read</span>
-              <span>•</span>
-              <span>👁️ {post.view_count} views</span>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                <time dateTime={post.published_at || post.created_at}>
+                  {new Date(post.published_at || post.created_at).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </time>
+                <span>•</span>
+                <span>{post.read_time_minutes} min read</span>
+                <span>•</span>
+                <span>👁️ {post.view_count} views</span>
+              </div>
+
+              {/* Admin Edit Button */}
+              {isAdmin && (
+                <button
+                  onClick={() => navigate(`/admin/blog/${post.id}`)}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white text-sm font-medium rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors shadow-sm"
+                  title="Edit this post"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Edit Post
+                </button>
+              )}
             </div>
 
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-gray-100 mb-4">
@@ -231,53 +247,20 @@ export const BlogPostView: React.FC = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.4, delay: 0.2 }}
             >
-              {/* Sticky Sidebar */}
+              {/* Sticky Sidebar - Compact */}
               <div className="sticky top-8 space-y-6">
                 {/* Sidebar Ad */}
                 <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-4 border border-gray-200 dark:border-slate-700">
                   <SidebarAd />
                 </div>
 
-                {/* Post Info Card */}
-                <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-slate-700">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">
-                    Post Info
-                  </h3>
-                  <div className="space-y-3 text-sm">
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">Views</span>
-                      <span className="font-medium text-gray-900 dark:text-gray-100">
-                        {post.view_count}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">Read Time</span>
-                      <span className="font-medium text-gray-900 dark:text-gray-100">
-                        {post.read_time_minutes} min
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">Published</span>
-                      <span className="font-medium text-gray-900 dark:text-gray-100">
-                        {new Date(post.published_at || post.created_at).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric'
-                        })}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Categories Card */}
+                {/* Category Card (if exists) */}
                 {post.category && (
-                  <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-slate-700">
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">
+                  <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-5 border border-gray-200 dark:border-slate-700">
+                    <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-3 uppercase tracking-wide">
                       Category
                     </h3>
-                    <span
-                      className="inline-flex items-center px-4 py-2 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 rounded-lg font-medium"
-                    >
+                    <span className="inline-flex items-center px-3 py-1.5 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 rounded-lg font-medium text-sm">
                       {post.category.name}
                     </span>
                   </div>
