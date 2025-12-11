@@ -19,6 +19,7 @@ interface SiteSettings {
   site_tagline: string;
   meta_description: string;
   meta_keywords: string;
+  og_image: string;
 
   // Homepage Hero
   hero_title: string;
@@ -70,6 +71,7 @@ const defaultSettings: SiteSettings = {
   site_tagline: 'A modern, SEO-optimized blog platform',
   meta_description: 'Share your knowledge with the world using FastReactCMS - a modern blog platform built with React and FastAPI.',
   meta_keywords: 'blog, cms, react, fastapi, seo, content management',
+  og_image: '',
 
   // Homepage defaults
   hero_title: 'Share Your Story',
@@ -603,6 +605,22 @@ VITE_ADSENSE_CLIENT_ID=${settings.google_adsense_client_id || 'ca-pub-XXXXXXXXXX
                     placeholder="keyword1, keyword2, keyword3"
                     className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Open Graph Image URL
+                  </label>
+                  <input
+                    type="url"
+                    value={settings.og_image}
+                    onChange={(e) => handleChange('og_image', e.target.value)}
+                    placeholder="https://yourdomain.com/og-image.jpg"
+                    className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    Image displayed when your site is shared on social media (1200x630px recommended)
+                  </p>
                 </div>
               </motion.div>
             )}

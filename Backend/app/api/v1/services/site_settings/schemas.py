@@ -17,6 +17,7 @@ class SiteSettingsBase(BaseModel):
     site_url: str = Field(default="https://yourdomain.com", max_length=255)
     meta_description: str = Field(default="A modern blog platform", max_length=500)
     meta_keywords: Optional[str] = Field(None, max_length=500)
+    og_image: Optional[str] = Field(None, max_length=255)
 
     # Homepage Hero
     hero_title: str = Field(default="Share Your Story", max_length=200)
@@ -70,6 +71,7 @@ class SiteSettingsUpdate(BaseModel):
     site_url: Optional[str] = Field(None, max_length=255)
     meta_description: Optional[str] = Field(None, max_length=500)
     meta_keywords: Optional[str] = Field(None, max_length=500)
+    og_image: Optional[str] = Field(None, max_length=255)
 
     # Homepage Hero
     hero_title: Optional[str] = Field(None, max_length=200)

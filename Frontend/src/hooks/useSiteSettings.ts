@@ -19,6 +19,7 @@ export interface SiteSettings {
   siteTagline: string;
   metaDescription: string;
   metaKeywords: string;
+  ogImage: string;
 
   // Homepage Hero
   heroTitle: string;
@@ -70,6 +71,7 @@ const defaultSettings: SiteSettings = {
   siteTagline: 'A modern, SEO-optimized blog platform',
   metaDescription: 'Share your knowledge with the world using FastReactCMS - a modern blog platform built with React and FastAPI.',
   metaKeywords: 'blog, cms, react, fastapi, seo, content management',
+  ogImage: '',
 
   // Homepage defaults
   heroTitle: 'Share Your Story',
@@ -114,6 +116,7 @@ const convertToCamelCase = (apiSettings: any): SiteSettings => {
     siteTagline: apiSettings.site_tagline || '',
     metaDescription: apiSettings.meta_description || defaultSettings.metaDescription,
     metaKeywords: apiSettings.meta_keywords || '',
+    ogImage: apiSettings.og_image || '',
     heroTitle: apiSettings.hero_title || defaultSettings.heroTitle,
     heroSubtitle: apiSettings.hero_subtitle || defaultSettings.heroSubtitle,
     heroBadgeText: apiSettings.hero_badge_text || defaultSettings.heroBadgeText,

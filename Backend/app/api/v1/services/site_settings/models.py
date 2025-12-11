@@ -25,6 +25,7 @@ class SiteSettings(Base):
     site_url = Column(String(255), default="https://yourdomain.com")
     meta_description = Column(String(500), default="A modern blog platform")
     meta_keywords = Column(String(500), nullable=True)
+    og_image = Column(String(255), nullable=True)  # Open Graph image for social sharing
 
     # Homepage Hero
     hero_title = Column(String(200), default="Share Your Story")

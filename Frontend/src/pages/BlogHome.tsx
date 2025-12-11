@@ -11,41 +11,48 @@ import FeaturedCarousel from '../components/home/FeaturedCarousel';
 import RecentPostsGrid from '../components/home/RecentPostsGrid';
 import CategoryShowcase from '../components/home/CategoryShowcase';
 import { Sparkles } from 'lucide-react';
+import { useSiteSettings } from '../hooks/useSiteSettings';
 
 export const BlogHome: React.FC = () => {
-  const siteTitle = 'The IT Apprentice';
-  const siteDescription = 'Professional insights on technology, software development, and IT practices. Real-world guides for developers, IT professionals, and tech enthusiasts.';
-  const siteUrl = 'https://theitapprentice.com';
-  const ogImage = `${siteUrl}/og-image.jpg`; // You can create a custom OG image
+  const { settings } = useSiteSettings();
+
+  // Build full page title with tagline if available
+  const pageTitle = settings.siteTagline
+    ? `${settings.siteTitle} - ${settings.siteTagline}`
+    : settings.siteTitle;
+
+  // Use OG image from settings, fallback to /og-image.jpg
+  const ogImage = settings.ogImage || `${settings.siteUrl}/og-image.jpg`;
 
   return (
     <>
       {/* SEO Meta Tags for Homepage */}
       <Helmet>
-        <title>{siteTitle} - Professional Tech Insights & IT Guides</title>
-        <meta name="description" content={siteDescription} />
-        <meta name="keywords" content="technology blog, software development, IT guides, programming tutorials, tech insights, developer resources, hardware reviews, tech industry" />
+        <title>{pageTitle}</title>
+        <meta name="description" content={settings.metaDescription} />
+        {settings.metaKeywords && <meta name="keywords" content={settings.metaKeywords} />}
 
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
-        <meta property="og:url" content={siteUrl} />
-        <meta property="og:title" content={siteTitle} />
-        <meta property="og:description" content={siteDescription} />
+        <meta property="og:url" content={settings.siteUrl} />
+        <meta property="og:title" content={settings.siteTitle} />
+        <meta property="og:description" content={settings.metaDescription} />
         <meta property="og:image" content={ogImage} />
-        <meta property="og:site_name" content={siteTitle} />
+        <meta property="og:site_name" content={settings.siteTitle} />
 
         {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:url" content={siteUrl} />
-        <meta name="twitter:title" content={siteTitle} />
-        <meta name="twitter:description" content={siteDescription} />
+        <meta name="twitter:url" content={settings.siteUrl} />
+        <meta name="twitter:title" content={settings.siteTitle} />
+        <meta name="twitter:description" content={settings.metaDescription} />
         <meta name="twitter:image" content={ogImage} />
+        {settings.twitterHandle && <meta name="twitter:site" content={`@${settings.twitterHandle}`} />}
 
         {/* LinkedIn */}
         <meta property="og:locale" content="en_US" />
 
         {/* Canonical URL */}
-        <link rel="canonical" href={siteUrl} />
+        <link rel="canonical" href={settings.siteUrl} />
       </Helmet>
 
       <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
