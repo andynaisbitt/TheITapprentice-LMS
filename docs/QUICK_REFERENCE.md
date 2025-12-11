@@ -154,7 +154,7 @@ sudo -u postgres psql -l
 
 **Connect to database:**
 ```bash
-sudo -u postgres psql fastreactcms_db
+sudo -u postgres psql fastreactcms
 ```
 
 **Check migrations:**
@@ -224,7 +224,7 @@ curl -H "User-Agent: Mozilla/5.0 (compatible; Googlebot/2.1)" \
 
 ### Check Database for Canonical URLs
 ```bash
-sudo -u postgres psql fastreactcms_db -c \
+sudo -u postgres psql fastreactcms -c \
   "SELECT id, title, canonical_url FROM blog_posts WHERE canonical_url IS NOT NULL;"
 ```
 
@@ -280,31 +280,31 @@ curl -H "User-Agent: Googlebot" \
 
 ### Backup Database
 ```bash
-sudo -u postgres pg_dump fastreactcms_db > backup_$(date +%Y%m%d).sql
+sudo -u postgres pg_dump fastreactcms > backup_$(date +%Y%m%d).sql
 ```
 
 ### Restore Database
 ```bash
-sudo -u postgres psql fastreactcms_db < backup_20250101.sql
+sudo -u postgres psql fastreactcms < backup_20250101.sql
 ```
 
 ### Check Database Size
 ```bash
-sudo -u postgres psql -c "\l+" fastreactcms_db
+sudo -u postgres psql -c "\l+" fastreactcms
 ```
 
 ### Useful Queries
 ```bash
 # Count posts
-sudo -u postgres psql fastreactcms_db -c \
+sudo -u postgres psql fastreactcms -c \
   "SELECT COUNT(*) FROM blog_posts;"
 
 # Recent posts
-sudo -u postgres psql fastreactcms_db -c \
+sudo -u postgres psql fastreactcms -c \
   "SELECT id, title, published, created_at FROM blog_posts ORDER BY created_at DESC LIMIT 10;"
 
 # Posts with canonical URLs
-sudo -u postgres psql fastreactcms_db -c \
+sudo -u postgres psql fastreactcms -c \
   "SELECT id, title, canonical_url FROM blog_posts WHERE canonical_url IS NOT NULL;"
 ```
 

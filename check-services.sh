@@ -90,10 +90,10 @@ echo "🗄️  PostgreSQL Database"
 if $SUDO systemctl is-active --quiet postgresql; then
     echo -e "${GREEN}✅ PostgreSQL is running${NC}"
     # Check if database exists
-    if $SUDO -u postgres psql -lqt | cut -d \| -f 1 | grep -qw fastreactcms_db; then
-        echo -e "   ${GREEN}└─ Database 'fastreactcms_db' exists${NC}"
+    if $SUDO -u postgres psql -lqt | cut -d \| -f 1 | grep -qw fastreactcms; then
+        echo -e "   ${GREEN}└─ Database 'fastreactcms' exists${NC}"
     else
-        echo -e "   ${RED}└─ Database 'fastreactcms_db' not found${NC}"
+        echo -e "   ${RED}└─ Database 'fastreactcms' not found${NC}"
     fi
 else
     echo -e "${RED}❌ PostgreSQL is NOT running${NC}"

@@ -87,7 +87,7 @@ psql fastreactcms_db -c "SELECT id, title, canonical_url FROM blog_posts WHERE c
 #### C) Post not published
 ```bash
 # Check if post is published
-psql fastreactcms_db -c "SELECT id, title, published FROM blog_posts WHERE canonical_url LIKE '%RAM-Price-Spikes%';"
+sudo -u postgres psql fastreactcms -c "SELECT id, title, published FROM blog_posts WHERE canonical_url LIKE '%RAM-Price-Spikes%';"
 ```
 
 **Fix:** Publish the post in admin panel
@@ -387,7 +387,7 @@ sudo systemctl reload nginx
 
 4. **Database query:**
    ```bash
-   psql fastreactcms_db -c "SELECT id, title, slug, canonical_url, published FROM blog_posts ORDER BY created_at DESC LIMIT 10;"
+   sudo -u postgres psql fastreactcms -c "SELECT id, title, slug, canonical_url, published FROM blog_posts ORDER BY created_at DESC LIMIT 10;"
    ```
 
 ---
@@ -413,7 +413,7 @@ sudo systemctl start fastreactcms-ssr
 sudo systemctl status fastreactcms-ssr
 
 # 2. Verify canonical URLs in database
-psql fastreactcms_db -c "SELECT canonical_url FROM blog_posts WHERE canonical_url IS NOT NULL;"
+sudo -u postgres psql fastreactcms -c "SELECT canonical_url FROM blog_posts WHERE canonical_url IS NOT NULL;"
 
 # 3. Test with crawler
 curl -H "User-Agent: Googlebot" "https://theitapprentice.com/blog/your-post" | grep title
