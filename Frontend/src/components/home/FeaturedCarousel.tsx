@@ -10,6 +10,7 @@ import { blogApi } from '../../services/api';
 import { ChevronLeft, ChevronRight, Calendar, Clock, ArrowRight } from 'lucide-react';
 import { resolveImageUrl } from '../../utils/imageUrl';
 import { CarouselSkeleton } from './skeletons/CarouselSkeleton';
+import { useSiteSettings } from '../../hooks/useSiteSettings';
 
 interface FeaturedPost {
   id: number;
@@ -22,7 +23,12 @@ interface FeaturedPost {
   view_count?: number;
 }
 
-export const FeaturedCarousel: React.FC = () => {
+interface FeaturedCarouselProps {
+  limit?: number;
+}
+
+export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({ limit }) => {
+  const { settings } = useSiteSettings();
   const [posts, setPosts] = useState<FeaturedPost[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -45,7 +51,8 @@ export const FeaturedCarousel: React.FC = () => {
 
   const loadFeaturedPosts = async () => {
     try {
-      const data = await blogApi.getFeatured(5);
+      const effectiveLimit = limit || settings.carouselLimit || 5;
+      const data = await blogApi.getFeatured(effectiveLimit);
       setPosts(data);
     } catch (error) {
       console.error('Failed to load featured posts:', error);
@@ -64,12 +71,12 @@ export const FeaturedCarousel: React.FC = () => {
     setCurrentIndex((prev) => (prev - 1 + posts.length) % posts.length);
   };
 
-  // Auto-play carousel (7 seconds for smoother experience)
+  // Auto-play carousel with configurable interval
   useEffect(() => {
-    if (posts.length === 0) return;
-    const interval = setInterval(nextSlide, 7000);
+    if (posts.length === 0 || !settings.carouselAutoplay) return;
+    const interval = setInterval(nextSlide, settings.carouselInterval || 7000);
     return () => clearInterval(interval);
-  }, [posts.length]);
+  }, [posts.length, settings.carouselAutoplay, settings.carouselInterval]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -224,28 +231,28 @@ export const FeaturedCarousel: React.FC = () => {
           </motion.div>
         </AnimatePresence>
 
-        {/* Navigation Arrows */}
+        {/* Navigation Arrows - Mobile Optimized */}
         {posts.length > 1 && (
           <>
             <button
               onClick={prevSlide}
-              className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-3 bg-white/90 dark:bg-gray-800/90 rounded-full shadow-lg hover:bg-white dark:hover:bg-gray-800 transition-all backdrop-blur-sm"
+              className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-10 p-2.5 sm:p-3 bg-white/90 dark:bg-gray-800/90 rounded-full shadow-lg hover:bg-white dark:hover:bg-gray-800 transition-all backdrop-blur-sm touch-manipulation active:scale-95"
               aria-label="Previous slide"
             >
-              <ChevronLeft size={24} className="text-gray-700 dark:text-gray-300" />
+              <ChevronLeft size={20} className="sm:w-6 sm:h-6 text-gray-700 dark:text-gray-300" />
             </button>
             <button
               onClick={nextSlide}
-              className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-3 bg-white/90 dark:bg-gray-800/90 rounded-full shadow-lg hover:bg-white dark:hover:bg-gray-800 transition-all backdrop-blur-sm"
+              className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-10 p-2.5 sm:p-3 bg-white/90 dark:bg-gray-800/90 rounded-full shadow-lg hover:bg-white dark:hover:bg-gray-800 transition-all backdrop-blur-sm touch-manipulation active:scale-95"
               aria-label="Next slide"
             >
-              <ChevronRight size={24} className="text-gray-700 dark:text-gray-300" />
+              <ChevronRight size={20} className="sm:w-6 sm:h-6 text-gray-700 dark:text-gray-300" />
             </button>
           </>
         )}
 
-        {/* Dots Indicator */}
-        <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-2 z-10">
+        {/* Dots Indicator - Mobile Optimized with larger touch targets */}
+        <div className="absolute bottom-4 sm:bottom-6 left-0 right-0 flex justify-center gap-1 sm:gap-2 z-10">
           {posts.map((_, index) => (
             <button
               key={index}
@@ -253,13 +260,17 @@ export const FeaturedCarousel: React.FC = () => {
                 setDirection(index > currentIndex ? 1 : -1);
                 setCurrentIndex(index);
               }}
-              className={`h-2 rounded-full transition-all ${
-                index === currentIndex
-                  ? 'w-8 bg-blue-600'
-                  : 'w-2 bg-gray-400 hover:bg-gray-600'
-              }`}
+              className={`touch-manipulation p-2 transition-all active:scale-95`}
               aria-label={`Go to slide ${index + 1}`}
-            />
+            >
+              <div
+                className={`h-2 rounded-full transition-all ${
+                  index === currentIndex
+                    ? 'w-8 bg-blue-600 dark:bg-blue-500'
+                    : 'w-2 bg-gray-400 dark:bg-gray-500'
+                }`}
+              />
+            </button>
           ))}
         </div>
       </div>

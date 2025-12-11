@@ -52,6 +52,16 @@ export interface SiteSettings {
   carouselAutoplay: boolean;
   carouselInterval: number;
   carouselTransition: 'crossfade' | 'slide' | 'none';
+  carouselTitle: string;
+  carouselSubtitle: string;
+
+  // Categories Settings
+  categoriesTitle: string;
+  categoriesSubtitle: string;
+
+  // Recent Posts Settings
+  recentPostsTitle: string;
+  recentPostsSubtitle: string;
 
   // Social Media
   twitterHandle: string;
@@ -124,6 +134,16 @@ const defaultSettings: SiteSettings = {
   carouselAutoplay: true,
   carouselInterval: 7000,
   carouselTransition: 'crossfade',
+  carouselTitle: 'Featured Articles',
+  carouselSubtitle: 'Hand-picked posts showcasing our best content',
+
+  // Categories Settings
+  categoriesTitle: 'Explore by Category',
+  categoriesSubtitle: 'Dive into topics that interest you',
+
+  // Recent Posts Settings
+  recentPostsTitle: 'Latest Posts',
+  recentPostsSubtitle: 'Fresh content from our writers',
 
   twitterHandle: '',
   facebookUrl: '',
@@ -177,6 +197,12 @@ const convertToCamelCase = (apiSettings: any): SiteSettings => {
     carouselAutoplay: apiSettings.carousel_autoplay !== undefined ? apiSettings.carousel_autoplay : true,
     carouselInterval: apiSettings.carousel_interval || 7000,
     carouselTransition: apiSettings.carousel_transition || 'crossfade',
+    carouselTitle: apiSettings.carousel_title || defaultSettings.carouselTitle,
+    carouselSubtitle: apiSettings.carousel_subtitle || defaultSettings.carouselSubtitle,
+    categoriesTitle: apiSettings.categories_title || defaultSettings.categoriesTitle,
+    categoriesSubtitle: apiSettings.categories_subtitle || defaultSettings.categoriesSubtitle,
+    recentPostsTitle: apiSettings.recent_posts_title || defaultSettings.recentPostsTitle,
+    recentPostsSubtitle: apiSettings.recent_posts_subtitle || defaultSettings.recentPostsSubtitle,
     twitterHandle: apiSettings.twitter_handle || '',
     facebookUrl: apiSettings.facebook_url || '',
     linkedinUrl: apiSettings.linkedin_url || '',

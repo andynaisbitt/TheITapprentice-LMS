@@ -9,6 +9,7 @@ import { Link } from 'react-router-dom';
 import { blogApi } from '../../services/api';
 import { Calendar, Clock, ArrowRight, TrendingUp } from 'lucide-react';
 import { resolveImageUrl } from '../../utils/imageUrl';
+import { useSiteSettings } from '../../hooks/useSiteSettings';
 
 interface RecentPost {
   id: number;
@@ -21,17 +22,23 @@ interface RecentPost {
   view_count?: number;
 }
 
-export const RecentPostsGrid: React.FC = () => {
+interface RecentPostsGridProps {
+  limit?: number;
+}
+
+export const RecentPostsGrid: React.FC<RecentPostsGridProps> = ({ limit }) => {
+  const { settings } = useSiteSettings();
   const [posts, setPosts] = useState<RecentPost[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadRecentPosts();
-  }, []);
+  }, [limit, settings.recentPostsLimit]);
 
   const loadRecentPosts = async () => {
     try {
-      const data = await blogApi.getRecent(6);
+      const effectiveLimit = limit ?? settings.recentPostsLimit ?? 6;
+      const data = await blogApi.getRecent(effectiveLimit);
       setPosts(data);
     } catch (error) {
       console.error('Failed to load recent posts:', error);
@@ -96,16 +103,16 @@ export const RecentPostsGrid: React.FC = () => {
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true, margin: '-100px' }}
-      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8"
     >
       {posts.map((post) => (
         <motion.article
           key={post.id}
           variants={cardVariants}
           whileHover={{ y: -8 }}
-          className="group bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300"
+          className="group bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 active:scale-98"
         >
-          <Link to={`/blog/${post.slug}`} className="block">
+          <Link to={`/blog/${post.slug}`} className="block touch-manipulation">
             {/* Image */}
             <div className="relative h-48 overflow-hidden bg-gradient-to-br from-blue-500 to-purple-600">
               {post.featured_image ? (
@@ -121,9 +128,9 @@ export const RecentPostsGrid: React.FC = () => {
 
               {/* Category Badge */}
               {post.categories && post.categories[0] && (
-                <div className="absolute top-4 left-4">
+                <div className="absolute top-3 left-3 sm:top-4 sm:left-4">
                   <span
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-sm"
+                    className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-sm"
                     style={{
                       backgroundColor: post.categories[0].color
                         ? `${post.categories[0].color}dd`
@@ -139,15 +146,16 @@ export const RecentPostsGrid: React.FC = () => {
 
               {/* View Count */}
               {post.view_count && post.view_count > 0 && (
-                <div className="absolute bottom-4 right-4 flex items-center gap-1.5 px-2.5 py-1 bg-black/50 backdrop-blur-sm rounded-full text-white text-xs font-medium">
+                <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 bg-black/50 backdrop-blur-sm rounded-full text-white text-xs font-medium">
                   <TrendingUp size={12} />
-                  <span>{post.view_count.toLocaleString()} views</span>
+                  <span className="hidden xs:inline">{post.view_count.toLocaleString()} views</span>
+                  <span className="xs:hidden">{post.view_count.toLocaleString()}</span>
                 </div>
               )}
             </div>
 
             {/* Content */}
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               {/* Meta */}
               <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mb-3">
                 <div className="flex items-center gap-1">
@@ -161,19 +169,19 @@ export const RecentPostsGrid: React.FC = () => {
               </div>
 
               {/* Title */}
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3 line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-3 line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                 {post.title}
               </h3>
 
               {/* Excerpt */}
-              <p className="text-gray-600 dark:text-gray-300 text-sm mb-4 line-clamp-3">
+              <p className="text-gray-600 dark:text-gray-300 text-sm mb-3 sm:mb-4 line-clamp-2 sm:line-clamp-3">
                 {post.excerpt}
               </p>
 
               {/* Read More Link */}
               <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-semibold text-sm group-hover:gap-3 transition-all">
                 <span>Read More</span>
-                <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                <ArrowRight size={14} className="sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform" />
               </div>
             </div>
           </Link>

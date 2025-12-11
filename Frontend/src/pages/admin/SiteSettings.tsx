@@ -62,6 +62,24 @@ interface SiteSettings {
   smtp_use_tls: boolean;
   smtp_from_email: string;
   smtp_from_name: string;
+
+  // Homepage Layout
+  show_carousel: boolean;
+  carousel_title: string;
+  carousel_subtitle: string;
+  carousel_limit: number;
+  carousel_autoplay: boolean;
+  carousel_interval: number;
+
+  show_categories: boolean;
+  categories_title: string;
+  categories_subtitle: string;
+  categories_limit: number;
+
+  show_recent_posts: boolean;
+  recent_posts_title: string;
+  recent_posts_subtitle: string;
+  recent_posts_limit: number;
 }
 
 const defaultSettings: SiteSettings = {
@@ -105,6 +123,24 @@ const defaultSettings: SiteSettings = {
   smtp_use_tls: true,
   smtp_from_email: '',
   smtp_from_name: '',
+
+  // Homepage Layout defaults
+  show_carousel: true,
+  carousel_title: 'Featured Articles',
+  carousel_subtitle: 'Hand-picked posts showcasing our best content',
+  carousel_limit: 5,
+  carousel_autoplay: true,
+  carousel_interval: 7000,
+
+  show_categories: true,
+  categories_title: 'Explore by Category',
+  categories_subtitle: 'Dive into topics that interest you',
+  categories_limit: 6,
+
+  show_recent_posts: true,
+  recent_posts_title: 'Latest Posts',
+  recent_posts_subtitle: 'Fresh content from our writers',
+  recent_posts_limit: 6,
 };
 
 export const SiteSettings: React.FC = () => {
@@ -113,8 +149,19 @@ export const SiteSettings: React.FC = () => {
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'analytics' | 'seo' | 'homepage' | 'social' | 'contact' | 'branding' | 'email'>('homepage');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'seo' | 'homepage' | 'layout' | 'social' | 'contact' | 'branding' | 'email'>('homepage');
   const [uploadingLogo, setUploadingLogo] = useState<'light' | 'dark' | null>(null);
+
+  // Helper to convert null values to defaults
+  const cleanSettings = (data: any): SiteSettings => {
+    const cleaned = { ...defaultSettings };
+    Object.keys(data).forEach((key) => {
+      if (data[key] !== null && data[key] !== undefined) {
+        (cleaned as any)[key] = data[key];
+      }
+    });
+    return cleaned;
+  };
 
   // Fetch settings from API on mount
   useEffect(() => {
@@ -138,7 +185,8 @@ export const SiteSettings: React.FC = () => {
         }
       } else {
         const data = await response.json();
-        setSettings(data);
+        // Convert null values to defaults
+        setSettings(cleanSettings(data));
       }
     } catch (err) {
       console.error('Error fetching settings:', err);
@@ -241,6 +289,7 @@ export const SiteSettings: React.FC = () => {
 
   const tabs = [
     { id: 'homepage', label: 'Homepage', icon: '🏠' },
+    { id: 'layout', label: 'Homepage Layout', icon: '📐' },
     { id: 'seo', label: 'SEO & Domain', icon: '🔍' },
     { id: 'branding', label: 'Branding & Logo', icon: '🎨' },
     { id: 'analytics', label: 'Analytics & Ads', icon: '📊' },
@@ -459,6 +508,270 @@ export const SiteSettings: React.FC = () => {
                       />
                     </div>
                   </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Homepage Layout Tab */}
+            {activeTab === 'layout' && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="space-y-6"
+              >
+                <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4 mb-6">
+                  <h3 className="font-medium text-purple-900 dark:text-purple-300 mb-2">
+                    📐 Homepage Layout Control
+                  </h3>
+                  <p className="text-sm text-purple-800 dark:text-purple-400">
+                    Show/hide sections, customize titles, and control limits for carousel, categories, and recent posts.
+                  </p>
+                </div>
+
+                {/* Carousel Section */}
+                <div className="border border-gray-200 dark:border-slate-700 rounded-lg p-6 bg-white dark:bg-slate-800">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                      Featured Carousel
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => handleChange('show_carousel', !settings.show_carousel)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        settings.show_carousel
+                          ? 'bg-blue-600 dark:bg-blue-700'
+                          : 'bg-gray-300 dark:bg-slate-600'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          settings.show_carousel ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {settings.show_carousel && (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Section Title
+                        </label>
+                        <input
+                          type="text"
+                          value={settings.carousel_title}
+                          onChange={(e) => handleChange('carousel_title', e.target.value)}
+                          placeholder="Featured Articles"
+                          className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Section Subtitle
+                        </label>
+                        <input
+                          type="text"
+                          value={settings.carousel_subtitle}
+                          onChange={(e) => handleChange('carousel_subtitle', e.target.value)}
+                          placeholder="Hand-picked posts showcasing our best content"
+                          className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Number of Posts
+                          </label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="10"
+                            value={settings.carousel_limit}
+                            onChange={(e) => handleChange('carousel_limit', parseInt(e.target.value) || 5)}
+                            className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">1-10 posts</p>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Auto-play Interval (ms)
+                          </label>
+                          <input
+                            type="number"
+                            min="3000"
+                            max="30000"
+                            step="1000"
+                            value={settings.carousel_interval}
+                            onChange={(e) => handleChange('carousel_interval', parseInt(e.target.value) || 7000)}
+                            className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">3000-30000 ms</p>
+                        </div>
+
+                        <div className="flex flex-col justify-end">
+                          <div className="flex items-center justify-between bg-gray-50 dark:bg-slate-700/50 p-3 rounded-lg">
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Auto-play</span>
+                            <button
+                              type="button"
+                              onClick={() => handleChange('carousel_autoplay', !settings.carousel_autoplay)}
+                              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                settings.carousel_autoplay
+                                  ? 'bg-blue-600 dark:bg-blue-700'
+                                  : 'bg-gray-300 dark:bg-slate-600'
+                              }`}
+                            >
+                              <span
+                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                  settings.carousel_autoplay ? 'translate-x-6' : 'translate-x-1'
+                                }`}
+                              />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Categories Section */}
+                <div className="border border-gray-200 dark:border-slate-700 rounded-lg p-6 bg-white dark:bg-slate-800">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                      Categories Showcase
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => handleChange('show_categories', !settings.show_categories)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        settings.show_categories
+                          ? 'bg-blue-600 dark:bg-blue-700'
+                          : 'bg-gray-300 dark:bg-slate-600'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          settings.show_categories ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {settings.show_categories && (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Section Title
+                        </label>
+                        <input
+                          type="text"
+                          value={settings.categories_title}
+                          onChange={(e) => handleChange('categories_title', e.target.value)}
+                          placeholder="Explore by Category"
+                          className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Section Subtitle
+                        </label>
+                        <input
+                          type="text"
+                          value={settings.categories_subtitle}
+                          onChange={(e) => handleChange('categories_subtitle', e.target.value)}
+                          placeholder="Dive into topics that interest you"
+                          className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Number of Categories
+                        </label>
+                        <input
+                          type="number"
+                          min="3"
+                          max="12"
+                          value={settings.categories_limit}
+                          onChange={(e) => handleChange('categories_limit', parseInt(e.target.value) || 6)}
+                          className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">3-12 categories (best: 6 or 9)</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Recent Posts Section */}
+                <div className="border border-gray-200 dark:border-slate-700 rounded-lg p-6 bg-white dark:bg-slate-800">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                      Recent Posts Grid
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => handleChange('show_recent_posts', !settings.show_recent_posts)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        settings.show_recent_posts
+                          ? 'bg-blue-600 dark:bg-blue-700'
+                          : 'bg-gray-300 dark:bg-slate-600'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          settings.show_recent_posts ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {settings.show_recent_posts && (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Section Title
+                        </label>
+                        <input
+                          type="text"
+                          value={settings.recent_posts_title}
+                          onChange={(e) => handleChange('recent_posts_title', e.target.value)}
+                          placeholder="Latest Posts"
+                          className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Section Subtitle
+                        </label>
+                        <input
+                          type="text"
+                          value={settings.recent_posts_subtitle}
+                          onChange={(e) => handleChange('recent_posts_subtitle', e.target.value)}
+                          placeholder="Fresh content from our writers"
+                          className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Number of Posts
+                        </label>
+                        <input
+                          type="number"
+                          min="3"
+                          max="12"
+                          value={settings.recent_posts_limit}
+                          onChange={(e) => handleChange('recent_posts_limit', parseInt(e.target.value) || 6)}
+                          className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">3-12 posts (best: 3, 6, or 9)</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}
