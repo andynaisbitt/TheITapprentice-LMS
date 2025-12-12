@@ -8,6 +8,7 @@ import { GoogleAdSense } from './components/analytics/GoogleAdSense';
 import { CookieConsent } from './components/CookieConsent';
 import { DynamicTitle } from './components/DynamicTitle';
 import { FaviconManager } from './components/FaviconManager';
+import { StoreInitializer } from './store/StoreInitializer';
 import { initializeConsentMode, initializeFromStorage } from './utils/googleConsentMode';
 import './index.css';
 
@@ -22,6 +23,7 @@ function App() {
       <BrowserRouter>
         <ThemeProvider>
           <AuthProvider>
+            <StoreInitializer />
             <DynamicTitle />
             <FaviconManager />
             <GoogleAnalytics />
