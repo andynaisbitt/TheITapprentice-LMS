@@ -2,11 +2,13 @@
 
 > **A modern, production-ready blog and CMS platform built for developers who want to ship fast without sacrificing control.**
 
+[![Version](https://img.shields.io/badge/Version-1.5-brightgreen.svg)](https://github.com/andynaisbitt/Fast-React-CMS/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![React](https://img.shields.io/badge/React-18.x-61dafb.svg)](https://reactjs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-009688.svg)](https://fastapi.tiangolo.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178c6.svg)](https://www.typescriptlang.org/)
-[![Security: A+](https://img.shields.io/badge/Security-A%2B-success.svg)](SECURITY_AUDIT_REPORT.md)
+[![Security: A+](https://img.shields.io/badge/Security-A%2B-success.svg)](docs/development/SECURITY_AUDIT_REPORT.md)
+[![Contributors Welcome](https://img.shields.io/badge/Contributors-Welcome-orange.svg)](docs/development/CONTRIBUTING.md)
 
 ---
 
@@ -29,6 +31,22 @@
 
 
 **Want to contribute screenshots?** Fork the repo, take screenshots, and submit a PR!
+
+---
+
+## ✨ What's New in v1.5 (12th December 2025)
+
+FastReactCMS v1.5 brings major refactoring improvements and comprehensive documentation:
+
+🎯 **State Management Upgrade** - Replaced scattered Context providers with Zustand for centralized, type-safe state
+🔧 **Cleaner Codebase** - Eliminated 57 lines of boilerplate with Pydantic alias automation
+📚 **Documentation Overhaul** - Added 2,283+ lines of documentation including comprehensive ARCHITECTURE.md
+📦 **Bundle Size Reduced** - 402 kB → 399.90 kB (-2.16 kB)
+🏗️ **OSS Standards** - Preparing directory structure for lowercase conventions
+
+> **Calling Contributors!** This project is actively seeking contributors to help improve code quality, documentation, and OSS best practices. Check out [CONTRIBUTING.md](docs/development/CONTRIBUTING.md)!
+
+See the full [Roadmap](#roadmap) below for details.
 
 ---
 
@@ -271,14 +289,16 @@ Frontend will be running at: `http://localhost:5173`
 
 ## Project Structure
 
+> **Note:** Directories `Backend/` and `Frontend/` are being renamed to lowercase (`backend/`, `frontend/`) to follow OSS conventions. See `PHASE3_INSTRUCTIONS.md` for details.
+
 ```
 FastReactCMS/
-├── Backend/
+├── backend/                  # (formerly Backend/)
 │   ├── alembic/              # Database migrations
 │   ├── app/
 │   │   ├── api/v1/           # API endpoints and services
 │   │   │   ├── endpoints/    # Route handlers
-│   │   │   ├── schemas/      # Pydantic schemas
+│   │   │   ├── schemas/      # Pydantic schemas (with auto alias_generator=to_camel)
 │   │   │   └── services/     # Business logic
 │   │   ├── auth/             # Authentication routes
 │   │   ├── core/             # Core config and security
@@ -289,7 +309,7 @@ FastReactCMS/
 │   ├── .env.example          # Environment variables template
 │   ├── alembic.ini           # Alembic configuration
 │   └── requirements.txt      # Python dependencies
-├── Frontend/
+├── frontend/                 # (formerly Frontend/)
 │   ├── src/
 │   │   ├── components/       # React components
 │   │   │   ├── Admin/        # Admin panel components
@@ -298,7 +318,8 @@ FastReactCMS/
 │   │   │   └── Pages/        # Dynamic page components
 │   │   ├── pages/            # Page-level components
 │   │   ├── services/         # API clients
-│   │   ├── state/            # Context providers
+│   │   ├── state/            # Context providers (legacy - migrating to Zustand)
+│   │   ├── store/            # Zustand state management (NEW in v1.5)
 │   │   ├── hooks/            # Custom React hooks
 │   │   ├── utils/            # Utility functions
 │   │   └── types/            # TypeScript type definitions
@@ -308,13 +329,22 @@ FastReactCMS/
 ├── deployment/
 │   ├── nginx.conf            # NGINX configuration
 │   ├── setup-nginx.sh        # NGINX setup script
-│   └── setup-postgres.sh     # PostgreSQL setup script
+│   ├── setup-postgres.sh     # PostgreSQL setup script
+│   └── fastreactcms.service  # systemd service configuration
 ├── docs/
 │   ├── deployment/           # Deployment guides
 │   ├── releases/             # Release notes
 │   ├── features/             # Feature documentation
-│   └── development/          # Contributing & setup guides
+│   ├── development/          # Contributing & setup guides
+│   └── README.md             # Documentation index
+├── ARCHITECTURE.md           # 🆕 System architecture guide (v1.5)
+├── REFACTORING_PLAN.md       # 🆕 5-phase refactoring roadmap (v1.5)
+├── REFACTORING_PROGRESS.md   # 🆕 Current refactoring status (v1.5)
+├── REFACTORING_PRODUCTION_IMPACT.md  # 🆕 Production deployment guide (v1.5)
+├── PHASE3_INSTRUCTIONS.md    # 🆕 Directory rename instructions (v1.5)
+├── rename-dirs.sh            # 🆕 Directory rename helper script (v1.5)
 ├── .gitignore                # Git exclusions
+├── LICENSE                   # MIT License
 └── README.md                 # This file
 ```
 
@@ -574,7 +604,34 @@ We take all security reports seriously and will respond promptly.
 
 ## Roadmap
 
-### ✅ v1.4 (Current - December 2025)
+### ✅ v1.5 (Current - 12th December 2025)
+
+> **Note to the OSS Community:**
+> I'm still learning best practices for open-source development! Feedback from Reddit and GitHub has been incredibly helpful. If you see areas for improvement in code standards, documentation, or project structure, please open an issue or PR. Looking for contributors who can help improve this project! 🙏
+
+**Latest Refactoring (v1.5 - 12th December 2025):**
+- ✅ **Zustand State Management** - Centralized state architecture replacing scattered Context providers
+  - Created `SiteSettingsStore` with global site configuration
+  - Automatic persistence via `persist` middleware
+  - Type-safe selectors and actions
+  - Fully backward compatible with existing code
+- ✅ **Pydantic Alias Automation** - Eliminated 57 lines of manual camelCase conversion boilerplate
+  - Added `alias_generator=to_camel` to all Pydantic schemas
+  - Automatic snake_case ↔ camelCase conversion
+  - Bundle size reduced: 402.06 kB → 399.90 kB (-2.16 kB)
+- ✅ **Documentation Overhaul**
+  - New `ARCHITECTURE.md` - 650+ line comprehensive architecture guide
+  - New `REFACTORING_PLAN.md` - 5-phase refactoring roadmap
+  - New `REFACTORING_PROGRESS.md` - Current refactoring status tracker
+  - New `REFACTORING_PRODUCTION_IMPACT.md` - Production deployment guide with risk analysis
+  - Updated `docs/README.md` with complete documentation index
+- ✅ **OSS Standards Preparation**
+  - Directory rename scripts for lowercase conventions (`Backend/` → `backend/`, `Frontend/` → `frontend/`)
+  - Improved project structure documentation
+  - Production deployment impact documentation
+  - GitHub launch preparation checklist
+
+**Build Status:** ✅ All builds passing | **Security Rating:** A+ (95/100) | **Bundle Size:** 399.90 kB
 
 **Core Features:**
 - ✅ Blog system with categories and tags
@@ -644,12 +701,13 @@ We take all security reports seriously and will respond promptly.
 - ✅ Database-driven configuration (update without rebuilds)
 - ✅ Multiple ad unit types (article, sidebar, banner)
 
-**Recent Updates:**
-- v1.4 (Dec 2025): Canonical URLs + SSR, favicon upload, homepage customization, logo upload, CSP-compliant analytics, SEO diagnostics, mobile UX improvements (77 commits)
-- v1.3 (Dec 2025): Newsletter system with complete subscriber management
-- v1.2 (Dec 2025): Mobile UX improvements across admin panel
-- v1.1 (Dec 2025): Production deployment fixes and optimizations
-- v1.0 (Nov 2025): Initial production release
+**Version History:**
+- **v1.5 (12 Dec 2025)**: Zustand state management, Pydantic alias automation, comprehensive documentation overhaul, OSS standards preparation
+- **v1.4 (Dec 2025)**: Canonical URLs + SSR, favicon upload, homepage customization, logo upload, CSP-compliant analytics, SEO diagnostics, mobile UX improvements (77 commits)
+- **v1.3 (Dec 2025)**: Newsletter system with complete subscriber management
+- **v1.2 (Dec 2025)**: Mobile UX improvements across admin panel
+- **v1.1 (Dec 2025)**: Production deployment fixes and optimizations
+- **v1.0 (Nov 2025)**: Initial production release
 
 ### 📋 Future Enhancements (Community Driven)
 FastReactCMS is designed as a **developer-friendly foundation** - not a bloated all-in-one solution.
@@ -732,12 +790,43 @@ FastReactCMS is built with amazing open-source technologies:
 
 ---
 
+## Documentation
+
+FastReactCMS now includes comprehensive documentation for developers and contributors:
+
+### Core Documentation
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Complete system architecture guide (NEW in v1.5!)
+  - System overview and design patterns
+  - Tech stack breakdown with justifications
+  - Security architecture and best practices
+  - API architecture and conventions
+  - Frontend patterns and state management
+  - Database schema and migrations
+  - Build and deployment guides
+
+### Refactoring Documentation (v1.5)
+- **[REFACTORING_PLAN.md](REFACTORING_PLAN.md)** - 5-phase refactoring roadmap
+- **[REFACTORING_PROGRESS.md](REFACTORING_PROGRESS.md)** - Current status tracker
+- **[REFACTORING_PRODUCTION_IMPACT.md](REFACTORING_PRODUCTION_IMPACT.md)** - Production deployment guide
+- **[PHASE3_INSTRUCTIONS.md](PHASE3_INSTRUCTIONS.md)** - Directory rename instructions
+
+### Additional Resources
+- **[docs/](docs/)** - Complete documentation index
+  - Deployment guides
+  - Feature documentation
+  - Contributing guidelines
+  - Security audit reports
+  - Release notes
+
+---
+
 ## Support
 
-- **Documentation**: Check this README and inline code documentation
+- **Documentation**: Check [ARCHITECTURE.md](ARCHITECTURE.md), this README, and the [docs/](docs/) folder
 - **API Docs**: Interactive docs at `/docs` when running the backend
 - **Issues**: Report bugs or request features on [GitHub Issues](https://github.com/andynaisbitt/Fast-React-CMS/issues)
 - **Discussions**: Ask questions and share ideas on [GitHub Discussions](https://github.com/andynaisbitt/Fast-React-CMS/discussions)
+- **Contributors Welcome**: See [docs/development/CONTRIBUTING.md](docs/development/CONTRIBUTING.md) - help improve OSS standards!
 
 ---
 
