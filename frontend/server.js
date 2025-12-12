@@ -187,9 +187,9 @@ async function fetchSiteSettings() {
   } catch (error) {
     console.error('[SSR] Failed to fetch site settings:', error.message);
     return {
-      site_name: 'The IT Apprentice',
-      site_description: 'Professional insights on technology, software development, and IT practices',
-      site_tagline: 'Learning, Building, Sharing',
+      siteTitle: 'The IT Apprentice',
+      metaDescription: 'Professional insights on technology, software development, and IT practices',
+      siteTagline: 'Learning, Building, Sharing',
     };
   }
 }
@@ -218,8 +218,8 @@ function generateMetaTags(data, route, siteSettings) {
     keywords = page.meta_keywords || '';
   } else {
     // Home page or fallback
-    title = siteSettings.site_name;
-    description = siteSettings.site_description;
+    title = siteSettings.siteTitle || 'The IT Apprentice';
+    description = siteSettings.metaDescription || 'Professional insights on technology, software development, and IT practices';
     image = `${SITE_URL}/og-default.jpg`;
     url = SITE_URL;
     type = 'website';
@@ -251,7 +251,7 @@ function generateMetaTags(data, route, siteSettings) {
     <meta property="og:title" content="${escapeHtml(title)}" />
     <meta property="og:description" content="${escapeHtml(description)}" />
     <meta property="og:image" content="${escapeHtml(image)}" />
-    <meta property="og:site_name" content="${escapeHtml(siteSettings.site_name)}" />
+    <meta property="og:site_name" content="${escapeHtml(siteSettings.siteTitle || 'The IT Apprentice')}" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
