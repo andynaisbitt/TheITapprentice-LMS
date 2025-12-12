@@ -1,12 +1,18 @@
 # Backend/app/api/v1/services/site_settings/schemas.py
 """Site settings schemas"""
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
+from pydantic.alias_generators import to_camel
 from typing import Optional
 from datetime import datetime
 
 
 class SiteSettingsBase(BaseModel):
     """Base site settings schema"""
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,  # Accept both camelCase and snake_case
+    )
+
     # Analytics & Ads
     google_analytics_id: Optional[str] = Field(None, max_length=50)
     google_adsense_client_id: Optional[str] = Field(None, max_length=50)
@@ -93,6 +99,11 @@ class SiteSettingsBase(BaseModel):
 
 class SiteSettingsUpdate(BaseModel):
     """Schema for updating site settings (all fields optional)"""
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,  # Accept both camelCase and snake_case
+    )
+
     # Analytics & Ads
     google_analytics_id: Optional[str] = Field(None, max_length=50)
     google_adsense_client_id: Optional[str] = Field(None, max_length=50)
@@ -181,8 +192,11 @@ class SiteSettingsUpdate(BaseModel):
 
 class SiteSettingsResponse(SiteSettingsBase):
     """Schema for site settings response"""
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,  # Accept both camelCase and snake_case
+        from_attributes=True,  # ORM mode (was orm_mode in Pydantic v1)
+    )
+
     id: int
     updated_at: Optional[datetime] = None
-
-    class Config:
-        from_attributes = True

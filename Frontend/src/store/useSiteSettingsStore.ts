@@ -171,63 +171,12 @@ const defaultSettings: SiteSettings = {
 };
 
 /**
- * Convert snake_case field names from API to camelCase for frontend
- * NOTE: This will be removed in Phase 2 when Pydantic aliases are configured
+ * Merge API settings with defaults
+ * Phase 2 Complete: Pydantic now handles snake_case → camelCase automatically!
+ * No manual conversion needed - API returns camelCase directly.
  */
-const convertToCamelCase = (apiSettings: any): SiteSettings => {
-  return {
-    googleAnalyticsId: apiSettings.google_analytics_id || '',
-    googleAdsenseClientId: apiSettings.google_adsense_client_id || '',
-    siteTitle: apiSettings.site_title || defaultSettings.siteTitle,
-    siteTagline: apiSettings.site_tagline || '',
-    metaDescription: apiSettings.meta_description || defaultSettings.metaDescription,
-    metaKeywords: apiSettings.meta_keywords || '',
-    ogImage: apiSettings.og_image || '',
-    heroTitle: apiSettings.hero_title || defaultSettings.heroTitle,
-    heroSubtitle: apiSettings.hero_subtitle || defaultSettings.heroSubtitle,
-    heroBadgeText: apiSettings.hero_badge_text || defaultSettings.heroBadgeText,
-    heroCTAPrimary: apiSettings.hero_cta_primary || defaultSettings.heroCTAPrimary,
-    heroCTASecondary: apiSettings.hero_cta_secondary || defaultSettings.heroCTASecondary,
-    statsArticles: apiSettings.stats_articles || '',
-    statsReaders: apiSettings.stats_readers || '',
-    statsFree: apiSettings.stats_free || '',
-    showHero: apiSettings.show_hero !== undefined ? apiSettings.show_hero : true,
-    showCarousel: apiSettings.show_carousel !== undefined ? apiSettings.show_carousel : true,
-    showCategories: apiSettings.show_categories !== undefined ? apiSettings.show_categories : true,
-    showRecentPosts: apiSettings.show_recent_posts !== undefined ? apiSettings.show_recent_posts : true,
-    carouselLimit: apiSettings.carousel_limit || 5,
-    categoriesLimit: apiSettings.categories_limit || 6,
-    recentPostsLimit: apiSettings.recent_posts_limit || 6,
-    ctaPrimaryUrl: apiSettings.cta_primary_url || '/blog',
-    ctaSecondaryUrl: apiSettings.cta_secondary_url || '/about',
-    carouselAutoplay: apiSettings.carousel_autoplay !== undefined ? apiSettings.carousel_autoplay : true,
-    carouselInterval: apiSettings.carousel_interval || 7000,
-    carouselTransition: apiSettings.carousel_transition || 'crossfade',
-    carouselTitle: apiSettings.carousel_title || defaultSettings.carouselTitle,
-    carouselSubtitle: apiSettings.carousel_subtitle || defaultSettings.carouselSubtitle,
-    categoriesTitle: apiSettings.categories_title || defaultSettings.categoriesTitle,
-    categoriesSubtitle: apiSettings.categories_subtitle || defaultSettings.categoriesSubtitle,
-    recentPostsTitle: apiSettings.recent_posts_title || defaultSettings.recentPostsTitle,
-    recentPostsSubtitle: apiSettings.recent_posts_subtitle || defaultSettings.recentPostsSubtitle,
-    twitterHandle: apiSettings.twitter_handle || '',
-    facebookUrl: apiSettings.facebook_url || '',
-    linkedinUrl: apiSettings.linkedin_url || '',
-    githubUrl: apiSettings.github_url || '',
-    contactEmail: apiSettings.contact_email || '',
-    supportEmail: apiSettings.support_email || '',
-    siteUrl: apiSettings.site_url || defaultSettings.siteUrl,
-    logoUrl: apiSettings.logo_url || '',
-    logoDarkUrl: apiSettings.logo_dark_url || '',
-    showPoweredBy: apiSettings.show_powered_by !== undefined ? apiSettings.show_powered_by : true,
-    newsletterEnabled: apiSettings.newsletter_enabled !== undefined ? apiSettings.newsletter_enabled : true,
-    smtpHost: apiSettings.smtp_host || '',
-    smtpPort: apiSettings.smtp_port || 587,
-    smtpUsername: apiSettings.smtp_username || '',
-    smtpPassword: apiSettings.smtp_password || '',
-    smtpUseTls: apiSettings.smtp_use_tls !== undefined ? apiSettings.smtp_use_tls : true,
-    smtpFromEmail: apiSettings.smtp_from_email || '',
-    smtpFromName: apiSettings.smtp_from_name || '',
-  };
+const mergeWithDefaults = (apiSettings: Partial<SiteSettings>): SiteSettings => {
+  return { ...defaultSettings, ...apiSettings };
 };
 
 interface SiteSettingsStore {
@@ -262,16 +211,16 @@ export const useSiteSettingsStore = create<SiteSettingsStore>()(
               throw new Error(`API error: ${response.status}`);
             }
 
-            const apiSettings = await response.json();
-            const camelCaseSettings = convertToCamelCase(apiSettings);
+            const apiSettings: Partial<SiteSettings> = await response.json();
+            const settings = mergeWithDefaults(apiSettings);
 
             set({
-              settings: camelCaseSettings,
+              settings,
               isLoading: false,
               error: null,
             });
 
-            console.log('✓ Site settings loaded from API');
+            console.log('✓ Site settings loaded from API (Pydantic auto-converted to camelCase)');
           } catch (error) {
             console.error('Failed to load site settings:', error);
             set({
