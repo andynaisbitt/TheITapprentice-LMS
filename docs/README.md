@@ -2,13 +2,22 @@
 
 This directory contains all project documentation organized by category.
 
+📑 **[Full Documentation Index](INDEX.md)** - Complete list of all documentation
+
 ## 📁 Directory Structure
+
+### `/setup/`
+Setup and configuration guides:
+- `ANALYTICS_SETUP.md` - Google Analytics 4 setup
+- `ADSENSE_AUTO_ADS_SETUP.md` - Google AdSense Auto Ads configuration
+- `ADSENSE_CONSENT_SETUP.md` - GDPR compliance with Consent Mode v2
 
 ### `/deployment/`
 Deployment guides and production setup documentation:
 - `DEPLOYMENT.md` - Main deployment guide with server setup
 - `DEPLOYMENT-FIXES.md` - Common deployment issues and fixes
 - `DEPLOYMENT-STEPS.md` - Quick deployment checklist
+- `DEPLOY_TO_PRODUCTION.md` - Latest deployment procedures
 
 ### `/releases/`
 Release notes and version history:
