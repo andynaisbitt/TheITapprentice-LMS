@@ -9,7 +9,7 @@ import { Link } from 'react-router-dom';
 import { blogApi } from '../../services/api';
 import { Calendar, Clock, ArrowRight, TrendingUp } from 'lucide-react';
 import { resolveImageUrl } from '../../utils/imageUrl';
-import { useSiteSettings } from '../../hooks/useSiteSettings';
+import { useSiteSettings } from '../../store/useSiteSettingsStore';
 
 interface RecentPost {
   id: number;

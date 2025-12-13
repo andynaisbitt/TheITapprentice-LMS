@@ -3,7 +3,7 @@
  * Dynamically updates the page title based on site settings
  */
 import { Helmet } from 'react-helmet-async';
-import { useSiteSettings } from '../hooks/useSiteSettings';
+import { useSiteSettings } from '../store/useSiteSettingsStore';
 
 export const DynamicTitle: React.FC = () => {
   const { settings } = useSiteSettings();

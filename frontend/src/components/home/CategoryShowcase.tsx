@@ -8,7 +8,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { blogApi } from '../../services/api';
 import { ArrowRight } from 'lucide-react';
-import { useSiteSettings } from '../../hooks/useSiteSettings';
+import { useSiteSettings } from '../../store/useSiteSettingsStore';
 
 interface Category {
   id: number;

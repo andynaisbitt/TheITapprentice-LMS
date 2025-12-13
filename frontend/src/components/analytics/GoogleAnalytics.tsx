@@ -12,7 +12,7 @@
 
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useSiteSettings } from '../../hooks/useSiteSettings';
+import { useSiteSettings } from '../../store/useSiteSettingsStore';
 import { validateAnalyticsId, shouldLoadAnalytics, sanitizeId } from '../../utils/analytics';
 
 declare global {

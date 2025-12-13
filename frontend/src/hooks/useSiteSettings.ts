@@ -1,10 +1,17 @@
 // src/hooks/useSiteSettings.ts
 /**
- * Hook for accessing site-wide settings from the API
- * Settings can be configured in the admin panel at /admin/site-settings
+ * @deprecated This hook has been replaced by the Zustand store implementation.
+ * Please import from '../store/useSiteSettingsStore' instead:
  *
- * This hook fetches settings from the database and caches them in localStorage
- * for offline access and performance.
+ * import { useSiteSettings } from '../store/useSiteSettingsStore';
+ *
+ * Benefits of the new implementation:
+ * - Single API call on app startup (vs. one call per component)
+ * - Automatic state synchronization across all components
+ * - Persistent caching with Zustand persist middleware
+ * - DevTools support for debugging
+ *
+ * This file is kept for backward compatibility during migration but should not be used.
  */
 
 import { useEffect, useState } from 'react';

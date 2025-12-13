@@ -10,7 +10,7 @@ import { blogApi } from '../../services/api';
 import { ChevronLeft, ChevronRight, Calendar, Clock, ArrowRight } from 'lucide-react';
 import { resolveImageUrl } from '../../utils/imageUrl';
 import { CarouselSkeleton } from './skeletons/CarouselSkeleton';
-import { useSiteSettings } from '../../hooks/useSiteSettings';
+import { useSiteSettings } from '../../store/useSiteSettingsStore';
 
 interface FeaturedPost {
   id: number;

@@ -6,7 +6,7 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ArrowRight, BookOpen, Sparkles } from 'lucide-react';
-import { useSiteSettings } from '../../hooks/useSiteSettings';
+import { useSiteSettings } from '../../store/useSiteSettingsStore';
 
 export const HeroSection: React.FC = () => {
   const { settings } = useSiteSettings();

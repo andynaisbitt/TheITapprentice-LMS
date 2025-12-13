@@ -9,7 +9,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../state/contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { navigationApi, MenuItem } from '../../services/api/navigation.api';
-import { useSiteSettings } from '../../hooks/useSiteSettings';
+import { useSiteSettings } from '../../store/useSiteSettingsStore';
 
 export const Header: React.FC = () => {
   const navigate = useNavigate();

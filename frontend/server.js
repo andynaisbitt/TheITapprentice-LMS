@@ -49,6 +49,14 @@ const pageCache = new LRUCache({
   updateAgeOnHas: false,
 });
 
+// LRU Cache for site settings (reduces API calls)
+// Stores settings for 5 minutes before re-fetching
+const settingsCache = new LRUCache({
+  max: 1,
+  ttl: 1000 * 60 * 5, // 5 minutes
+  updateAgeOnGet: true,
+});
+
 // Crawler User-Agent patterns
 const CRAWLER_PATTERNS = [
   /googlebot/i,
@@ -176,21 +184,41 @@ async function resolveCanonicalUrl(path) {
 }
 
 /**
- * Fetch site settings for default metadata
+ * Fetch site settings for default metadata (with caching)
  */
 async function fetchSiteSettings() {
+  // Check cache first
+  const cached = settingsCache.get('settings');
+  if (cached) {
+    console.log('[SSR] Site settings cache HIT');
+    return cached;
+  }
+
+  console.log('[SSR] Site settings cache MISS - fetching from API');
+
   try {
     const response = await axios.get(`${API_BASE_URL}/api/v1/site-settings`, {
       timeout: 5000,
     });
-    return response.data;
+    const settings = response.data;
+
+    // Cache the settings
+    settingsCache.set('settings', settings);
+    console.log('[SSR] Site settings cached for 5 minutes');
+
+    return settings;
   } catch (error) {
     console.error('[SSR] Failed to fetch site settings:', error.message);
-    return {
+    const fallback = {
       siteTitle: 'FastReactCMS',
       metaDescription: 'A modern, SEO-optimized blog platform built with React and FastAPI',
       siteTagline: 'A modern blogging platform',
     };
+
+    // Cache the fallback too (prevents hammering API on errors)
+    settingsCache.set('settings', fallback);
+
+    return fallback;
   }
 }
 
@@ -367,8 +395,9 @@ async function handleSSR(req, res, baseHtml, siteSettings) {
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
-    cache_size: pageCache.size,
-    cache_max: pageCache.max,
+    page_cache_size: pageCache.size,
+    page_cache_max: pageCache.max,
+    settings_cached: settingsCache.has('settings'),
     uptime: process.uptime(),
   });
 });

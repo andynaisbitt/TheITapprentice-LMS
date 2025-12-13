@@ -11,7 +11,7 @@
  */
 
 import { useEffect } from 'react';
-import { useSiteSettings } from '../../hooks/useSiteSettings';
+import { useSiteSettings } from '../../store/useSiteSettingsStore';
 import { validateAdSenseId, sanitizeId, shouldLoadAnalytics } from '../../utils/analytics';
 
 declare global {

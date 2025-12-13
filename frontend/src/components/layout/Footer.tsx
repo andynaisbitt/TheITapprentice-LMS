@@ -8,7 +8,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { blogApi } from '../../services/api';
 import { navigationApi, MenuItem } from '../../services/api/navigation.api';
-import { useSiteSettings } from '../../hooks/useSiteSettings';
+import { useSiteSettings } from '../../store/useSiteSettingsStore';
 import { openNewsletterModal } from '../../hooks/useNewsletterModal';
 import { Mail } from 'lucide-react';
 

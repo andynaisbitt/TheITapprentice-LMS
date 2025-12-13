@@ -4,12 +4,12 @@
  * Wraps all pages with Header and Footer
  */
 
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { Header } from './Header';
 import { Footer } from './Footer';
 import { NewsletterModal } from '../NewsletterModal';
 import { useNewsletterModal } from '../../hooks/useNewsletterModal';
-import { useSiteSettings } from '../../hooks/useSiteSettings';
+import { useSiteSettings } from '../../store/useSiteSettingsStore';
 
 interface LayoutProps {
   children: React.ReactNode;

@@ -4,14 +4,13 @@
  * Features: Hero, Featured Carousel, Recent Grid, Categories
  */
 
-import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import HeroSection from '../components/home/HeroSection';
 import FeaturedCarousel from '../components/home/FeaturedCarousel';
 import RecentPostsGrid from '../components/home/RecentPostsGrid';
 import CategoryShowcase from '../components/home/CategoryShowcase';
 import { Sparkles } from 'lucide-react';
-import { useSiteSettings } from '../hooks/useSiteSettings';
+import { useSiteSettings } from '../store/useSiteSettingsStore';
 
 export const BlogHome: React.FC = () => {
   const { settings } = useSiteSettings();
