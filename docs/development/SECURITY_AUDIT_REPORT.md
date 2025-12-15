@@ -402,7 +402,7 @@ The following localStorage usage was found and **VERIFIED AS SAFE**:
 
 **No critical vulnerabilities were found.**
 
-**Audited by**: Claude AI Security Audit
+**Audited by**: Andy Naisbitt
 **Date**: December 4, 2025
 **Version**: FastReactCMS v1.0
 
