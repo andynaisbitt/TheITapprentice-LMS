@@ -66,6 +66,9 @@ Frontend/.vite/
 # Archive folder (local only)
 archive/
 
+# Social media drafts (local only)
+docs/social-media/
+
 # Personal planning documents (local only)
 PERSONAL_*.md
 *_PRIVATE.md

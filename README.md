@@ -34,15 +34,16 @@
 
 ---
 
-## ✨ What's New in v1.5 (12th December 2025)
+## ✨ What's New in v1.5 (December 15, 2025)
 
-FastReactCMS v1.5 brings major refactoring improvements and comprehensive documentation:
+FastReactCMS v1.5 brings major refactoring improvements, comprehensive documentation, and **production-tested stability**:
 
 🎯 **State Management Upgrade** - Replaced scattered Context providers with Zustand for centralized, type-safe state
 🔧 **Cleaner Codebase** - Eliminated 57 lines of boilerplate with Pydantic alias automation
 📚 **Documentation Overhaul** - Added 2,283+ lines of documentation including comprehensive ARCHITECTURE.md
 📦 **Bundle Size Reduced** - 402 kB → 399.90 kB (-2.16 kB)
-🏗️ **OSS Standards** - Preparing directory structure for lowercase conventions
+🏗️ **Production Battle-Tested** - Resolved configuration issues and documented comprehensive troubleshooting approaches
+🔒 **Security Hardened** - A+ security rating with HTTP-only cookies, CSRF protection, and bcrypt hashing
 
 > **Calling Contributors!** This project is actively seeking contributors to help improve code quality, documentation, and OSS best practices. Check out [CONTRIBUTING.md](docs/development/CONTRIBUTING.md)!
 
@@ -289,7 +290,7 @@ Frontend will be running at: `http://localhost:5173`
 
 ## Project Structure
 
-> **Note:** Directories `Backend/` and `Frontend/` are being renamed to lowercase (`backend/`, `frontend/`) to follow OSS conventions. See `PHASE3_INSTRUCTIONS.md` for details.
+> **Note:** Directories `Backend/` and `Frontend/` are being renamed to lowercase (`backend/`, `frontend/`) to follow OSS conventions. Use `rename-dirs.sh` for safe migration.
 
 ```
 FastReactCMS/
@@ -318,8 +319,7 @@ FastReactCMS/
 │   │   │   └── Pages/        # Dynamic page components
 │   │   ├── pages/            # Page-level components
 │   │   ├── services/         # API clients
-│   │   ├── state/            # Context providers (legacy - migrating to Zustand)
-│   │   ├── store/            # Zustand state management (NEW in v1.5)
+│   │   ├── store/            # Zustand state management (v1.5)
 │   │   ├── hooks/            # Custom React hooks
 │   │   ├── utils/            # Utility functions
 │   │   └── types/            # TypeScript type definitions
@@ -333,16 +333,13 @@ FastReactCMS/
 │   └── fastreactcms.service  # systemd service configuration
 ├── docs/
 │   ├── deployment/           # Deployment guides
-│   ├── releases/             # Release notes
+│   ├── development/          # Contributing, setup, security
 │   ├── features/             # Feature documentation
-│   ├── development/          # Contributing & setup guides
+│   ├── releases/             # Release notes
+│   ├── setup/                # Analytics, AdSense setup
 │   └── README.md             # Documentation index
-├── ARCHITECTURE.md           # 🆕 System architecture guide (v1.5)
-├── REFACTORING_PLAN.md       # 🆕 5-phase refactoring roadmap (v1.5)
-├── REFACTORING_PROGRESS.md   # 🆕 Current refactoring status (v1.5)
-├── REFACTORING_PRODUCTION_IMPACT.md  # 🆕 Production deployment guide (v1.5)
-├── PHASE3_INSTRUCTIONS.md    # 🆕 Directory rename instructions (v1.5)
-├── rename-dirs.sh            # 🆕 Directory rename helper script (v1.5)
+├── ARCHITECTURE.md           # System architecture guide (v1.5)
+├── rename-dirs.sh            # Directory rename helper script (v1.5)
 ├── .gitignore                # Git exclusions
 ├── LICENSE                   # MIT License
 └── README.md                 # This file
@@ -604,12 +601,12 @@ We take all security reports seriously and will respond promptly.
 
 ## Roadmap
 
-### ✅ v1.5 (Current - 12th December 2025)
+### ✅ v1.5 (Current - December 15, 2025)
 
 > **Note to the OSS Community:**
 > I'm still learning best practices for open-source development! Feedback from Reddit and GitHub has been incredibly helpful. If you see areas for improvement in code standards, documentation, or project structure, please open an issue or PR. Looking for contributors who can help improve this project! 🙏
 
-**Latest Refactoring (v1.5 - 12th December 2025):**
+**Latest Refactoring (v1.5 - December 12-15, 2025):**
 - ✅ **Zustand State Management** - Centralized state architecture replacing scattered Context providers
   - Created `SiteSettingsStore` with global site configuration
   - Automatic persistence via `persist` middleware
@@ -621,17 +618,20 @@ We take all security reports seriously and will respond promptly.
   - Bundle size reduced: 402.06 kB → 399.90 kB (-2.16 kB)
 - ✅ **Documentation Overhaul**
   - New `ARCHITECTURE.md` - 650+ line comprehensive architecture guide
-  - New `REFACTORING_PLAN.md` - 5-phase refactoring roadmap
-  - New `REFACTORING_PROGRESS.md` - Current refactoring status tracker
-  - New `REFACTORING_PRODUCTION_IMPACT.md` - Production deployment guide with risk analysis
-  - Updated `docs/README.md` with complete documentation index
-- ✅ **OSS Standards Preparation**
-  - Directory rename scripts for lowercase conventions (`Backend/` → `backend/`, `Frontend/` → `frontend/`)
-  - Improved project structure documentation
-  - Production deployment impact documentation
-  - GitHub launch preparation checklist
+  - Updated `docs/` structure with organized deployment, development, and feature docs
+  - Production troubleshooting documentation
+  - Security audit report (A+ rating)
+- ✅ **Production Hardening**
+  - Resolved configuration issues (case sensitivity, environment variables, CORS)
+  - File permission fixes for multi-user deployment
+  - Browser cache handling best practices documented
+  - Battle-tested with 48-hour production incident and full recovery
+- ✅ **OSS Standards**
+  - Directory rename script for lowercase conventions (`Backend/` → `backend/`, `Frontend/` → `frontend/`)
+  - Cleaned documentation structure (essential docs only, no "AI slop")
+  - Professional README and contribution guidelines
 
-**Build Status:** ✅ All builds passing | **Security Rating:** A+ (95/100) | **Bundle Size:** 399.90 kB
+**Build Status:** ✅ All builds passing | **Security Rating:** A+ (95/100) | **Bundle Size:** 399.90 kB | **Production:** Battle-tested ✅
 
 **Core Features:**
 - ✅ Blog system with categories and tags
@@ -702,7 +702,7 @@ We take all security reports seriously and will respond promptly.
 - ✅ Multiple ad unit types (article, sidebar, banner)
 
 **Version History:**
-- **v1.5 (12 Dec 2025)**: Zustand state management, Pydantic alias automation, comprehensive documentation overhaul, OSS standards preparation
+- **v1.5 (12-15 Dec 2025)**: Zustand state management, Pydantic alias automation, comprehensive documentation overhaul, production hardening, OSS standards preparation
 - **v1.4 (Dec 2025)**: Canonical URLs + SSR, favicon upload, homepage customization, logo upload, CSP-compliant analytics, SEO diagnostics, mobile UX improvements (77 commits)
 - **v1.3 (Dec 2025)**: Newsletter system with complete subscriber management
 - **v1.2 (Dec 2025)**: Mobile UX improvements across admin panel
@@ -792,10 +792,10 @@ FastReactCMS is built with amazing open-source technologies:
 
 ## Documentation
 
-FastReactCMS now includes comprehensive documentation for developers and contributors:
+FastReactCMS includes comprehensive documentation for developers and contributors:
 
 ### Core Documentation
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Complete system architecture guide (NEW in v1.5!)
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Complete system architecture guide (v1.5)
   - System overview and design patterns
   - Tech stack breakdown with justifications
   - Security architecture and best practices
@@ -804,19 +804,13 @@ FastReactCMS now includes comprehensive documentation for developers and contrib
   - Database schema and migrations
   - Build and deployment guides
 
-### Refactoring Documentation (v1.5)
-- **[REFACTORING_PLAN.md](REFACTORING_PLAN.md)** - 5-phase refactoring roadmap
-- **[REFACTORING_PROGRESS.md](REFACTORING_PROGRESS.md)** - Current status tracker
-- **[REFACTORING_PRODUCTION_IMPACT.md](REFACTORING_PRODUCTION_IMPACT.md)** - Production deployment guide
-- **[PHASE3_INSTRUCTIONS.md](PHASE3_INSTRUCTIONS.md)** - Directory rename instructions
-
 ### Additional Resources
 - **[docs/](docs/)** - Complete documentation index
-  - Deployment guides
-  - Feature documentation
-  - Contributing guidelines
-  - Security audit reports
-  - Release notes
+  - **[docs/deployment/](docs/deployment/)** - Deployment guides and troubleshooting
+  - **[docs/development/](docs/development/)** - Contributing guidelines, setup, and security audits
+  - **[docs/features/](docs/features/)** - Feature documentation (SEO, newsletters)
+  - **[docs/releases/](docs/releases/)** - Release notes and changelogs
+  - **[docs/setup/](docs/setup/)** - Analytics and AdSense setup guides
 
 ---
 
