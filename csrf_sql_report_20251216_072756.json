@@ -1,0 +1,13 @@
+{
+  "test_count": 44,
+  "vulnerabilities": [
+    {
+      "severity": "CRITICAL",
+      "endpoint": "http://localhost:8100/api/v1/blog/posts?search=",
+      "attack_type": "SQL Injection - Time-based in Search",
+      "details": "Time-based SQL injection in search parameter",
+      "timestamp": "2025-12-16T07:27:52.246270"
+    }
+  ],
+  "timestamp": "2025-12-16T07:27:56.364992"
+}

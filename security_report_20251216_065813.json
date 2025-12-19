@@ -1,0 +1,15 @@
+{
+  "total_tests": 118,
+  "passed": 117,
+  "failed": 0,
+  "vulnerabilities": [
+    {
+      "severity": "HIGH",
+      "endpoint": "http://localhost:8100/api/v1/blog/posts",
+      "payload": "<script>alert('XSS')</script>",
+      "details": "XSS payload reflected without encoding in parameter 'page'",
+      "timestamp": "2025-12-16T06:58:13.122381"
+    }
+  ],
+  "start_time": "2025-12-16 06:51:25.565554"
+}

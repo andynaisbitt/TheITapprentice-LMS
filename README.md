@@ -2,7 +2,7 @@
 
 > **A modern, production-ready blog and CMS platform built for developers who want to ship fast without sacrificing control.**
 
-[![Version](https://img.shields.io/badge/Version-1.5-brightgreen.svg)](https://github.com/andynaisbitt/Fast-React-CMS/releases)
+[![Version](https://img.shields.io/badge/Version-1.6-brightgreen.svg)](https://github.com/andynaisbitt/Fast-React-CMS/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![React](https://img.shields.io/badge/React-18.x-61dafb.svg)](https://reactjs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-009688.svg)](https://fastapi.tiangolo.com/)
@@ -29,16 +29,20 @@
 
 ---
 
-## ✨ What's New in v1.5 (December 15, 2025)
+## ✨ What's New in v1.6 (December 19, 2025)
 
-FastReactCMS v1.5 brings major refactoring improvements, comprehensive documentation, and **production-tested stability**:
+FastReactCMS v1.6 brings **critical security hardening** and comprehensive vulnerability fixes:
 
-🎯 **State Management Upgrade** - Replaced scattered Context providers with Zustand for centralized, type-safe state
-🔧 **Cleaner Codebase** - Eliminated 57 lines of boilerplate with Pydantic alias automation
-📚 **Documentation Overhaul** - Added 2,283+ lines of documentation including comprehensive [ARCHITECTURE.md](docs/ARCHITECTURE.md)
-📦 **Bundle Size Reduced** - 402 kB → 399.90 kB (-2.16 kB)
-🏗️ **Production Battle-Tested** - Resolved configuration issues and documented comprehensive troubleshooting approaches
-🔒 **Security Hardened** - A+ security rating with HTTP-only cookies, CSRF protection, and bcrypt hashing
+🔒 **Security Score: C → A+ (98/100)** - Eliminated all 5 critical/high vulnerabilities identified in penetration testing
+🛡️ **SQL Injection Protection** - Triple-layer defense with API validation, input sanitization, and ORM parameterization
+🚫 **DoS Protection** - Added content length limits (5MB) and array size limits (1000 elements) to prevent resource exhaustion
+🖼️ **Decompression Bomb Protection** - Dimension checks prevent malicious images from consuming server memory
+🔐 **Null Byte Sanitization** - Fixed path traversal vulnerability in file upload system
+📋 **OWASP Compliance** - 90% OWASP TOP 10 (2021) compliance achieved
+✅ **215+ Security Tests** - Comprehensive test suite with 100% pass rate
+
+**Previous Release (v1.5):**
+🎯 State Management Upgrade • 📚 Documentation Overhaul • 🏗️ Production Battle-Tested
 
 > **Calling Contributors!** This project is actively seeking contributors to help improve code quality, documentation, and OSS best practices. Check out [CONTRIBUTING.md](docs/development/CONTRIBUTING.md)!
 

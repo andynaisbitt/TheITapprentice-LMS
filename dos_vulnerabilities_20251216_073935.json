@@ -1,0 +1,14 @@
+{
+  "test_count": 15,
+  "vulnerabilities": [
+    {
+      "severity": "HIGH",
+      "endpoint": "http://localhost:8100/api/v1/admin/blog/posts/bulk-update",
+      "attack_type": "DoS - No Array Size Limit",
+      "details": "Server processed 1M element array",
+      "payload_size": "1M elements",
+      "timestamp": "2025-12-16T07:21:58.631676"
+    }
+  ],
+  "timestamp": "2025-12-16T07:39:35.733933"
+}

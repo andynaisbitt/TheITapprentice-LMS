@@ -1,0 +1,75 @@
+================================================================================
+CSRF VALIDATION & DEEP SQL INJECTION TESTING
+================================================================================
+
+[SECTION 1] CSRF TOKEN BYPASS ATTEMPTS
+--------------------------------------------------------------------------------
+[1] Getting valid session with CSRF token ... PASS (Got CSRF: GyosYFpmHrX4z8UJ1772...)
+[2] POST request without CSRF token ... Status: 401
+[3] POST request with invalid CSRF token ... Status: 422
+[4] POST request with CSRF token from different session ... Status: 422
+[5] GET request for state change (password reset) ... PASS (405 Method Not Allowed)
+
+[SECTION 2] DEEP SQL INJECTION - EVERY FIELD
+--------------------------------------------------------------------------------
+[6] SQL in Blog post title: '; SELECT CASE WHEN (1=1) THEN ... PASS
+[7] SQL in Blog post title: ' AND (SELECT 1 FROM (SELECT(S ... PASS
+[8] SQL in Blog post title: ' AND '1'='1' AND '1'='1 ... PASS
+[9] SQL in Blog post title: ' AND '1'='2' AND '1'='1 ... PASS
+[10] SQL in Blog post title: ' UNION SELECT NULL,NULL,NULL, ... PASS
+[11] SQL in Blog post content: '; SELECT CASE WHEN (1=1) THEN ... PASS
+[12] SQL in Blog post content: ' AND (SELECT 1 FROM (SELECT(S ... PASS
+[13] SQL in Blog post content: ' AND '1'='1' AND '1'='1 ... PASS
+[14] SQL in Blog post content: ' AND '1'='2' AND '1'='1 ... PASS
+[15] SQL in Blog post content: ' UNION SELECT NULL,NULL,NULL, ... PASS
+[16] SQL in Blog post slug: '; SELECT CASE WHEN (1=1) THEN ... PASS
+[17] SQL in Blog post slug: ' AND (SELECT 1 FROM (SELECT(S ... PASS
+[18] SQL in Blog post slug: ' AND '1'='1' AND '1'='1 ... PASS
+[19] SQL in Blog post slug: ' AND '1'='2' AND '1'='1 ... PASS
+[20] SQL in Blog post slug: ' UNION SELECT NULL,NULL,NULL, ... PASS
+[21] SQL in Blog post excerpt: '; SELECT CASE WHEN (1=1) THEN ... PASS
+[22] SQL in Blog post excerpt: ' AND (SELECT 1 FROM (SELECT(S ... PASS
+[23] SQL in Blog post excerpt: ' AND '1'='1' AND '1'='1 ... PASS
+[24] SQL in Blog post excerpt: ' AND '1'='2' AND '1'='1 ... PASS
+[25] SQL in Blog post excerpt: ' UNION SELECT NULL,NULL,NULL, ... PASS
+[26] SQL in SEO meta title: '; SELECT CASE WHEN (1=1) THEN ... PASS
+[27] SQL in SEO meta title: ' AND (SELECT 1 FROM (SELECT(S ... PASS
+[28] SQL in SEO meta title: ' AND '1'='1' AND '1'='1 ... PASS
+[29] SQL in SEO meta title: ' AND '1'='2' AND '1'='1 ... PASS
+[30] SQL in SEO meta title: ' UNION SELECT NULL,NULL,NULL, ... PASS
+[31] SQL in SEO meta description: '; SELECT CASE WHEN (1=1) THEN ... PASS
+[32] SQL in SEO meta description: ' AND (SELECT 1 FROM (SELECT(S ... PASS
+[33] SQL in SEO meta description: ' AND '1'='1' AND '1'='1 ... PASS
+[34] SQL in SEO meta description: ' AND '1'='2' AND '1'='1 ... PASS
+[35] SQL in SEO meta description: ' UNION SELECT NULL,NULL,NULL, ... PASS
+[36] SQL in Canonical URL: '; SELECT CASE WHEN (1=1) THEN ... PASS
+[37] SQL in Canonical URL: ' AND (SELECT 1 FROM (SELECT(S ... PASS
+[38] SQL in Canonical URL: ' AND '1'='1' AND '1'='1 ... PASS
+[39] SQL in Canonical URL: ' AND '1'='2' AND '1'='1 ... PASS
+[40] SQL in Canonical URL: ' UNION SELECT NULL,NULL,NULL, ... PASS
+[41] SQL injection in newsletter email field ... Done newsletter SQL tests
+[42] SQL injection in category name ... Done category SQL tests
+[43] SQL injection in search query parameter ... 
+[VULN-CRITICAL] SQL Injection - Time-based in Search
+  Endpoint: http://localhost:8100/api/v1/blog/posts?search=
+  Details: Time-based SQL injection in search parameter
+
+Done search SQL tests
+
+[SECTION 3] SECOND-ORDER SQL INJECTION
+--------------------------------------------------------------------------------
+[44] Second-order SQL injection via stored data ... PASS
+
+================================================================================
+CSRF & SQL INJECTION TESTING COMPLETED
+================================================================================
+Total Tests: 44
+Vulnerabilities Found: 1
+
+VULNERABILITIES:
+
+CRITICAL (1):
+  [SQL Injection - Time-based in Search] Time-based SQL injection in search parameter
+      http://localhost:8100/api/v1/blog/posts?search=
+
+[SAVED] csrf_sql_report_20251216_072756.json

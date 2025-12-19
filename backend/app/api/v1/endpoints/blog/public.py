@@ -24,7 +24,7 @@ async def get_published_posts(
     page_size: int = Query(10, ge=1, le=50, description="Items per page"),
     category_id: Optional[int] = Query(None, description="Filter by category ID"),
     tag: Optional[str] = Query(None, description="Filter by tag slug"),
-    search: Optional[str] = Query(None, description="Search in title/content"),
+    search: Optional[str] = Query(None, max_length=200, description="Search in title/content (max 200 chars)"),
     featured_only: bool = Query(False, description="Show only featured posts"),
     db: Session = Depends(get_db)
 ):

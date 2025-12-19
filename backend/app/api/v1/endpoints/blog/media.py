@@ -22,6 +22,8 @@ logger = logging.getLogger(__name__)
 # Configuration
 UPLOAD_DIR = Path("static/blog/uploads")
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+MAX_IMAGE_PIXELS = 50_000_000  # 50 megapixels (safety: prevents decompression bombs)
+MAX_IMAGE_DIMENSION = 10000  # Max width or height in pixels
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"}
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"}
 
@@ -71,8 +73,11 @@ def validate_svg(file_content: bytes) -> None:
 def validate_image(file: UploadFile) -> None:
     """Validate uploaded image file"""
 
+    # SECURITY: Sanitize filename FIRST to prevent null byte injection and path traversal
+    safe_name = sanitize_filename(file.filename) if file.filename else "unnamed.bin"
+
     # Check file extension
-    file_ext = Path(file.filename).suffix.lower()
+    file_ext = Path(safe_name).suffix.lower()
     if file_ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -181,9 +186,31 @@ async def upload_blog_image(
     else:
         # Validate raster image is actually a valid image (prevents corrupted/malicious files)
         try:
+            # SECURITY: Check image dimensions BEFORE fully decompressing (prevents decompression bombs)
             img = Image.open(io.BytesIO(file_content))
-            img.verify()  # Verifies image integrity
+
+            # Get dimensions without fully loading the image
+            width, height = img.size
+            total_pixels = width * height
+
+            # Check for decompression bomb (extreme dimensions)
+            if width > MAX_IMAGE_DIMENSION or height > MAX_IMAGE_DIMENSION:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Image dimensions too large. Maximum: {MAX_IMAGE_DIMENSION}x{MAX_IMAGE_DIMENSION} pixels. Got: {width}x{height}"
+                )
+
+            if total_pixels > MAX_IMAGE_PIXELS:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Image too large. Maximum: {MAX_IMAGE_PIXELS / 1_000_000:.1f} megapixels. Got: {total_pixels / 1_000_000:.1f} megapixels"
+                )
+
+            # Now verify integrity (safe to do after dimension check)
+            img.verify()
             logger.info(f"Image verified: {img.format} {img.size}")
+        except HTTPException:
+            raise  # Re-raise our custom exceptions
         except Exception as e:
             logger.warning(f"Invalid image file uploaded: {e}")
             raise HTTPException(

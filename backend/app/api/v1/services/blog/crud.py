@@ -272,14 +272,20 @@ def get_posts(
     
     # Search in title, excerpt, content
     if search:
-        search_term = f"%{search}%"
-        query = query.filter(
-            or_(
-                BlogPost.title.ilike(search_term),
-                BlogPost.excerpt.ilike(search_term),
-                BlogPost.content.ilike(search_term)
+        # SECURITY: Sanitize search input (defense-in-depth, even though .ilike() parameterizes)
+        # Limit to 200 chars and remove dangerous patterns
+        from app.core.security_utils import sanitize_search_query
+        clean_search = sanitize_search_query(search, max_length=200)
+
+        if clean_search:  # Only search if not empty after sanitization
+            search_term = f"%{clean_search}%"
+            query = query.filter(
+                or_(
+                    BlogPost.title.ilike(search_term),
+                    BlogPost.excerpt.ilike(search_term),
+                    BlogPost.content.ilike(search_term)
+                )
             )
-        )
     
     # Get total count before pagination
     total = query.count()

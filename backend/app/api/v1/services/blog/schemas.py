@@ -126,7 +126,7 @@ class BlogPostBase(BaseModel):
     """Enhanced base schema for blog posts"""
     title: str = Field(..., min_length=3, max_length=200)
     excerpt: Optional[str] = Field(None, max_length=500)
-    content: str = Field(..., min_length=10)
+    content: str = Field(..., min_length=10, max_length=5_000_000)  # 5MB limit (safety: prevents 100MB DoS)
     
     # SEO fields
     meta_title: Optional[str] = Field(None, max_length=60, description="Optimal: 50-60 characters")
@@ -195,7 +195,7 @@ class BlogPostUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=3, max_length=200)
     slug: Optional[str] = Field(None, max_length=250)
     excerpt: Optional[str] = Field(None, max_length=500)
-    content: Optional[str] = Field(None, min_length=10)
+    content: Optional[str] = Field(None, min_length=10, max_length=5_000_000)  # 5MB limit
     meta_title: Optional[str] = Field(None, max_length=60)
     meta_description: Optional[str] = Field(None, max_length=160)
     meta_keywords: Optional[str] = Field(None, max_length=255)
@@ -299,11 +299,11 @@ class BlogPostFilters(BaseModel):
 
 class BulkPostUpdate(BaseModel):
     """Schema for bulk post updates"""
-    post_ids: List[int] = Field(..., min_length=1)
+    post_ids: List[int] = Field(..., min_length=1, max_length=1000)  # Safety: prevent 1M array DoS
     published: Optional[bool] = None
     is_featured: Optional[bool] = None
-    category_ids: Optional[List[int]] = None
-    tag_ids: Optional[List[int]] = None
+    category_ids: Optional[List[int]] = Field(None, max_length=50)  # Reasonable limit for categories
+    tag_ids: Optional[List[int]] = Field(None, max_length=50)  # Reasonable limit for tags
 
 
 class BulkDeleteResponse(BaseModel):
