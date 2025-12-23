@@ -90,3 +90,6 @@ docs/security/testing/*_FINDINGS*.md
 BLOG_POST_*.md
 LINKEDIN_POST_*.md
 DEPLOY_*.md
+
+# User uploads (should not be in git - media files)
+backend/static/blog/uploads/
