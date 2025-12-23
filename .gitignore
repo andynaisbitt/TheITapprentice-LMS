@@ -81,6 +81,11 @@ tests/security/reports/
 security_report_*.json
 *vulnerabilities*.json
 
+# Security testing documentation (local only - internal use)
+docs/security/testing/PHASE*_IMPLEMENTATION*.md
+docs/security/testing/*_RESULTS*.md
+docs/security/testing/*_FINDINGS*.md
+
 # Release drafts (local only - until published)
 BLOG_POST_*.md
 LINKEDIN_POST_*.md
