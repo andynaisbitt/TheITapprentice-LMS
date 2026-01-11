@@ -194,6 +194,28 @@ class UserAdminUpdate(BaseModel):
     can_moderate: Optional[bool] = None
 
 
+class UserAdminCreate(BaseModel):
+    """Admin-only user creation schema"""
+    email: EmailStr
+    username: str = Field(..., min_length=3, max_length=50, pattern=r'^[a-zA-Z0-9_-]+$')
+    first_name: str = Field(..., min_length=1, max_length=50)
+    last_name: str = Field(..., min_length=1, max_length=50)
+    password: Optional[str] = Field(None, min_length=8, max_length=100)  # Optional - will generate if not provided
+    role: UserRole = UserRole.APPRENTICE
+    is_active: bool = True
+    is_verified: bool = False
+    can_write_blog: bool = False
+    can_moderate: bool = False
+
+    @field_validator('username')
+    @classmethod
+    def username_alphanumeric(cls, v: str) -> str:
+        """Validate username is alphanumeric with underscores and hyphens"""
+        if not v.replace('_', '').replace('-', '').isalnum():
+            raise ValueError('Username must be alphanumeric (underscores and hyphens allowed)')
+        return v.lower()
+
+
 class UserListResponse(BaseModel):
     """Paginated user list response"""
     users: list[UserResponse]

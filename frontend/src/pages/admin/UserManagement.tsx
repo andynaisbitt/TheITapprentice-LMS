@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { adminUserApi, User, UserAdminUpdate, UserStats } from '../../services/api/admin-user.api';
+import { adminUserApi, User, UserAdminUpdate, UserAdminCreate, UserStats } from '../../services/api/admin-user.api';
 import {
   Users,
   UserCheck,
@@ -24,6 +24,7 @@ import {
   Mail,
   Calendar,
   Activity,
+  UserPlus,
 } from 'lucide-react';
 
 export const UserManagement = () => {
@@ -51,10 +52,25 @@ export const UserManagement = () => {
   const [selectedUsers, setSelectedUsers] = useState<Set<number>>(new Set());
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [showBulkMenu, setShowBulkMenu] = useState(false);
 
   // Edit form state
   const [editForm, setEditForm] = useState<UserAdminUpdate>({});
+
+  // Create form state
+  const [createForm, setCreateForm] = useState<UserAdminCreate>({
+    email: '',
+    username: '',
+    first_name: '',
+    last_name: '',
+    password: '',
+    role: 'apprentice',
+    is_active: true,
+    is_verified: false,
+    can_write_blog: false,
+    can_moderate: false,
+  });
 
   useEffect(() => {
     loadUsers();
@@ -152,6 +168,40 @@ export const UserManagement = () => {
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to update user');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateUser = async () => {
+    setError('');
+    setLoading(true);
+
+    try {
+      const newUser = await adminUserApi.createUser(createForm);
+      setSuccess(`User ${newUser.username} created successfully${!createForm.password ? ' (random password generated)' : ''}`);
+      setShowCreateModal(false);
+
+      // Reset form
+      setCreateForm({
+        email: '',
+        username: '',
+        first_name: '',
+        last_name: '',
+        password: '',
+        role: 'apprentice',
+        is_active: true,
+        is_verified: false,
+        can_write_blog: false,
+        can_moderate: false,
+      });
+
+      loadUsers();
+      loadStats();
+
+      setTimeout(() => setSuccess(''), 5000);
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to create user');
     } finally {
       setLoading(false);
     }
@@ -257,15 +307,17 @@ export const UserManagement = () => {
 
   const getRoleBadgeColor = (role: string) => {
     const colors: Record<string, string> = {
-      ADMIN: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
-      AUTHOR: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-      TUTOR: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-      MENTOR: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
-      CONTRIBUTOR: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-      SUPPORTER: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
-      APPRENTICE: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
+      admin: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+      author: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+      tutor: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+      mentor: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
+      contributor: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+      supporter: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+      apprentice: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
     };
-    return colors[role] || colors.APPRENTICE;
+    // Handle both lowercase (new) and uppercase (legacy)
+    const normalizedRole = role.toLowerCase();
+    return colors[normalizedRole] || colors.apprentice;
   };
 
   if (loading && !stats) {
@@ -280,9 +332,18 @@ export const UserManagement = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">User Management</h1>
-          <p className="text-gray-600 dark:text-gray-400">Manage user accounts, roles, and permissions</p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">User Management</h1>
+            <p className="text-gray-600 dark:text-gray-400">Manage user accounts, roles, and permissions</p>
+          </div>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-medium"
+          >
+            <UserPlus size={20} />
+            Create User
+          </button>
         </div>
 
         {/* Success/Error Messages */}
@@ -375,13 +436,13 @@ export const UserManagement = () => {
               className="px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="all">All Roles</option>
-              <option value="APPRENTICE">Apprentice</option>
-              <option value="SUPPORTER">Supporter</option>
-              <option value="CONTRIBUTOR">Contributor</option>
-              <option value="MENTOR">Mentor</option>
-              <option value="TUTOR">Tutor</option>
-              <option value="AUTHOR">Author</option>
-              <option value="ADMIN">Admin</option>
+              <option value="apprentice">Apprentice</option>
+              <option value="supporter">Supporter</option>
+              <option value="contributor">Contributor</option>
+              <option value="mentor">Mentor</option>
+              <option value="tutor">Tutor</option>
+              <option value="author">Author</option>
+              <option value="admin">Admin</option>
             </select>
 
             {/* Status Filter */}
@@ -573,7 +634,7 @@ export const UserManagement = () => {
                     {/* Badges & Info */}
                     <div className="flex flex-wrap gap-2 mb-3">
                       <span className={`px-2 py-1 rounded text-xs font-medium ${getRoleBadgeColor(user.role)}`}>
-                        {user.role}
+                        {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                       </span>
                       {user.is_active ? (
                         <span className="px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
@@ -688,13 +749,13 @@ export const UserManagement = () => {
                     onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100"
                   >
-                    <option value="APPRENTICE">Apprentice</option>
-                    <option value="SUPPORTER">Supporter</option>
-                    <option value="CONTRIBUTOR">Contributor</option>
-                    <option value="MENTOR">Mentor</option>
-                    <option value="TUTOR">Tutor</option>
-                    <option value="AUTHOR">Author</option>
-                    <option value="ADMIN">Admin</option>
+                    <option value="apprentice">Apprentice (Free Learner)</option>
+                    <option value="supporter">Supporter (Paid Subscriber)</option>
+                    <option value="contributor">Contributor (Volunteer Helper)</option>
+                    <option value="mentor">Mentor (Community Guide)</option>
+                    <option value="tutor">Tutor (Course Creator)</option>
+                    <option value="author">Author (Blog Writer)</option>
+                    <option value="admin">Admin (Full Access)</option>
                   </select>
                 </div>
 
@@ -792,6 +853,195 @@ export const UserManagement = () => {
                   >
                     {loading && <Loader2 size={16} className="animate-spin" />}
                     Save Changes
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create User Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Create New User</h2>
+                <button
+                  onClick={() => setShowCreateModal(false)}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                {/* Email & Username */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Email *
+                    </label>
+                    <input
+                      type="email"
+                      value={createForm.email}
+                      onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100"
+                      placeholder="user@example.com"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Username *
+                    </label>
+                    <input
+                      type="text"
+                      value={createForm.username}
+                      onChange={(e) => setCreateForm({ ...createForm, username: e.target.value.toLowerCase() })}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100"
+                      placeholder="username"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* First & Last Name */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      First Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={createForm.first_name}
+                      onChange={(e) => setCreateForm({ ...createForm, first_name: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100"
+                      placeholder="John"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Last Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={createForm.last_name}
+                      onChange={(e) => setCreateForm({ ...createForm, last_name: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100"
+                      placeholder="Doe"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Password */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Password (optional)
+                  </label>
+                  <input
+                    type="password"
+                    value={createForm.password}
+                    onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100"
+                    placeholder="Leave empty to auto-generate"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Leave empty to generate a secure random password
+                  </p>
+                </div>
+
+                {/* Role */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Role
+                  </label>
+                  <select
+                    value={createForm.role}
+                    onChange={(e) => setCreateForm({ ...createForm, role: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100"
+                  >
+                    <option value="apprentice">Apprentice (Free Learner)</option>
+                    <option value="supporter">Supporter (Paid Subscriber)</option>
+                    <option value="contributor">Contributor (Volunteer Helper)</option>
+                    <option value="mentor">Mentor (Community Guide)</option>
+                    <option value="tutor">Tutor (Course Creator)</option>
+                    <option value="author">Author (Blog Writer)</option>
+                    <option value="admin">Admin (Full Access)</option>
+                  </select>
+                </div>
+
+                {/* Status Toggles */}
+                <div className="grid grid-cols-2 gap-4">
+                  <label className="flex items-center gap-3 p-4 border border-gray-300 dark:border-slate-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={createForm.is_active}
+                      onChange={(e) => setCreateForm({ ...createForm, is_active: e.target.checked })}
+                      className="w-5 h-5"
+                    />
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Active</span>
+                  </label>
+
+                  <label className="flex items-center gap-3 p-4 border border-gray-300 dark:border-slate-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={createForm.is_verified}
+                      onChange={(e) => setCreateForm({ ...createForm, is_verified: e.target.checked })}
+                      className="w-5 h-5"
+                    />
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Verified</span>
+                  </label>
+                </div>
+
+                {/* Permissions */}
+                <div>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Permissions</p>
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-3 p-3 border border-gray-300 dark:border-slate-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={createForm.can_write_blog}
+                        onChange={(e) => setCreateForm({ ...createForm, can_write_blog: e.target.checked })}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Can write blog posts</span>
+                    </label>
+
+                    <label className="flex items-center gap-3 p-3 border border-gray-300 dark:border-slate-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={createForm.can_moderate}
+                        onChange={(e) => setCreateForm({ ...createForm, can_moderate: e.target.checked })}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Can moderate content</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-slate-600">
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateModal(false)}
+                    className="px-6 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCreateUser}
+                    disabled={loading || !createForm.email || !createForm.username || !createForm.first_name || !createForm.last_name}
+                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {loading && <Loader2 size={16} className="animate-spin" />}
+                    Create User
                   </button>
                 </div>
               </div>

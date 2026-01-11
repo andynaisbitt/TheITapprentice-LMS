@@ -86,7 +86,28 @@ export interface UserAdminUpdate {
   can_moderate?: boolean;
 }
 
+export interface UserAdminCreate {
+  email: string;
+  username: string;
+  first_name: string;
+  last_name: string;
+  password?: string;  // Optional - backend generates if not provided
+  role?: string;
+  is_active?: boolean;
+  is_verified?: boolean;
+  can_write_blog?: boolean;
+  can_moderate?: boolean;
+}
+
 export const adminUserApi = {
+  /**
+   * Create new user (admin only)
+   */
+  createUser: async (data: UserAdminCreate): Promise<User> => {
+    const response = await apiClient.post<User>('/api/v1/admin/users', data);
+    return response.data;
+  },
+
   /**
    * Get all users with filtering and pagination
    */
