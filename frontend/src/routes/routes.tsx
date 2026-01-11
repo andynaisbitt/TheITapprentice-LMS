@@ -30,6 +30,7 @@ const VerifyEmail = lazy(() => import('../pages/VerifyEmail'));
 const Unsubscribe = lazy(() => import('../pages/Unsubscribe'));
 const CanonicalResolver = lazy(() => import('../components/CanonicalResolver'));
 const UserDashboard = lazy(() => import('../pages/user/UserDashboard'));
+const Profile = lazy(() => import('../pages/user/Profile'));
 
 // Loading component
 const PageLoader = () => (
@@ -158,6 +159,18 @@ export const AppRoutes = () => {
             <ProtectedRoute>
               <Layout>
                 <UserDashboard />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* User Profile (protected) */}
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Profile />
               </Layout>
             </ProtectedRoute>
           }
