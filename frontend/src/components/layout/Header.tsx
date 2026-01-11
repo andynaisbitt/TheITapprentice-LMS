@@ -327,7 +327,7 @@ export const Header: React.FC = () => {
 
                 {/* Dropdown */}
                 {isUserMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 py-2 z-50">
+                  <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 py-2 z-50">
                     <div className="px-4 py-2 border-b border-gray-200 dark:border-slate-700">
                       <p className="text-sm font-semibold text-gray-900 dark:text-white">
                         {user?.first_name} {user?.last_name}
@@ -335,14 +335,73 @@ export const Header: React.FC = () => {
                       <p className="text-xs text-gray-500 dark:text-gray-400">
                         {user?.email}
                       </p>
+                      <p className="text-xs text-blue-600 dark:text-blue-400 capitalize">
+                        {user?.role}
+                      </p>
                     </div>
+
+                    {/* Dashboard Link */}
+                    {user?.is_admin ? (
+                      <Link
+                        to="/admin"
+                        className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <span className="flex items-center gap-2">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                          </svg>
+                          Admin Dashboard
+                        </span>
+                      </Link>
+                    ) : (
+                      <Link
+                        to="/dashboard"
+                        className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <span className="flex items-center gap-2">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                          </svg>
+                          My Dashboard
+                        </span>
+                      </Link>
+                    )}
+
+                    {/* Author/Blog Permission */}
+                    {(user?.role === 'author' || user?.can_write_blog || user?.is_admin) && (
+                      <Link
+                        to="/admin/blog"
+                        className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <span className="flex items-center gap-2">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                          Write Blog Post
+                        </span>
+                      </Link>
+                    )}
+
+                    {/* Profile/Settings */}
                     <Link
-                      to="/admin"
+                      to="/profile"
                       className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition"
                       onClick={() => setIsUserMenuOpen(false)}
                     >
-                      Admin Dashboard
+                      <span className="flex items-center gap-2">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        My Profile
+                      </span>
                     </Link>
+
+                    <div className="border-t border-gray-200 dark:border-slate-700 my-1"></div>
+
+                    {/* Logout */}
                     <button
                       onClick={() => {
                         setIsUserMenuOpen(false);
@@ -350,7 +409,12 @@ export const Header: React.FC = () => {
                       }}
                       className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-slate-700 transition"
                     >
-                      Logout
+                      <span className="flex items-center gap-2">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        Logout
+                      </span>
                     </button>
                   </div>
                 )}
