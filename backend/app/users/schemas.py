@@ -122,29 +122,35 @@ class UserResponse(BaseModel):
     last_name: str
     avatar_url: Optional[str] = None
     bio: Optional[str] = None
-    
+
     # OAuth
     google_id: Optional[str] = None  # For OAuth users
-    
+
     # Role & status
     role: UserRole
     is_admin: bool
     is_active: bool
     is_verified: bool
-    
+
+    # Permissions (granular)
+    can_write_blog: bool = False
+    can_moderate: bool = False
+
     # Subscription
     subscription_status: SubscriptionStatus
     subscription_plan: Optional[SubscriptionPlan] = None
     subscription_expires: Optional[datetime] = None
-    
+
     # Gamification
     total_points: int
     level: int
-    
+    login_count: int = 0
+
     # Timestamps
     created_at: datetime
+    updated_at: datetime
     last_login: Optional[datetime] = None
-    
+
     class Config:
         from_attributes = True
 

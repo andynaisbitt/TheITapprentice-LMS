@@ -13,7 +13,7 @@ import math
 from app.core.database import get_db
 from app.auth.dependencies import get_current_user, require_admin
 from app.users.models import User, UserRole, SubscriptionStatus
-from app.users.schemas import UserResponse, UserAdminUpdate, UserAdminCreate
+from app.users.schemas import UserResponse, UserAdminUpdate, UserAdminCreate, UserListResponse
 from app.core.security import get_password_hash
 import secrets
 import string
@@ -21,7 +21,7 @@ import string
 router = APIRouter(prefix="/admin/users", tags=["Admin - Users"])
 
 
-@router.get("", response_model=dict)
+@router.get("", response_model=UserListResponse)
 async def get_all_users(
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
