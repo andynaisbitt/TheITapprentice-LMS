@@ -18,7 +18,7 @@ export interface User {
   google_id?: string;
   
   // Role & status
-  role: 'STUDENT' | 'VOLUNTEER' | 'INSTRUCTOR' | 'ADMIN';
+  role: 'apprentice' | 'supporter' | 'contributor' | 'mentor' | 'tutor' | 'author' | 'admin';
   is_admin: boolean;
   is_active: boolean;
   is_verified: boolean;

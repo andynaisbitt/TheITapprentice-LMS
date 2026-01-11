@@ -12,7 +12,7 @@ import { GoogleOAuthButton } from '../components/auth/GoogleOAuthButton';
 export const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, isLoading } = useAuth();
+  const { login, isLoading, user } = useAuth();
 
   const [formData, setFormData] = useState({
     email: '',
@@ -48,9 +48,17 @@ export const Login: React.FC = () => {
     try {
       await login(formData.email, formData.password);
 
-      // Redirect based on where they came from or to admin dashboard
-      const from = location.state?.from?.pathname || '/admin';
-      navigate(from, { replace: true });
+      // Wait a moment for user state to update
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Redirect based on where they came from or user role
+      if (location.state?.from?.pathname) {
+        navigate(location.state.from.pathname, { replace: true });
+      } else if (user?.role === 'admin' || user?.is_admin) {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
     } catch (err: any) {
       console.error('Login error:', err);
       const errorMessage = err.message || 'Invalid email or password';

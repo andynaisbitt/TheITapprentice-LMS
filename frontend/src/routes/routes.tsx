@@ -56,6 +56,29 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   return <>{children}</>;
 };
 
+// Admin-only route wrapper
+interface AdminRouteProps {
+  children: React.ReactNode;
+}
+
+const AdminRoute = ({ children }: AdminRouteProps) => {
+  const { isAuthenticated, isAdmin, loading } = useAuth();
+
+  if (loading) {
+    return <PageLoader />;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!isAdmin) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+};
+
 // Main routes component
 export const AppRoutes = () => {
   return (
@@ -165,141 +188,141 @@ export const AppRoutes = () => {
         <Route
           path="/admin"
           element={
-            <ProtectedRoute>
+            <AdminRoute>
               <Layout hideFooter>
                 <AdminDashboard />
               </Layout>
-            </ProtectedRoute>
+            </AdminRoute>
           }
         />
         <Route
           path="/admin/posts"
           element={
-            <ProtectedRoute>
+            <AdminRoute>
               <Layout hideFooter>
                 <BlogPostsList />
               </Layout>
-            </ProtectedRoute>
+            </AdminRoute>
           }
         />
         <Route
           path="/admin/blog"
           element={
-            <ProtectedRoute>
+            <AdminRoute>
               <Layout hideFooter>
                 <BlogEditor />
               </Layout>
-            </ProtectedRoute>
+            </AdminRoute>
           }
         />
         <Route
           path="/admin/blog/:id"
           element={
-            <ProtectedRoute>
+            <AdminRoute>
               <Layout hideFooter>
                 <BlogEditor />
               </Layout>
-            </ProtectedRoute>
+            </AdminRoute>
           }
         />
         <Route
           path="/admin/categories"
           element={
-            <ProtectedRoute>
+            <AdminRoute>
               <Layout hideFooter>
                 <CategoryManager />
               </Layout>
-            </ProtectedRoute>
+            </AdminRoute>
           }
         />
         <Route
           path="/admin/tags"
           element={
-            <ProtectedRoute>
+            <AdminRoute>
               <Layout hideFooter>
                 <TagManager />
               </Layout>
-            </ProtectedRoute>
+            </AdminRoute>
           }
         />
         <Route
           path="/admin/settings"
           element={
-            <ProtectedRoute>
+            <AdminRoute>
               <Layout hideFooter>
                 <SiteSettings />
               </Layout>
-            </ProtectedRoute>
+            </AdminRoute>
           }
         />
         <Route
           path="/admin/navigation"
           element={
-            <ProtectedRoute>
+            <AdminRoute>
               <Layout hideFooter>
                 <NavigationManager />
               </Layout>
-            </ProtectedRoute>
+            </AdminRoute>
           }
         />
         <Route
           path="/admin/newsletter"
           element={
-            <ProtectedRoute>
+            <AdminRoute>
               <Layout hideFooter>
                 <Newsletter />
               </Layout>
-            </ProtectedRoute>
+            </AdminRoute>
           }
         />
         <Route
           path="/admin/theme"
           element={
-            <ProtectedRoute>
+            <AdminRoute>
               <Layout hideFooter>
                 <ThemeCustomizer />
               </Layout>
-            </ProtectedRoute>
+            </AdminRoute>
           }
         />
         <Route
           path="/admin/pages"
           element={
-            <ProtectedRoute>
+            <AdminRoute>
               <Layout hideFooter>
                 <PagesList />
               </Layout>
-            </ProtectedRoute>
+            </AdminRoute>
           }
         />
         <Route
           path="/admin/pages/new"
           element={
-            <ProtectedRoute>
+            <AdminRoute>
               <Layout hideFooter>
                 <PageEditor />
               </Layout>
-            </ProtectedRoute>
+            </AdminRoute>
           }
         />
         <Route
           path="/admin/pages/:id"
           element={
-            <ProtectedRoute>
+            <AdminRoute>
               <Layout hideFooter>
                 <PageEditor />
               </Layout>
-            </ProtectedRoute>
+            </AdminRoute>
           }
         />
         <Route
           path="/admin/users"
           element={
-            <ProtectedRoute>
+            <AdminRoute>
               <Layout hideFooter>
                 <UserManagement />
               </Layout>
-            </ProtectedRoute>
+            </AdminRoute>
           }
         />
 

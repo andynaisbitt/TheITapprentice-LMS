@@ -66,8 +66,12 @@ export const GoogleOAuthButton: React.FC<GoogleOAuthButtonProps> = ({
       // Success callback
       onSuccess?.();
 
-      // Redirect to admin dashboard
-      navigate('/admin', { replace: true });
+      // Redirect based on user role
+      if (user.role === 'admin' || user.is_admin) {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
     } catch (error: any) {
       console.error('Google OAuth error:', error);
       const errorMessage = error.response?.data?.detail || 'Google sign-in failed. Please try again.';
