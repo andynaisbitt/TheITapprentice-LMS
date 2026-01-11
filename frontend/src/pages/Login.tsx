@@ -46,18 +46,15 @@ export const Login: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      await login(formData.email, formData.password);
-
-      // Wait a moment for user state to update
-      await new Promise(resolve => setTimeout(resolve, 100));
+      const response = await login(formData.email, formData.password);
 
       // Redirect based on where they came from or user role
       if (location.state?.from?.pathname) {
         navigate(location.state.from.pathname, { replace: true });
-      } else if (user?.role === 'admin' || user?.is_admin) {
+      } else if (response.user.role === 'admin' || response.user.is_admin) {
         navigate('/admin', { replace: true });
       } else {
-        navigate('/', { replace: true });
+        navigate('/dashboard', { replace: true });
       }
     } catch (err: any) {
       console.error('Login error:', err);

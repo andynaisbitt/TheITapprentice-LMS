@@ -13,7 +13,7 @@ interface AuthContextType {
   isAdmin: boolean;
   isLoading: boolean;
   loading: boolean; // Alias for isLoading (compatibility)
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<{ user: User }>;
   logout: () => Promise<void>;
   register: (data: RegisterData) => Promise<void>;  // NEW
   refreshAuth: () => Promise<void>;
@@ -75,6 +75,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const response = await authApi.login(email, password);
       setUser(response.user);
+      return { user: response.user };
     } catch (error: any) {
       console.error('Login error:', error);
       throw new Error(error.response?.data?.detail || 'Login failed');

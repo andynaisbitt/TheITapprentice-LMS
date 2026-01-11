@@ -29,6 +29,7 @@ const UserManagement = lazy(() => import('../pages/admin/UserManagement'));
 const VerifyEmail = lazy(() => import('../pages/VerifyEmail'));
 const Unsubscribe = lazy(() => import('../pages/Unsubscribe'));
 const CanonicalResolver = lazy(() => import('../components/CanonicalResolver'));
+const UserDashboard = lazy(() => import('../pages/user/UserDashboard'));
 
 // Loading component
 const PageLoader = () => (
@@ -147,6 +148,18 @@ export const AppRoutes = () => {
             <Layout hideHeader hideFooter>
               <Unsubscribe />
             </Layout>
+          }
+        />
+
+        {/* User Dashboard (protected, for non-admins) */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <UserDashboard />
+              </Layout>
+            </ProtectedRoute>
           }
         />
 
