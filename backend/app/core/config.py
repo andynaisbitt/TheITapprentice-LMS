@@ -29,6 +29,18 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str = ""
     GOOGLE_REDIRECT_URI: str = ""
 
+    # Email Service (v1.7 - optional)
+    SENDGRID_API_KEY: str = ""
+    EMAIL_FROM: str = "noreply@example.com"
+    EMAIL_FROM_NAME: str = "BlogCMS"
+
+    # SMTP Alternative (optional)
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_USE_TLS: bool = True
+
     # App
     DEBUG: bool = False  # Changed default to False for security
     FRONTEND_URL: str = "http://localhost:5173"
