@@ -89,11 +89,10 @@ async def google_oauth_login(
                 hashed_password=None,
 
                 # Default settings
-                role=UserRole.STUDENT,
+                role=UserRole.APPRENTICE,  # Free learner (default role)
                 is_active=True,
                 is_verified=True,  # Google verified the email
                 email_verified_at=datetime.utcnow(),  # Mark email as verified immediately
-                is_admin=False,
 
                 # Initialize gamification
                 total_points=0,
