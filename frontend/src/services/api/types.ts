@@ -16,24 +16,30 @@ export interface User {
   avatar_url?: string;
   bio?: string;
   google_id?: string;
-  
+
   // Role & status
   role: 'apprentice' | 'supporter' | 'contributor' | 'mentor' | 'tutor' | 'author' | 'admin';
   is_admin: boolean;
   is_active: boolean;
   is_verified: boolean;
-  
+
+  // Permissions (granular)
+  can_write_blog: boolean;
+  can_moderate: boolean;
+
   // Subscription
-  subscription_status: 'FREE' | 'ACTIVE' | 'CANCELLED' | 'EXPIRED' | 'PAST_DUE';
-  subscription_plan?: 'BASIC' | 'PRO' | 'ENTERPRISE';
+  subscription_status: 'free' | 'active' | 'cancelled' | 'expired' | 'past_due';
+  subscription_plan?: 'basic' | 'pro' | 'enterprise';
   subscription_expires?: string;
-  
+
   // Gamification
   total_points: number;
   level: number;
-  
+  login_count: number;
+
   // Timestamps
   created_at: string;
+  updated_at: string;
   last_login?: string;
 }
 
