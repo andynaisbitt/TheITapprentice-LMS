@@ -34,6 +34,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({ limit }) => 
   const [loading, setLoading] = useState(true);
   const [direction, setDirection] = useState(0);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
 
   useEffect(() => {
     loadFeaturedPosts();
@@ -47,6 +48,13 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({ limit }) => 
     const handleChange = () => setReducedMotion(mediaQuery.matches);
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
+  // Update isMobile on window resize
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const loadFeaturedPosts = async () => {
@@ -95,10 +103,12 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({ limit }) => 
   }
 
   // Crossfade animation variants for smooth transitions
+  // Mobile: opacity-only (no scale to prevent GPU glitches)
+  // Desktop: subtle scale for elegance
   const crossfadeVariants = {
     enter: {
       opacity: 0,
-      scale: 1.05, // Subtle zoom for elegance
+      scale: isMobile ? 1 : 1.02, // Reduced scale, mobile gets none
       zIndex: 0,
     },
     center: {
@@ -108,7 +118,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({ limit }) => 
     },
     exit: {
       opacity: 0,
-      scale: 0.95, // Subtle zoom out
+      scale: isMobile ? 1 : 0.98, // Reduced scale, mobile gets none
       zIndex: 0,
     },
   };
@@ -118,7 +128,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({ limit }) => 
   return (
     <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-gray-800 dark:to-gray-900 shadow-2xl">
       <div className="relative lg:h-[600px]">
-        <AnimatePresence initial={false} mode="sync">
+        <AnimatePresence initial={false} mode="wait">
           <motion.div
             key={currentIndex}
             variants={crossfadeVariants}
@@ -126,10 +136,9 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({ limit }) => 
             animate="center"
             exit="exit"
             transition={{
-              duration: reducedMotion ? 0 : 0.8,
-              ease: [0.42, 0, 0.58, 1], // easeInOut cubic bezier
+              duration: reducedMotion ? 0 : (isMobile ? 0.4 : 0.6), // Faster on mobile
+              ease: [0.32, 0.72, 0, 1], // Smoother easing for mobile
             }}
-            style={{ willChange: 'opacity, transform' }}
             className="lg:absolute lg:inset-0"
           >
             <div className="grid grid-cols-1 lg:grid-cols-2 lg:h-full">
@@ -231,24 +240,26 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({ limit }) => 
           </motion.div>
         </AnimatePresence>
 
-        {/* Navigation Arrows - Mobile Optimized */}
+        {/* Navigation Arrows - Mobile Optimized with fixed positioning */}
         {posts.length > 1 && (
-          <>
-            <button
-              onClick={prevSlide}
-              className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-10 p-2.5 sm:p-3 bg-white/90 dark:bg-gray-800/90 rounded-full shadow-lg hover:bg-white dark:hover:bg-gray-800 transition-all backdrop-blur-sm touch-manipulation active:scale-95"
-              aria-label="Previous slide"
-            >
-              <ChevronLeft size={20} className="sm:w-6 sm:h-6 text-gray-700 dark:text-gray-300" />
-            </button>
-            <button
-              onClick={nextSlide}
-              className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-10 p-2.5 sm:p-3 bg-white/90 dark:bg-gray-800/90 rounded-full shadow-lg hover:bg-white dark:hover:bg-gray-800 transition-all backdrop-blur-sm touch-manipulation active:scale-95"
-              aria-label="Next slide"
-            >
-              <ChevronRight size={20} className="sm:w-6 sm:h-6 text-gray-700 dark:text-gray-300" />
-            </button>
-          </>
+          <div className="absolute inset-0 pointer-events-none z-20">
+            <div className="relative h-full flex items-center justify-between px-2 sm:px-4">
+              <button
+                onClick={prevSlide}
+                className="pointer-events-auto p-3 sm:p-3.5 bg-white/95 dark:bg-gray-800/95 rounded-full shadow-xl hover:bg-white dark:hover:bg-gray-800 transition-colors backdrop-blur-sm touch-manipulation active:scale-90"
+                aria-label="Previous slide"
+              >
+                <ChevronLeft size={20} className="sm:w-6 sm:h-6 text-gray-700 dark:text-gray-300" />
+              </button>
+              <button
+                onClick={nextSlide}
+                className="pointer-events-auto p-3 sm:p-3.5 bg-white/95 dark:bg-gray-800/95 rounded-full shadow-xl hover:bg-white dark:hover:bg-gray-800 transition-colors backdrop-blur-sm touch-manipulation active:scale-90"
+                aria-label="Next slide"
+              >
+                <ChevronRight size={20} className="sm:w-6 sm:h-6 text-gray-700 dark:text-gray-300" />
+              </button>
+            </div>
+          </div>
         )}
 
         {/* Dots Indicator - Mobile Optimized with larger touch targets */}

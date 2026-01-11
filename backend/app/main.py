@@ -13,6 +13,8 @@ from app.core.database import engine, Base
 
 # Import routers
 from app.auth.routes import router as auth_router
+from app.auth.oauth import router as oauth_router
+from app.auth.verification_routes import router as verification_router
 from app.api.v1.endpoints.blog.public import router as blog_public_router
 from app.api.v1.endpoints.blog.admin import router as blog_admin_router
 from app.api.v1.endpoints.blog.media_routes import router as blog_media_router
@@ -29,6 +31,7 @@ from app.api.v1.endpoints.site_settings.public import router as site_settings_pu
 from app.api.v1.endpoints.newsletter.public import router as newsletter_public_router
 from app.api.v1.endpoints.newsletter.admin import router as newsletter_admin_router
 from app.api.v1.endpoints.content import router as content_router
+from app.api.v1.endpoints.admin.users import router as admin_users_router
 
 # Create tables (for development only - use Alembic in production)
 if settings.ENVIRONMENT == "development":
@@ -59,6 +62,8 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Register routers
 app.include_router(auth_router, tags=["Authentication"])
+app.include_router(oauth_router, prefix="/api/v1", tags=["OAuth"])
+app.include_router(verification_router, prefix="/api/v1", tags=["Email Verification"])
 app.include_router(blog_public_router, prefix="/api/v1", tags=["Blog - Public"])
 app.include_router(blog_admin_router, prefix="/api/v1", tags=["Blog - Admin"])
 app.include_router(blog_media_router, prefix="/api/v1", tags=["Blog - Media"])
@@ -75,6 +80,7 @@ app.include_router(newsletter_admin_router, prefix="/api/v1", tags=["Newsletter 
 app.include_router(content_router, prefix="/api/v1", tags=["Content - Unified"])
 app.include_router(rss_router, prefix="/api/v1", tags=["RSS/Sitemap"])
 app.include_router(sitemap_router, prefix="/api/v1", tags=["RSS/Sitemap"])
+app.include_router(admin_users_router, prefix="/api/v1", tags=["Admin - Users"])
 
 @app.get("/health")
 async def health_check():

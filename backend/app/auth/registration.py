@@ -6,9 +6,15 @@ from app.core.database import get_db
 from app.core.security import get_password_hash
 from app.users.models import User, UserRole
 from app.users.schemas import UserRegister, UserResponse
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+from app.auth.email_verification import EmailVerification, generate_verification_tokens
+from app.services.email_service import email_service
+from app.core.config import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["Registration"])
 
@@ -85,10 +91,44 @@ async def register_user(
         print(f"   Role: {new_user.role}")
         print(f"   Subscription: {new_user.subscription_status}")
         print("=" * 80)
-        
-        # TODO: Send verification email
-        # await send_verification_email(new_user.email, verification_token)
-        
+
+        # Generate verification tokens
+        short_code, long_token = generate_verification_tokens()
+
+        # Create verification record
+        verification = EmailVerification(
+            user_id=new_user.id,
+            short_code=short_code,
+            long_token=long_token,
+            created_at=datetime.utcnow(),
+            expires_at=datetime.utcnow() + timedelta(hours=24),
+            is_used=False
+        )
+
+        db.add(verification)
+        db.commit()
+        db.refresh(verification)
+
+        # Send verification email
+        base_url = settings.FRONTEND_URL if hasattr(settings, 'FRONTEND_URL') else "http://localhost:5173"
+
+        try:
+            success = email_service.send_verification_email(
+                to_email=new_user.email,
+                first_name=new_user.first_name,
+                short_code=short_code,
+                long_token=long_token,
+                base_url=base_url
+            )
+
+            if success:
+                logger.info(f"✅ Verification email sent to {new_user.email}")
+            else:
+                logger.warning(f"⚠️ Failed to send verification email to {new_user.email}")
+        except Exception as e:
+            logger.error(f"❌ Error sending verification email: {e}")
+            # Don't fail registration if email fails
+
         return new_user
         
     except Exception as e:

@@ -66,7 +66,7 @@ export const BlogList: React.FC = () => {
     try {
       const response = await blogApi.getPosts({
         page: currentPage,
-        per_page: postsPerPage,
+        page_size: postsPerPage,
         category: selectedCategory || undefined,
         tag: selectedTag || undefined,
         search: searchQuery || undefined,

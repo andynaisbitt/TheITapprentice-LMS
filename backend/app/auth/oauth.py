@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import create_access_token
+from app.auth.dependencies import get_current_user
 from app.users.models import User, UserRole
 from app.users.schemas import GoogleOAuthRegister, UserResponse
 from datetime import timedelta
@@ -48,14 +49,17 @@ async def google_oauth_login(
             # Link Google account to existing user
             print(f"🔗 Linking Google account to existing user: {user.email}")
             user.google_id = oauth_data.google_id
-            
+
             # Update avatar if not set
             if not user.avatar_url and oauth_data.avatar_url:
                 user.avatar_url = oauth_data.avatar_url
-            
+
             # Mark as verified (Google verified the email)
+            from datetime import datetime
             user.is_verified = True
-            
+            if not user.email_verified_at:
+                user.email_verified_at = datetime.utcnow()
+
             db.commit()
         else:
             # Create new user
@@ -71,6 +75,8 @@ async def google_oauth_login(
                 username = f"{base_username}{counter}"
                 counter += 1
             
+            from datetime import datetime
+
             user = User(
                 email=oauth_data.email,
                 username=username,
@@ -78,16 +84,17 @@ async def google_oauth_login(
                 last_name=oauth_data.last_name,
                 google_id=oauth_data.google_id,
                 avatar_url=oauth_data.avatar_url,
-                
+
                 # OAuth users don't need password
                 hashed_password=None,
-                
+
                 # Default settings
                 role=UserRole.STUDENT,
                 is_active=True,
                 is_verified=True,  # Google verified the email
+                email_verified_at=datetime.utcnow(),  # Mark email as verified immediately
                 is_admin=False,
-                
+
                 # Initialize gamification
                 total_points=0,
                 level=1,

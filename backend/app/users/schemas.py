@@ -187,8 +187,11 @@ class UserAdminUpdate(BaseModel):
     role: Optional[UserRole] = None
     is_active: Optional[bool] = None
     is_verified: Optional[bool] = None
+    is_admin: Optional[bool] = None
     subscription_status: Optional[SubscriptionStatus] = None
     subscription_plan: Optional[SubscriptionPlan] = None
+    can_write_blog: Optional[bool] = None
+    can_moderate: Optional[bool] = None
 
 
 class UserListResponse(BaseModel):

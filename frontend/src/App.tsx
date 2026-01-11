@@ -1,5 +1,6 @@
 import { BrowserRouter } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider } from './state/contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AppRoutes } from './routes/routes';
@@ -18,22 +19,27 @@ initializeConsentMode();
 initializeFromStorage();
 
 function App() {
+  // Get Google OAuth Client ID from environment variable
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+
   return (
-    <HelmetProvider>
-      <BrowserRouter>
-        <ThemeProvider>
-          <AuthProvider>
-            <StoreInitializer />
-            <DynamicTitle />
-            <FaviconManager />
-            <GoogleAnalytics />
-            <GoogleAdSense />
-            <CookieConsent />
-            <AppRoutes />
-          </AuthProvider>
-        </ThemeProvider>
-      </BrowserRouter>
-    </HelmetProvider>
+    <GoogleOAuthProvider clientId={googleClientId}>
+      <HelmetProvider>
+        <BrowserRouter>
+          <ThemeProvider>
+            <AuthProvider>
+              <StoreInitializer />
+              <DynamicTitle />
+              <FaviconManager />
+              <GoogleAnalytics />
+              <GoogleAdSense />
+              <CookieConsent />
+              <AppRoutes />
+            </AuthProvider>
+          </ThemeProvider>
+        </BrowserRouter>
+      </HelmetProvider>
+    </GoogleOAuthProvider>
   );
 }
 

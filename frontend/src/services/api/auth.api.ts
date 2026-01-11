@@ -98,6 +98,39 @@ export const authApi = {
     return response.data;
   },
 
+  // ==================== EMAIL VERIFICATION ====================
+
+  /**
+   * Verify email with code or token
+   */
+  verifyEmail: async (token: string): Promise<{
+    message: string;
+    email: string;
+    verified_at: string;
+  }> => {
+    const response = await apiClient.post('/auth/verification/verify', { token });
+    return response.data;
+  },
+
+  /**
+   * Resend verification email
+   */
+  resendVerificationEmail: async (email: string): Promise<{ message: string }> => {
+    const response = await apiClient.post('/auth/verification/resend', { email });
+    return response.data;
+  },
+
+  /**
+   * Check verification status
+   */
+  checkVerificationStatus: async (email: string): Promise<{
+    is_verified: boolean;
+    verified_at: string | null;
+  }> => {
+    const response = await apiClient.get(`/auth/verification/status/${email}`);
+    return response.data;
+  },
+
   // ==================== USER PROFILE ====================
 
   /**

@@ -87,7 +87,13 @@ class User(Base):
     # Activity tracking
     last_login = Column(DateTime(timezone=True), nullable=True)
     login_count = Column(Integer, default=0)
-    
+
+    # Security & verification
+    email_verified_at = Column(DateTime(timezone=True), nullable=True)  # When email was verified
+    mfa_enabled = Column(Boolean, default=False, index=True)  # Multi-factor authentication enabled
+    failed_login_attempts = Column(Integer, default=0)  # Failed login counter
+    locked_until = Column(DateTime(timezone=True), nullable=True)  # Account lockout expiry
+
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
@@ -95,6 +101,7 @@ class User(Base):
     # Relationships
     # NOTE: BlogCMS doesn't have skills/courses, so no relationships needed here
     # Blog posts are linked via BlogPost.author_id foreign key
+    email_verifications = relationship("EmailVerification", back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<User {self.username} ({self.role})>"

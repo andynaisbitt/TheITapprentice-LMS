@@ -23,6 +23,7 @@ async def get_published_posts(
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(10, ge=1, le=50, description="Items per page"),
     category_id: Optional[int] = Query(None, description="Filter by category ID"),
+    category: Optional[str] = Query(None, description="Filter by category slug"),
     tag: Optional[str] = Query(None, description="Filter by tag slug"),
     search: Optional[str] = Query(None, max_length=200, description="Search in title/content (max 200 chars)"),
     featured_only: bool = Query(False, description="Show only featured posts"),
@@ -31,12 +32,19 @@ async def get_published_posts(
     """Get list of published blog posts with pagination and filters"""
     skip = (page - 1) * page_size
 
+    # If category slug is provided, look up the category ID
+    resolved_category_id = category_id
+    if category and not category_id:
+        category_obj = crud.get_category_by_slug(db, category)
+        if category_obj:
+            resolved_category_id = category_obj.id
+
     posts, total = crud.get_posts(
         db,
         skip=skip,
         limit=page_size,
         published_only=True,
-        category_id=category_id,
+        category_id=resolved_category_id,
         tag_slug=tag,
         search=search,
         is_featured=True if featured_only else None

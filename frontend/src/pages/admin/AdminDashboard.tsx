@@ -717,6 +717,37 @@ export const AdminDashboard: React.FC = () => {
               </div>
             </div>
           </button>
+
+          <button
+            onClick={() => navigate('/admin/users')}
+            className="p-4 bg-gradient-to-br from-indigo-500 to-indigo-600 dark:from-indigo-600 dark:to-indigo-700 rounded-lg hover:shadow-lg transition cursor-pointer text-left"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-indigo-600 dark:bg-indigo-700 rounded-lg">
+                <svg
+                  className="w-6 h-6 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-semibold text-white">
+                  Users
+                </h3>
+                <p className="text-sm text-indigo-100">
+                  Manage accounts & roles
+                </p>
+              </div>
+            </div>
+          </button>
         </div>
       </div>
     </div>

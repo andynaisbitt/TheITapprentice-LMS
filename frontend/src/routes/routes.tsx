@@ -8,6 +8,7 @@ const BlogHome = lazy(() => import('../pages/BlogHome'));
 const BlogList = lazy(() => import('../pages/BlogList'));
 const BlogPostView = lazy(() => import('../pages/blog/BlogPostView'));
 const Login = lazy(() => import('../pages/Login'));
+const Register = lazy(() => import('../pages/Register'));
 const BlogEditor = lazy(() => import('../pages/admin/BlogEditor'));
 const BlogPostsList = lazy(() => import('../pages/admin/BlogPostsList'));
 const CategoryManager = lazy(() => import('../pages/admin/CategoryManager'));
@@ -24,6 +25,8 @@ const Contact = lazy(() => import('../pages/Contact'));
 const DynamicPage = lazy(() => import('../pages/DynamicPage'));
 const PagesList = lazy(() => import('../pages/admin/PagesList'));
 const PageEditor = lazy(() => import('../pages/admin/PageEditor'));
+const UserManagement = lazy(() => import('../pages/admin/UserManagement'));
+const VerifyEmail = lazy(() => import('../pages/VerifyEmail'));
 const Unsubscribe = lazy(() => import('../pages/Unsubscribe'));
 const CanonicalResolver = lazy(() => import('../components/CanonicalResolver'));
 
@@ -90,6 +93,26 @@ export const AppRoutes = () => {
           element={
             <Layout hideHeader hideFooter>
               <Login />
+            </Layout>
+          }
+        />
+
+        {/* Register page (no header/footer) */}
+        <Route
+          path="/register"
+          element={
+            <Layout hideHeader hideFooter>
+              <Register />
+            </Layout>
+          }
+        />
+
+        {/* Email Verification page (no header/footer) */}
+        <Route
+          path="/verify-email"
+          element={
+            <Layout hideHeader hideFooter>
+              <VerifyEmail />
             </Layout>
           }
         />
@@ -265,6 +288,16 @@ export const AppRoutes = () => {
             <ProtectedRoute>
               <Layout hideFooter>
                 <PageEditor />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <ProtectedRoute>
+              <Layout hideFooter>
+                <UserManagement />
               </Layout>
             </ProtectedRoute>
           }
