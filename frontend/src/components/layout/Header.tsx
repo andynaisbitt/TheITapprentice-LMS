@@ -33,8 +33,9 @@ export const Header: React.FC = () => {
         setHeaderItems([
           { id: 1, label: 'Home', url: '/', order: 1, parent_id: null, visible: true, show_in_header: true, show_in_footer: false, target_blank: false, created_at: '', updated_at: null },
           { id: 2, label: 'Blog', url: '/blog', order: 2, parent_id: null, visible: true, show_in_header: true, show_in_footer: false, target_blank: false, created_at: '', updated_at: null },
-          { id: 3, label: 'About', url: '/about', order: 3, parent_id: null, visible: true, show_in_header: true, show_in_footer: false, target_blank: false, created_at: '', updated_at: null },
-          { id: 4, label: 'Contact', url: '/contact', order: 4, parent_id: null, visible: true, show_in_header: true, show_in_footer: false, target_blank: false, created_at: '', updated_at: null },
+          { id: 3, label: 'Tutorials', url: '/tutorials', order: 3, parent_id: null, visible: true, show_in_header: true, show_in_footer: false, target_blank: false, created_at: '', updated_at: null },
+          { id: 4, label: 'About', url: '/about', order: 4, parent_id: null, visible: true, show_in_header: true, show_in_footer: false, target_blank: false, created_at: '', updated_at: null },
+          { id: 5, label: 'Contact', url: '/contact', order: 5, parent_id: null, visible: true, show_in_header: true, show_in_footer: false, target_blank: false, created_at: '', updated_at: null },
         ]);
       }
     };

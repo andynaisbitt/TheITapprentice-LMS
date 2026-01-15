@@ -293,12 +293,12 @@ export const Footer: React.FC = () => {
                 <p className="text-xs text-gray-500">
                   Powered by{' '}
                   <a
-                    href="https://github.com/andynaisbitt/Fast-React-CMS"
+                    href="https://github.com/andynaisbitt/TheITapprentice-LMS"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="hover:text-blue-400 transition"
                   >
-                    FastReactCMS
+                    The IT Apprentice LMS
                   </a>
                 </p>
               )}

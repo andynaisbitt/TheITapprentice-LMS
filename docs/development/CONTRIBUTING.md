@@ -1,6 +1,6 @@
-# Contributing to FastReactCMS
+# Contributing to The IT Apprentice LMS
 
-Thank you for your interest in contributing to FastReactCMS! We welcome contributions from the community to help make this project even better.
+Thank you for your interest in contributing to The IT Apprentice LMS! We welcome contributions from the community to help make this project even better.
 
 ## Code of Conduct
 
@@ -13,7 +13,7 @@ By participating in this project, you agree to maintain a respectful and inclusi
 
 ## How to Contribute
 
-There are many ways to contribute to FastReactCMS:
+There are many ways to contribute to The IT Apprentice LMS:
 
 ### 1. Report Bugs
 

@@ -15,6 +15,15 @@ from app.api.v1.services.blog.models import BlogPost, BlogCategory, BlogTag, Blo
 from app.api.v1.services.pages.models import Page
 from app.api.v1.services.navigation.models import MenuItem
 from app.api.v1.services.theme.models import ThemeSettings
+from app.plugins.tutorials.models import Tutorial, TutorialStep, TutorialCategory, TutorialProgress
+from app.plugins.courses.models import Course, CourseModule, ModuleSection, CourseEnrollment, ModuleProgress
+from app.plugins.typing_game.models import (
+    TypingWordList, TypingGameSession, UserTypingStats,
+    PVPMatch, UserPVPStats, TypingChallenge, TypingLeaderboard
+)
+from app.plugins.shared.models import (
+    Achievement, UserAchievement, UserActivity, XPTransaction, LevelConfig
+)
 
 # this is the Alembic Config object
 config = context.config

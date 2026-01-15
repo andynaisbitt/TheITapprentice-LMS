@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     # Email Service (v1.7 - optional)
     SENDGRID_API_KEY: str = ""
     EMAIL_FROM: str = "noreply@example.com"
-    EMAIL_FROM_NAME: str = "BlogCMS"
+    EMAIL_FROM_NAME: str = "The IT Apprentice"
 
     # SMTP Alternative (optional)
     SMTP_HOST: str = ""
@@ -40,6 +40,14 @@ class Settings(BaseSettings):
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
     SMTP_USE_TLS: bool = True
+
+    # Plugin System (v1.7.1 - LMS Edition)
+    PLUGINS_ENABLED: dict = {
+        "tutorials": True,       # Enable tutorials plugin
+        "typing_game": True,     # Enable typing game plugin (v1.9 - ACTIVE)
+        "courses": True,         # Enable courses plugin (v1.8 - ACTIVE)
+        "quizzes": False,        # Enable quizzes plugin (coming soon)
+    }
 
     # App
     DEBUG: bool = False  # Changed default to False for security

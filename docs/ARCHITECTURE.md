@@ -1,14 +1,14 @@
-# FastReactCMS - Architecture Documentation
+# The IT Apprentice LMS - Architecture Documentation
 
-**Last Updated:** 2025-12-12
-**Version:** 1.5
-**Status:** 🚀 Production
+**Last Updated:** 2025-01-15
+**Version:** 2.0
+**Status:** Production
 
 ---
 
-## 📐 System Overview
+## System Overview
 
-FastReactCMS is a modern, full-stack blog CMS built with React + FastAPI, designed for performance, SEO, and ease of customization.
+The IT Apprentice LMS is a modern, full-stack Learning Management System built on a CMS foundation with React + FastAPI. It features a modular plugin architecture for tutorials, typing games, XP/achievements, and courses.
 
 ### Core Philosophy
 - **SEO-First**: Server-side rendering for crawlers, optimized meta tags, canonical URLs

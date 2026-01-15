@@ -1,33 +1,35 @@
 {
-  "name": "fastreactcms-frontend",
-  "version": "1.0.0",
-  "description": "FastReactCMS Frontend - Modern, production-ready blog and CMS platform built with React and TypeScript",
+  "name": "theitapprentice-lms",
+  "version": "2.0.0",
+  "description": "The IT Apprentice LMS - A modern Learning Management System for IT apprentices, bootcamp students, and self-taught developers",
   "private": true,
   "type": "module",
   "author": {
-    "name": "FastReactCMS Contributors",
-    "url": "https://github.com/yourusername/fastreactcms"
+    "name": "Andy Naisbitt",
+    "url": "https://github.com/andynaisbitt"
   },
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/fastreactcms.git"
+    "url": "https://github.com/andynaisbitt/TheITapprentice-LMS.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/fastreactcms/issues"
+    "url": "https://github.com/andynaisbitt/TheITapprentice-LMS/issues"
   },
-  "homepage": "https://github.com/yourusername/fastreactcms#readme",
+  "homepage": "https://github.com/andynaisbitt/TheITapprentice-LMS#readme",
   "keywords": [
     "react",
     "typescript",
     "vite",
-    "cms",
-    "blog",
+    "lms",
+    "learning-management-system",
     "fastapi",
     "tailwindcss",
-    "headless-cms",
-    "blog-platform",
-    "content-management"
+    "education",
+    "tutorials",
+    "it-apprentice",
+    "gamification",
+    "xp-system"
   ],
   "scripts": {
     "dev": "vite",
@@ -41,6 +43,7 @@
     "@react-oauth/google": "^0.13.4",
     "@tailwindcss/forms": "^0.5.10",
     "@tailwindcss/typography": "^0.5.19",
+    "@types/react-syntax-highlighter": "^15.5.13",
     "axios": "^1.13.2",
     "date-fns": "^2.30.0",
     "express": "^5.2.1",
@@ -53,6 +56,7 @@
     "react-helmet-async": "^2.0.4",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^6.20.0",
+    "react-syntax-highlighter": "^16.1.0",
     "zustand": "^5.0.9"
   },
   "devDependencies": {

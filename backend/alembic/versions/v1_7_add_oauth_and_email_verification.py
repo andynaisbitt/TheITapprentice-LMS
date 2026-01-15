@@ -50,24 +50,27 @@ def upgrade() -> None:
     # 2. Create email_verifications table
     # ========================================================================
 
-    op.create_table(
-        'email_verifications',
-        sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('user_id', sa.Integer(), nullable=False),
-        sa.Column('short_code', sa.String(length=6), nullable=False),
-        sa.Column('long_token', sa.String(length=64), nullable=False),
-        sa.Column('created_at', sa.DateTime(), nullable=False),
-        sa.Column('expires_at', sa.DateTime(), nullable=False),
-        sa.Column('verified_at', sa.DateTime(), nullable=True),
-        sa.Column('is_used', sa.Boolean(), nullable=False, server_default='false'),
-        sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
-        sa.PrimaryKeyConstraint('id')
-    )
+    try:
+        op.create_table(
+            'email_verifications',
+            sa.Column('id', sa.Integer(), nullable=False),
+            sa.Column('user_id', sa.Integer(), nullable=False),
+            sa.Column('short_code', sa.String(length=6), nullable=False),
+            sa.Column('long_token', sa.String(length=64), nullable=False),
+            sa.Column('created_at', sa.DateTime(), nullable=False),
+            sa.Column('expires_at', sa.DateTime(), nullable=False),
+            sa.Column('verified_at', sa.DateTime(), nullable=True),
+            sa.Column('is_used', sa.Boolean(), nullable=False, server_default='false'),
+            sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
+            sa.PrimaryKeyConstraint('id')
+        )
 
-    # Create indexes for email_verifications table
-    op.create_index('ix_email_verifications_short_code', 'email_verifications', ['short_code'])
-    op.create_index('ix_email_verifications_long_token', 'email_verifications', ['long_token'], unique=True)
-    op.create_index('ix_email_verifications_user_id', 'email_verifications', ['user_id'])
+        # Create indexes for email_verifications table
+        op.create_index('ix_email_verifications_short_code', 'email_verifications', ['short_code'])
+        op.create_index('ix_email_verifications_long_token', 'email_verifications', ['long_token'], unique=True)
+        op.create_index('ix_email_verifications_user_id', 'email_verifications', ['user_id'])
+    except Exception as e:
+        print(f"Note: email_verifications table may already exist: {e}")
 
 
 def downgrade() -> None:

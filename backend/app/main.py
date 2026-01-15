@@ -1,7 +1,7 @@
 # Backend\app\main.py
 """
-BlogCMS - Minimal Blog Platform
-FastAPI application with JWT authentication and blog management
+The IT Apprentice LMS - Learning Management System
+FastAPI application with JWT authentication, CMS, and LMS plugins
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -33,15 +33,28 @@ from app.api.v1.endpoints.newsletter.admin import router as newsletter_admin_rou
 from app.api.v1.endpoints.content import router as content_router
 from app.api.v1.endpoints.admin.users import router as admin_users_router
 
+# Plugin routers (conditional imports based on settings.PLUGINS_ENABLED)
+if settings.PLUGINS_ENABLED.get("tutorials", False):
+    from app.plugins.tutorials.routes import router as tutorials_router
+
+if settings.PLUGINS_ENABLED.get("courses", False):
+    from app.plugins.courses.routes import router as courses_router
+
+if settings.PLUGINS_ENABLED.get("typing_game", False):
+    from app.plugins.typing_game.routes import router as typing_game_router
+
+# Shared plugin routes (XP, Achievements, Progress - always enabled)
+from app.plugins.shared.routes import router as progress_router
+
 # Create tables (for development only - use Alembic in production)
 if settings.ENVIRONMENT == "development":
     Base.metadata.create_all(bind=engine)
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="BlogCMS API",
-    description="Minimal blog platform with authentication and CMS",
-    version="1.0.0",
+    title="The IT Apprentice LMS API",
+    description="Learning Management System with tutorials, typing games, XP/achievements, and CMS",
+    version="2.0.0",
     docs_url="/docs",
     redoc_url="/redoc"
 )
@@ -81,6 +94,19 @@ app.include_router(content_router, prefix="/api/v1", tags=["Content - Unified"])
 app.include_router(rss_router, prefix="/api/v1", tags=["RSS/Sitemap"])
 app.include_router(sitemap_router, prefix="/api/v1", tags=["RSS/Sitemap"])
 app.include_router(admin_users_router, prefix="/api/v1", tags=["Admin - Users"])
+
+# Mount plugin routers (conditional based on settings.PLUGINS_ENABLED)
+if settings.PLUGINS_ENABLED.get("tutorials", False):
+    app.include_router(tutorials_router, prefix="/api/v1/tutorials", tags=["Tutorials - LMS"])
+
+if settings.PLUGINS_ENABLED.get("courses", False):
+    app.include_router(courses_router, prefix="/api/v1/courses", tags=["Courses - LMS"])
+
+if settings.PLUGINS_ENABLED.get("typing_game", False):
+    app.include_router(typing_game_router, prefix="/api/v1", tags=["Typing Game - LMS"])
+
+# Shared plugin routes (XP, Achievements, Progress)
+app.include_router(progress_router, prefix="/api/v1", tags=["Progress & Achievements"])
 
 @app.get("/health")
 async def health_check():
