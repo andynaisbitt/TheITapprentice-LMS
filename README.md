@@ -1,6 +1,6 @@
 # The IT Apprentice LMS
 
-> **A modern Learning Management System for IT apprentices, bootcamp students, and self-taught developers. Built with React, FastAPI, and a modular plugin architecture.**
+> **A modern Learning Management System for IT apprentices, students, and self-taught developers. Built with React, FastAPI, and a modular plugin architecture.**
 
 [![Version](https://img.shields.io/badge/Version-2.0-brightgreen.svg)](https://github.com/andynaisbitt/TheITapprentice-LMS/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -15,7 +15,7 @@
 The IT Apprentice LMS is a full-featured learning platform designed specifically for:
 
 - **IT Apprentices** completing Level 3/4 qualifications
-- **Bootcamp students** learning to code
+- **Students** learning to code
 - **Self-taught developers** building their skills
 - **Training providers** delivering IT education
 
@@ -339,8 +339,6 @@ Contributions are welcome! Please see [docs/development/CONTRIBUTING.md](docs/de
 - Course system with structured learning paths
 - Quiz and assessment features
 - Certificates of completion
-- Mentor matching system
-- Mobile app
 
 ---
 
