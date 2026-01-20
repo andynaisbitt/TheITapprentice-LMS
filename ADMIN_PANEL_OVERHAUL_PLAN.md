@@ -764,3 +764,218 @@ export const adminNavigation = [
 **Document Status**: Ready for Review
 **Next Step**: User approval before implementation
 **Recommended Start**: Phase 1 (Sidebar Layout) - foundation for everything
+
+---
+
+## Issue #6: Dashboard Placeholder Content (NEW - Jan 20, 2026)
+
+### Scan Results - Placeholder & Mock Data Found
+
+The frontend dashboard has significant placeholder content that needs to be replaced with real API data.
+
+#### 1. **BlogHeader.tsx** - Mock Blog Stats
+**File**: `frontend/src/components/Blog/core/BlogHeader.tsx:30-35`
+```typescript
+const mockStats: BlogStats = {
+  totalPosts: 47,
+  totalReads: 12500,
+  activeReaders: 1200,
+  avgReadTime: '8 min'
+};
+```
+**Fix**: Connect to `/api/v1/blog/stats` endpoint (already exists)
+
+#### 2. **TrendingTopics.tsx** - Fake Trending Data
+**File**: `frontend/src/components/Blog/content/TrendingTopics.tsx:25-34`
+```typescript
+const mockTrendingTopics: TrendingTopic[] = [
+  { tag: 'Python', count: 24, trend: 'up', percentage: 12 },
+  { tag: 'Networking', count: 18, trend: 'up', percentage: 8 },
+  // ... 8 hardcoded items
+];
+```
+**Fix**: Create `/api/v1/blog/trending-tags` endpoint based on actual tag usage
+
+#### 3. **AdminDashboard.tsx** - Multiple Mock Sections
+**File**: `frontend/src/pages/admin/AdminDashboard.tsx:72-132`
+
+**Mock Activities (lines 73-105):**
+- Hardcoded recent activity items
+- Fake user registrations, tutorial completions, achievements
+
+**Mock Attention Items (lines 107-126):**
+- "3 Draft Posts" - hardcoded
+- "2 Unverified Users" - hardcoded
+
+**Mock System Status (lines 128-132):**
+- API Server: always "healthy"
+- Database: always "healthy"
+- Plugins: hardcoded "3/4 active"
+
+**Fix**: Create `/api/v1/admin/dashboard-stats` aggregated endpoint
+
+#### 4. **AnalyticsPage.tsx** - All Fake Data
+**File**: `frontend/src/pages/admin/AnalyticsPage.tsx`
+
+**Stats Cards (lines 40-45):**
+```typescript
+Page Views: 12,847 (+12.5%)
+Unique Visitors: 3,421 (+8.2%)
+Avg. Session: 4m 32s (-2.1%)
+Bounce Rate: 42.3% (-5.4%)
+```
+
+**Top Content (lines 47-53):**
+- 5 hardcoded articles with fake view counts
+
+**Chart Placeholders (lines 145-179):**
+- "Chart visualization coming soon"
+- "Engagement metrics coming soon"
+
+**Fix**:
+- Option A: Integrate Google Analytics API
+- Option B: Build custom analytics tracking
+- Option C: Remove page until real analytics available
+
+#### 5. **AdminHeader.tsx** - Static Notification Badge
+**File**: `frontend/src/components/admin/layout/AdminHeader.tsx:204-211`
+- Red notification dot always shows
+- No actual notification logic
+
+**Fix**: Connect to real notification/alert system or remove badge
+
+#### 6. **BlogEditor.tsx** - Coming Soon Message
+**File**: `frontend/src/pages/admin/BlogEditor.tsx:480`
+```
+"💡 HTML is supported. Rich text editor coming soon!"
+```
+**Fix**: Either implement rich text editor or remove the message
+
+#### 7. **SiteSettings.tsx** - 15+ Placeholder Input Fields
+**File**: `frontend/src/pages/admin/SiteSettings.tsx`
+- `placeholder="50+"` (Articles stat)
+- `placeholder="10K+"` (Readers stat)
+- `placeholder="https://yourdomain.com"` (Site URL)
+- `placeholder="contact@yourdomain.com"` (Emails)
+- etc.
+
+**Status**: These are acceptable - they're input placeholders, not fake data
+
+---
+
+### Phase 8: Dashboard Data Integration (NEW)
+
+**Priority**: High - Users seeing fake data is worse than empty sections
+
+#### 8.1 Create Aggregated Admin Stats Endpoint
+**Backend**: `/api/v1/admin/dashboard-stats`
+
+```python
+# Returns:
+{
+  "quick_stats": {
+    "total_posts": 24,        # from blog
+    "total_users": 156,       # from users
+    "total_tutorials": 12,    # from tutorials plugin
+    "total_courses": 5,       # from courses plugin
+    "posts_today": 2,
+    "users_today": 5
+  },
+  "recent_activity": [
+    {
+      "type": "user_registered",
+      "description": "sarah@example.com registered",
+      "timestamp": "2026-01-20T10:30:00Z",
+      "icon": "user-plus"
+    },
+    // ... real activity from activity_log table
+  ],
+  "attention_items": [
+    {
+      "type": "draft_posts",
+      "count": 3,
+      "priority": "medium",
+      "action_url": "/admin/posts?status=draft"
+    },
+    // ... real items needing attention
+  ],
+  "system_status": {
+    "api": "healthy",
+    "database": "healthy",  # actual DB ping
+    "plugins": {
+      "enabled": 3,
+      "total": 4
+    }
+  }
+}
+```
+
+#### 8.2 Create Blog Stats Endpoint (if missing)
+**Backend**: `/api/v1/blog/stats`
+
+```python
+{
+  "total_posts": 47,           # actual count
+  "total_views": 12500,        # if tracking views
+  "categories_count": 8,
+  "tags_count": 45,
+  "avg_read_time": "5 min"     # calculated from word count
+}
+```
+
+#### 8.3 Create Trending Tags Endpoint
+**Backend**: `/api/v1/blog/trending-tags`
+
+```python
+[
+  {
+    "tag": "Python",
+    "count": 24,              # posts with this tag
+    "trend": "up",            # comparing to last period
+    "percentage": 12          # growth percentage
+  }
+]
+```
+
+#### 8.4 Frontend Integration Tasks
+
+| Component | Current | Fix |
+|-----------|---------|-----|
+| AdminDashboard.tsx | Mock data | Call `/admin/dashboard-stats` |
+| BlogHeader.tsx | mockStats fallback | Call `/blog/stats` or pass from parent |
+| TrendingTopics.tsx | mockTrendingTopics | Call `/blog/trending-tags` |
+| AnalyticsPage.tsx | All fake | Either integrate GA or mark as "Coming Soon" properly |
+| AdminHeader.tsx | Static badge | Connect to notifications or hide |
+
+---
+
+### Files to Create/Modify for Phase 8
+
+**Backend (New Endpoints)**:
+| File | Purpose |
+|------|---------|
+| `/backend/app/api/v1/endpoints/admin/dashboard_stats.py` | Aggregated dashboard data |
+| `/backend/app/api/v1/endpoints/blog/stats.py` | Blog statistics (if missing) |
+| `/backend/app/api/v1/endpoints/blog/trending.py` | Trending tags calculation |
+
+**Frontend (Modifications)**:
+| File | Changes |
+|------|---------|
+| `AdminDashboard.tsx` | Replace mock data with API calls |
+| `BlogHeader.tsx` | Remove mockStats, require real data |
+| `TrendingTopics.tsx` | Remove mock, fetch from API |
+| `AnalyticsPage.tsx` | Either integrate real analytics or add proper "Coming Soon" UI |
+| `AdminHeader.tsx` | Fix notification badge logic |
+
+---
+
+### Success Criteria for Phase 8
+
+- [ ] Admin dashboard shows real post/user/tutorial counts
+- [ ] Recent activity feed shows actual logged activity
+- [ ] Attention items reflect real drafts/pending users
+- [ ] System status does actual health checks
+- [ ] Blog header stats are real or gracefully empty
+- [ ] Trending topics based on actual tag usage
+- [ ] No hardcoded fake numbers visible to users
+- [ ] Analytics page either works or clearly states "Coming Soon"

@@ -16,7 +16,13 @@ import {
   Plus,
   ArrowRight,
 } from 'lucide-react';
-import { blogApi } from '../../services/api';
+import {
+  adminStatsApi,
+  type DashboardResponse,
+  type ActivityItem as ApiActivityItem,
+  type AttentionItem as ApiAttentionItem,
+  type SystemStatusItem as ApiSystemStatusItem,
+} from '../../services/api/admin-stats.api';
 import { useAuth } from '../../state/contexts/AuthContext';
 import {
   QuickStatsCard,
@@ -37,6 +43,8 @@ interface DashboardStats {
   total_users?: number;
   total_tutorials?: number;
   total_courses?: number;
+  active_users?: number;
+  new_users_this_month?: number;
 }
 
 // Helper to get greeting based on time
@@ -69,66 +77,13 @@ export const AdminDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Mock data for features not yet connected to API
-  const [activities] = useState<ActivityItem[]>([
-    {
-      id: '1',
-      type: 'post_published',
-      title: 'New post published',
-      description: 'Docker Guide for Beginners',
-      timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-      user: { name: 'Admin' },
-    },
-    {
-      id: '2',
-      type: 'user_registered',
-      title: 'New user registered',
-      description: 'sarah@example.com',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-    },
-    {
-      id: '3',
-      type: 'tutorial_completed',
-      title: 'Tutorial completed',
-      description: 'Python Basics by john_doe',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
-      user: { name: 'John' },
-    },
-    {
-      id: '4',
-      type: 'achievement_unlocked',
-      title: 'Achievement unlocked',
-      description: 'Speed Demon (80+ WPM)',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
-      user: { name: 'Mike' },
-    },
-  ]);
-
-  const [attentionItems] = useState<AttentionItem[]>([
-    {
-      id: '1',
-      type: 'draft_posts',
-      title: 'Draft Posts',
-      count: 3,
-      description: 'Posts awaiting publication',
-      link: '/admin/posts?status=draft',
-      priority: 'medium',
-    },
-    {
-      id: '2',
-      type: 'pending_users',
-      title: 'Unverified Users',
-      count: 2,
-      description: 'Users pending email verification',
-      link: '/admin/users?verified=false',
-      priority: 'low',
-    },
-  ]);
-
-  const [systemStatus] = useState<SystemStatusItem[]>([
+  // Real data from API
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [attentionItems, setAttentionItems] = useState<AttentionItem[]>([]);
+  const [systemStatus, setSystemStatus] = useState<SystemStatusItem[]>([
     { id: 'api', name: 'API Server', status: 'healthy' },
     { id: 'database', name: 'Database', status: 'healthy' },
-    { id: 'plugins', name: 'Plugins', status: 'healthy', message: '3/4 active' },
+    { id: 'plugins', name: 'Plugins', status: 'healthy', message: 'Loading...' },
   ]);
 
   useEffect(() => {
@@ -140,8 +95,56 @@ export const AdminDashboard: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const statsData = await blogApi.getStats();
-      setStats(statsData);
+      const dashboardData = await adminStatsApi.getDashboard();
+
+      // Map stats
+      setStats({
+        total_posts: dashboardData.stats.total_posts,
+        total_categories: dashboardData.stats.total_categories,
+        total_views: dashboardData.stats.total_views,
+        total_tags: dashboardData.stats.total_tags,
+        draft_posts: dashboardData.stats.draft_posts,
+        total_users: dashboardData.stats.total_users,
+        total_tutorials: dashboardData.stats.total_tutorials,
+        total_courses: dashboardData.stats.total_courses,
+        active_users: dashboardData.stats.active_users,
+        new_users_this_month: dashboardData.stats.new_users_this_month,
+      });
+
+      // Map activities
+      setActivities(
+        dashboardData.recent_activities.map((a: ApiActivityItem) => ({
+          id: a.id,
+          type: a.type,
+          title: a.title,
+          description: a.description,
+          timestamp: a.timestamp,
+          user: a.user_name ? { name: a.user_name } : undefined,
+        }))
+      );
+
+      // Map attention items
+      setAttentionItems(
+        dashboardData.attention_items.map((item: ApiAttentionItem) => ({
+          id: item.id,
+          type: item.type,
+          title: item.title,
+          count: item.count,
+          description: item.description,
+          link: item.link,
+          priority: item.priority,
+        }))
+      );
+
+      // Map system status
+      setSystemStatus(
+        dashboardData.system_status.map((s: ApiSystemStatusItem) => ({
+          id: s.id,
+          name: s.name,
+          status: s.status,
+          message: s.message,
+        }))
+      );
     } catch (err: any) {
       console.error('Error loading dashboard data:', err);
       setError(err.message || 'Failed to load dashboard data');

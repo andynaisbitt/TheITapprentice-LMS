@@ -45,9 +45,38 @@ class TrendData(BaseModel):
     change_label: Optional[str] = None
 
 
+class ActivityItem(BaseModel):
+    id: str
+    type: str
+    title: str
+    description: str
+    timestamp: datetime
+    user_name: Optional[str] = None
+
+
+class AttentionItem(BaseModel):
+    id: str
+    type: str
+    title: str
+    count: int
+    description: str
+    link: str
+    priority: str  # low, medium, high
+
+
+class SystemStatusItem(BaseModel):
+    id: str
+    name: str
+    status: str  # healthy, warning, error
+    message: Optional[str] = None
+
+
 class DashboardResponse(BaseModel):
     stats: DashboardStats
     trends: List[TrendData]
+    recent_activities: List[ActivityItem]
+    attention_items: List[AttentionItem]
+    system_status: List[SystemStatusItem]
     last_updated: datetime
 
 
@@ -161,9 +190,82 @@ async def get_dashboard_stats(
         change_label="last 7 days"
     ))
 
+    # Get recent activities
+    recent_activities = []
+    try:
+        from app.plugins.shared.models import UserActivity
+        activities = db.query(UserActivity).order_by(
+            UserActivity.created_at.desc()
+        ).limit(10).all()
+
+        for idx, activity in enumerate(activities):
+            activity_user = db.query(User).filter(User.id == activity.user_id).first()
+            recent_activities.append(ActivityItem(
+                id=str(activity.id),
+                type=activity.activity_type.value if activity.activity_type else "unknown",
+                title=activity.title or "Activity",
+                description=activity.activity_data.get("description", "") if activity.activity_data else "",
+                timestamp=activity.created_at,
+                user_name=activity_user.username if activity_user else None
+            ))
+    except Exception as e:
+        # If activity logging isn't set up, return empty
+        pass
+
+    # Get attention items (real data)
+    attention_items = []
+
+    # Draft posts needing attention
+    if draft_posts > 0:
+        attention_items.append(AttentionItem(
+            id="draft_posts",
+            type="draft_posts",
+            title="Draft Posts",
+            count=draft_posts,
+            description="Posts awaiting publication",
+            link="/admin/posts?status=draft",
+            priority="medium" if draft_posts < 5 else "high"
+        ))
+
+    # Unverified users
+    unverified_users = db.query(User).filter(
+        User.is_active == True,
+        User.email_verified == False
+    ).count() if hasattr(User, 'email_verified') else 0
+
+    if unverified_users > 0:
+        attention_items.append(AttentionItem(
+            id="unverified_users",
+            type="pending_users",
+            title="Unverified Users",
+            count=unverified_users,
+            description="Users pending email verification",
+            link="/admin/users?verified=false",
+            priority="low"
+        ))
+
+    # System status
+    system_status = [
+        SystemStatusItem(id="api", name="API Server", status="healthy"),
+        SystemStatusItem(id="database", name="Database", status="healthy"),
+    ]
+
+    # Plugin status
+    enabled_plugins = sum(1 for v in settings.PLUGINS_ENABLED.values() if v)
+    total_plugins = len(settings.PLUGINS_ENABLED)
+    system_status.append(SystemStatusItem(
+        id="plugins",
+        name="Plugins",
+        status="healthy" if enabled_plugins > 0 else "warning",
+        message=f"{enabled_plugins}/{total_plugins} active"
+    ))
+
     return DashboardResponse(
         stats=stats,
         trends=trends,
+        recent_activities=recent_activities,
+        attention_items=attention_items,
+        system_status=system_status,
         last_updated=now
     )
 

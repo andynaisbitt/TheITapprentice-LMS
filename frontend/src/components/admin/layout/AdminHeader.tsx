@@ -81,7 +81,8 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
         flex items-center justify-between px-4
         z-30
         transition-all duration-300
-        ${sidebarCollapsed ? 'left-16' : 'left-60'}
+        left-0
+        ${sidebarCollapsed ? 'lg:left-16' : 'lg:left-60'}
       `}
     >
       {/* Left: Menu button (mobile) + Breadcrumbs */}

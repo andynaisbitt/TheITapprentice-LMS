@@ -93,6 +93,9 @@ class SiteSettings(Base):
     # Plugin Settings (JSON: {"tutorials": true, "courses": true, ...})
     plugins_enabled = Column(JSON, nullable=True, default=None)
 
+    # LMS Navigation Settings
+    show_lms_navigation = Column(Boolean, default=True, nullable=False)
+
     # Timestamps
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
 
