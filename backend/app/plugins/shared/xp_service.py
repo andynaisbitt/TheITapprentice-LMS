@@ -5,7 +5,7 @@ XP (Experience Points) Service
 Handles XP awarding, level calculation, and streak tracking across all LMS plugins.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Optional, Tuple
 from sqlalchemy.orm import Session
 import logging
@@ -288,8 +288,11 @@ class XPService:
         if not user:
             return {"error": "User not found"}
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         last_activity = user.updated_at or user.created_at
+        # Ensure last_activity is timezone-aware
+        if last_activity.tzinfo is None:
+            last_activity = last_activity.replace(tzinfo=timezone.utc)
         hours_since_activity = (now - last_activity).total_seconds() / 3600
 
         streak_xp = 0
