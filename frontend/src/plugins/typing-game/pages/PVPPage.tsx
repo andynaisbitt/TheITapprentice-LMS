@@ -168,7 +168,7 @@ export const PVPPage: React.FC = () => {
         p2_wpm: r.opponentWpm,
         p1_accuracy: r.playerAccuracy,
         p2_accuracy: r.opponentAccuracy,
-        winner: r.playerWpm > r.opponentWpm ? 1 : r.opponentWpm > r.playerWpm ? 2 : null,
+        winner: r.playerWpm > r.opponentWpm ? 1 : r.opponentWpm > r.playerWpm ? 2 : undefined,
       })),
       matchDuration: 180, // Placeholder - would be calculated from actual times
     });

@@ -417,7 +417,9 @@ const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
                 className="w-10 h-10 rounded-lg flex items-center justify-center"
                 style={{ backgroundColor: formData.color + '20' }}
               >
-                <IconComponent className="w-5 h-5" style={{ color: formData.color }} />
+                <span style={{ color: formData.color }}>
+                  <IconComponent className="w-5 h-5" />
+                </span>
               </div>
               <div>
                 <p className="font-medium text-gray-900 dark:text-white">
