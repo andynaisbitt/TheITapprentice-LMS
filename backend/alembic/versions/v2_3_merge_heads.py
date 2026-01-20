@@ -16,7 +16,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = "v2_3_merge_heads"
-down_revision: Union[str, Sequence[str]] = ("v1_10_achievements", "v2_2_add_plugins_enabled_to_site_settings")
+down_revision: Union[str, Sequence[str]] = ("v1_10_achievements", "v2_2_plugins_enabled")
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

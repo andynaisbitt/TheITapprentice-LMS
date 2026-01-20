@@ -16,7 +16,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = "v2_1_add_quizzes_plugin_tables"
+revision: str = "v2_1_quizzes"
 down_revision: Union[str, None] = "v2_0_enhance_tutorial_steps"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
