@@ -43,16 +43,70 @@ class TutorialCategoryResponse(TutorialCategoryBase):
 
 
 # ============================================================================
-# Tutorial Step Schemas
+# Tutorial Step Schemas - ENHANCED
 # ============================================================================
+
+# Content block types for flexible step content
+class ContentBlock(BaseModel):
+    """A single content block within a tutorial step"""
+    type: str  # text, heading, code, image, video, callout, quiz, diagram, terminal
+    content: dict  # Type-specific content
+    order: int = 0
+
+
+# Enhanced hint with type support
+class TutorialHint(BaseModel):
+    """A hint that can be text, code, or a link"""
+    content: str
+    type: str = "text"  # text, code, link, image
+    reveal_after_attempts: Optional[int] = None
+
+
+# Inline quiz question for knowledge checks
+class QuizQuestion(BaseModel):
+    """Optional inline quiz within a step"""
+    question: str
+    type: str = "multiple_choice"  # multiple_choice, true_false, short_answer, fill_blank
+    options: Optional[List[str]] = None  # For multiple choice
+    correct_answer: Optional[str] = None
+    explanation: Optional[str] = None
+
 
 class TutorialStepBase(BaseModel):
     step_order: int
     title: str
+
+    # Step classification
+    step_type: str = "theory"  # theory, practice, quiz, demonstration, exercise
+
+    # Main markdown content
     content: Optional[str] = None
+
+    # Rich content blocks (like courses)
+    content_blocks: List[dict] = []
+
+    # Primary media
+    media_type: str = "none"  # none, code, image, video, diagram, terminal
+    media_content: Optional[str] = None
+    media_language: Optional[str] = None
+    media_caption: Optional[str] = None
+
+    # Legacy code support (backward compatible)
     code_example: Optional[str] = None
     code_language: Optional[str] = None
-    hints: List[str] = []
+
+    # Hints - supports both simple strings and rich hint objects
+    hints: List = []
+
+    # Optional inline quiz
+    quiz_question: Optional[dict] = None
+
+    # Expected user action
+    expected_action: Optional[str] = None
+
+    # Time and XP
+    estimated_minutes: int = 5
+    xp_reward: int = 0
 
 
 class TutorialStepCreate(TutorialStepBase):
@@ -62,10 +116,20 @@ class TutorialStepCreate(TutorialStepBase):
 class TutorialStepUpdate(BaseModel):
     step_order: Optional[int] = None
     title: Optional[str] = None
+    step_type: Optional[str] = None
     content: Optional[str] = None
+    content_blocks: Optional[List[dict]] = None
+    media_type: Optional[str] = None
+    media_content: Optional[str] = None
+    media_language: Optional[str] = None
+    media_caption: Optional[str] = None
     code_example: Optional[str] = None
     code_language: Optional[str] = None
-    hints: Optional[List[str]] = None
+    hints: Optional[List] = None
+    quiz_question: Optional[dict] = None
+    expected_action: Optional[str] = None
+    estimated_minutes: Optional[int] = None
+    xp_reward: Optional[int] = None
 
 
 class TutorialStepResponse(TutorialStepBase):

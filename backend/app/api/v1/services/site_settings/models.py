@@ -1,6 +1,6 @@
 # Backend/app/api/v1/services/site_settings/models.py
 """Site settings model for SEO, analytics, and site configuration"""
-from sqlalchemy import Column, Integer, String, DateTime, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, JSON
 from sqlalchemy.sql import func
 from app.core.database import Base
 
@@ -89,6 +89,9 @@ class SiteSettings(Base):
     smtp_use_tls = Column(Boolean, default=True, nullable=True)
     smtp_from_email = Column(String(255), nullable=True)
     smtp_from_name = Column(String(255), nullable=True)
+
+    # Plugin Settings (JSON: {"tutorials": true, "courses": true, ...})
+    plugins_enabled = Column(JSON, nullable=True, default=None)
 
     # Timestamps
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())

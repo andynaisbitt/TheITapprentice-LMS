@@ -98,10 +98,10 @@ export const UserDashboard = () => {
 
     actions.push({
       icon: Trophy,
-      label: 'Achievements',
-      href: '/profile#achievements',
+      label: 'Leaderboard',
+      href: '/leaderboard',
       color: 'from-yellow-500 to-orange-600',
-      description: 'View all achievements',
+      description: 'See top learners',
     });
 
     // Authors and above can write blog posts

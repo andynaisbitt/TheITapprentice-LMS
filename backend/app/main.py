@@ -32,6 +32,10 @@ from app.api.v1.endpoints.newsletter.public import router as newsletter_public_r
 from app.api.v1.endpoints.newsletter.admin import router as newsletter_admin_router
 from app.api.v1.endpoints.content import router as content_router
 from app.api.v1.endpoints.admin.users import router as admin_users_router
+from app.api.v1.endpoints.admin.plugins import router as admin_plugins_router
+from app.api.v1.endpoints.admin.system import router as admin_system_router
+from app.api.v1.endpoints.admin.activities import router as admin_activities_router
+from app.api.v1.endpoints.admin.stats import router as admin_stats_router
 
 # Plugin routers (conditional imports based on settings.PLUGINS_ENABLED)
 if settings.PLUGINS_ENABLED.get("tutorials", False):
@@ -42,6 +46,10 @@ if settings.PLUGINS_ENABLED.get("courses", False):
 
 if settings.PLUGINS_ENABLED.get("typing_game", False):
     from app.plugins.typing_game.routes import router as typing_game_router
+    from app.websocket.pvp_handler import pvp_router as pvp_websocket_router
+
+if settings.PLUGINS_ENABLED.get("quizzes", False):
+    from app.plugins.quizzes.routes import router as quizzes_router
 
 # Shared plugin routes (XP, Achievements, Progress - always enabled)
 from app.plugins.shared.routes import router as progress_router
@@ -94,6 +102,10 @@ app.include_router(content_router, prefix="/api/v1", tags=["Content - Unified"])
 app.include_router(rss_router, prefix="/api/v1", tags=["RSS/Sitemap"])
 app.include_router(sitemap_router, prefix="/api/v1", tags=["RSS/Sitemap"])
 app.include_router(admin_users_router, prefix="/api/v1", tags=["Admin - Users"])
+app.include_router(admin_plugins_router, prefix="/api/v1", tags=["Admin - Plugins"])
+app.include_router(admin_system_router, prefix="/api/v1", tags=["Admin - System"])
+app.include_router(admin_activities_router, prefix="/api/v1", tags=["Admin - Activities"])
+app.include_router(admin_stats_router, prefix="/api/v1", tags=["Admin - Stats"])
 
 # Mount plugin routers (conditional based on settings.PLUGINS_ENABLED)
 if settings.PLUGINS_ENABLED.get("tutorials", False):
@@ -104,6 +116,11 @@ if settings.PLUGINS_ENABLED.get("courses", False):
 
 if settings.PLUGINS_ENABLED.get("typing_game", False):
     app.include_router(typing_game_router, prefix="/api/v1", tags=["Typing Game - LMS"])
+    # WebSocket routes for PVP (no prefix - WebSocket paths are absolute)
+    app.include_router(pvp_websocket_router, tags=["Typing Game - WebSocket"])
+
+if settings.PLUGINS_ENABLED.get("quizzes", False):
+    app.include_router(quizzes_router, prefix="/api/v1", tags=["Quizzes - LMS"])
 
 # Shared plugin routes (XP, Achievements, Progress)
 app.include_router(progress_router, prefix="/api/v1", tags=["Progress & Achievements"])

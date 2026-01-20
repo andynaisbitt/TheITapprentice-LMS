@@ -19,6 +19,9 @@ from app.users.models import User
 
 from . import crud, schemas
 from .models import Tutorial, TutorialProgress
+from app.plugins.shared.xp_service import xp_service
+from app.plugins.shared.achievement_service import achievement_service
+from app.plugins.shared.models import ActivityType
 
 logger = logging.getLogger(__name__)
 
@@ -218,6 +221,10 @@ async def complete_tutorial_step(
             detail="Tutorial step not found"
         )
 
+    # Check if step was already completed (to avoid double XP)
+    existing_progress = crud.get_tutorial_progress(db, current_user.id, tutorial_id)
+    step_already_completed = existing_progress and step_id in existing_progress.completed_step_ids
+
     # Complete the step
     progress = crud.complete_tutorial_step(db, current_user.id, tutorial_id, step_id)
 
@@ -226,30 +233,130 @@ async def complete_tutorial_step(
     completed_steps = len(progress.completed_step_ids)
     progress_percentage = int((completed_steps / total_steps * 100)) if total_steps > 0 else 0
 
+    # Track total XP awarded this request
+    xp_awarded = 0
+
+    # Award per-step XP if step wasn't already completed
+    if not step_already_completed:
+        step_xp_result = xp_service.award_xp(
+            db=db,
+            user_id=current_user.id,
+            action="tutorial_step_complete",
+            reason=f"Completed step: {step.title}"
+        )
+        xp_awarded += step_xp_result.get("xp_awarded", 0)
+
+        # Log step completion activity
+        achievement_service.log_activity(
+            db=db,
+            user_id=current_user.id,
+            activity_type=ActivityType.TUTORIAL_STEP,
+            title=f"Completed step: {step.title}",
+            reference_type="tutorial_step",
+            reference_id=str(step_id),
+            activity_data={
+                "tutorial_id": tutorial_id,
+                "tutorial_title": tutorial.title,
+                "step_order": step.step_order,
+                "progress_percentage": progress_percentage
+            },
+            xp_earned=step_xp_result.get("xp_awarded", 0)
+        )
+
+        logger.info(f"User {current_user.id} completed step {step_id}, awarded {step_xp_result.get('xp_awarded', 0)} XP")
+
     # Check if tutorial is complete
     tutorial_completed = progress.status == "completed"
-    xp_awarded = None
 
     # Award XP if tutorial just completed
     if tutorial_completed and progress.completed_at:
-        xp_awarded = tutorial.xp_reward
-        # TODO: Implement XP system integration
-        logger.info(f"User {current_user.id} completed tutorial {tutorial_id}, awarded {xp_awarded} XP")
+        # Use tutorial's custom xp_reward if set, otherwise use default
+        if tutorial.xp_reward and tutorial.xp_reward > 0:
+            # Award custom XP amount using a multiplier
+            base_xp = xp_service.config.REWARDS.get("tutorial_complete", 100)
+            multiplier = tutorial.xp_reward / base_xp if base_xp > 0 else 1.0
+            xp_result = xp_service.award_xp(
+                db=db,
+                user_id=current_user.id,
+                action="tutorial_complete",
+                multiplier=multiplier,
+                reason=f"Completed tutorial: {tutorial.title}"
+            )
+        else:
+            # Award default XP
+            xp_result = xp_service.award_xp(
+                db=db,
+                user_id=current_user.id,
+                action="tutorial_complete",
+                reason=f"Completed tutorial: {tutorial.title}"
+            )
+
+        xp_awarded += xp_result.get("xp_awarded", 0)
+
+        # Check for level up
+        if xp_result.get("level_up"):
+            logger.info(f"User {current_user.id} leveled up to {xp_result.get('new_level')}!")
+
+            # Log level up activity
+            achievement_service.log_activity(
+                db=db,
+                user_id=current_user.id,
+                activity_type=ActivityType.LEVEL_UP,
+                title=f"Reached level {xp_result.get('new_level')}!",
+                activity_data={
+                    "old_level": xp_result.get("old_level"),
+                    "new_level": xp_result.get("new_level"),
+                    "trigger": "tutorial_complete"
+                }
+            )
+
+        # Log tutorial completion activity
+        achievement_service.log_activity(
+            db=db,
+            user_id=current_user.id,
+            activity_type=ActivityType.TUTORIAL_COMPLETE,
+            title=f"Completed tutorial: {tutorial.title}",
+            reference_type="tutorial",
+            reference_id=str(tutorial_id),
+            activity_data={
+                "difficulty": tutorial.difficulty,
+                "time_spent_minutes": progress.time_spent_minutes,
+                "total_steps": total_steps
+            },
+            xp_earned=xp_result.get("xp_awarded", 0)
+        )
+
+        # Check and unlock any achievements
+        unlocked_achievements = achievement_service.check_and_unlock_achievements(
+            db=db,
+            user_id=current_user.id,
+            action="tutorial_complete",
+            context={
+                "tutorial_id": tutorial_id,
+                "difficulty": tutorial.difficulty,
+                "time_spent_minutes": progress.time_spent_minutes
+            }
+        )
+
+        if unlocked_achievements:
+            logger.info(f"User {current_user.id} unlocked {len(unlocked_achievements)} achievement(s)")
+
+        logger.info(f"User {current_user.id} completed tutorial {tutorial_id}, awarded {xp_result.get('xp_awarded', 0)} XP")
 
     # Find next step
     next_step_id = None
     if not tutorial_completed:
         # Get next uncompleted step
-        for step in sorted(tutorial.steps, key=lambda s: s.step_order):
-            if step.id not in progress.completed_step_ids:
-                next_step_id = step.id
+        for s in sorted(tutorial.steps, key=lambda x: x.step_order):
+            if s.id not in progress.completed_step_ids:
+                next_step_id = s.id
                 break
 
     return schemas.CompleteStepResponse(
         message="Step completed successfully",
         progress_percentage=progress_percentage,
         tutorial_completed=tutorial_completed,
-        xp_awarded=xp_awarded,
+        xp_awarded=xp_awarded if xp_awarded > 0 else None,
         next_step_id=next_step_id
     )
 

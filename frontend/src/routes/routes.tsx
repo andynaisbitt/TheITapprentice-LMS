@@ -32,6 +32,7 @@ const Unsubscribe = lazy(() => import('../pages/Unsubscribe'));
 const CanonicalResolver = lazy(() => import('../components/CanonicalResolver'));
 const UserDashboard = lazy(() => import('../pages/user/UserDashboard'));
 const Profile = lazy(() => import('../pages/user/Profile'));
+const XPLeaderboardPage = lazy(() => import('../pages/user/XPLeaderboardPage'));
 
 // Tutorial plugin pages
 const TutorialsPage = lazy(() => import('../plugins/tutorials/pages/TutorialsPage'));
@@ -57,6 +58,32 @@ const CourseEditorPage = lazy(() => import('../plugins/courses/pages/admin/Cours
 const TypingGamePage = lazy(() => import('../plugins/typing-game/pages/TypingGamePage'));
 const TypingGamePlayPage = lazy(() => import('../plugins/typing-game/pages/TypingGamePlayPage'));
 const TypingLeaderboardPage = lazy(() => import('../plugins/typing-game/pages/TypingLeaderboardPage'));
+const PVPPage = lazy(() => import('../plugins/typing-game/pages/PVPPage'));
+
+// Quiz plugin pages
+const QuizzesPage = lazy(() => import('../plugins/quizzes/pages/QuizzesPage'));
+const QuizPlayerPage = lazy(() => import('../plugins/quizzes/pages/QuizPlayerPage'));
+
+// Quiz admin pages
+const QuizManagerPage = lazy(() => import('../plugins/quizzes/pages/admin/QuizManagerPage'));
+const QuizEditorPage = lazy(() => import('../plugins/quizzes/pages/admin/QuizEditorPage'));
+
+// New Admin Pages (v2.1)
+const TutorialCategoryManager = lazy(() => import('../pages/admin/TutorialCategoryManager'));
+const PluginManager = lazy(() => import('../pages/admin/PluginManager'));
+const SystemHealthPage = lazy(() => import('../pages/admin/SystemHealthPage'));
+const ActivityLogPage = lazy(() => import('../pages/admin/ActivityLogPage'));
+const AchievementsAdmin = lazy(() => import('../pages/admin/AchievementsAdmin'));
+const AnalyticsPage = lazy(() => import('../pages/admin/AnalyticsPage'));
+const LMSProgressPage = lazy(() => import('../pages/admin/LMSProgressPage'));
+
+// New Admin Pages (v2.2) - Full Implementations
+const RolesAdmin = lazy(() => import('../pages/admin/RolesAdmin'));
+const XPConfigAdmin = lazy(() => import('../pages/admin/XPConfigAdmin'));
+const CourseEnrollmentsAdmin = lazy(() => import('../pages/admin/CourseEnrollmentsAdmin'));
+const WordListsAdmin = lazy(() => import('../pages/admin/WordListsAdmin'));
+const TypingChallengesAdmin = lazy(() => import('../pages/admin/TypingChallengesAdmin'));
+const GameLeaderboardAdmin = lazy(() => import('../pages/admin/GameLeaderboardAdmin'));
 
 // Loading component
 const PageLoader = () => (
@@ -212,6 +239,16 @@ export const AppRoutes = () => {
           }
         />
 
+        {/* XP Leaderboard - Public */}
+        <Route
+          path="/leaderboard"
+          element={
+            <Layout>
+              <XPLeaderboardPage />
+            </Layout>
+          }
+        />
+
         {/* Tutorial Routes - LMS Plugin */}
         <Route
           path="/tutorials"
@@ -298,6 +335,34 @@ export const AppRoutes = () => {
           element={
             <Layout>
               <TypingLeaderboardPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/games/typing/pvp"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <PVPPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Quiz Routes - LMS Plugin */}
+        <Route
+          path="/quizzes"
+          element={
+            <Layout>
+              <QuizzesPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/quizzes/:quizId"
+          element={
+            <Layout>
+              <QuizPlayerPage />
             </Layout>
           }
         />
@@ -557,6 +622,176 @@ export const AppRoutes = () => {
             <AdminRoute>
               <AdminLayout>
                 <CourseEditorPage />
+              </AdminLayout>
+            </AdminRoute>
+          }
+        />
+
+        {/* Admin Quiz Routes - LMS Plugin */}
+        <Route
+          path="/admin/quizzes"
+          element={
+            <AdminRoute>
+              <AdminLayout>
+                <QuizManagerPage />
+              </AdminLayout>
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/quizzes/new"
+          element={
+            <AdminRoute>
+              <AdminLayout>
+                <QuizEditorPage />
+              </AdminLayout>
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/quizzes/:id/edit"
+          element={
+            <AdminRoute>
+              <AdminLayout>
+                <QuizEditorPage />
+              </AdminLayout>
+            </AdminRoute>
+          }
+        />
+
+        {/* New Admin Routes - v2.1 */}
+        <Route
+          path="/admin/analytics"
+          element={
+            <AdminRoute>
+              <AdminLayout>
+                <AnalyticsPage />
+              </AdminLayout>
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/tutorial-categories"
+          element={
+            <AdminRoute>
+              <AdminLayout>
+                <TutorialCategoryManager />
+              </AdminLayout>
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/lms/progress"
+          element={
+            <AdminRoute>
+              <AdminLayout>
+                <LMSProgressPage />
+              </AdminLayout>
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/achievements"
+          element={
+            <AdminRoute>
+              <AdminLayout>
+                <AchievementsAdmin />
+              </AdminLayout>
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/activity"
+          element={
+            <AdminRoute>
+              <AdminLayout>
+                <ActivityLogPage />
+              </AdminLayout>
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/plugins"
+          element={
+            <AdminRoute>
+              <AdminLayout>
+                <PluginManager />
+              </AdminLayout>
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/system"
+          element={
+            <AdminRoute>
+              <AdminLayout>
+                <SystemHealthPage />
+              </AdminLayout>
+            </AdminRoute>
+          }
+        />
+
+        {/* Admin User & XP Routes - v2.2 */}
+        <Route
+          path="/admin/users/roles"
+          element={
+            <AdminRoute>
+              <AdminLayout>
+                <RolesAdmin />
+              </AdminLayout>
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/xp-config"
+          element={
+            <AdminRoute>
+              <AdminLayout>
+                <XPConfigAdmin />
+              </AdminLayout>
+            </AdminRoute>
+          }
+        />
+
+        {/* Admin Course Enrollments - v2.2 */}
+        <Route
+          path="/admin/courses/enrollments"
+          element={
+            <AdminRoute>
+              <AdminLayout>
+                <CourseEnrollmentsAdmin />
+              </AdminLayout>
+            </AdminRoute>
+          }
+        />
+
+        {/* Admin Game Routes - v2.2 */}
+        <Route
+          path="/admin/games/word-lists"
+          element={
+            <AdminRoute>
+              <AdminLayout>
+                <WordListsAdmin />
+              </AdminLayout>
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/games/challenges"
+          element={
+            <AdminRoute>
+              <AdminLayout>
+                <TypingChallengesAdmin />
+              </AdminLayout>
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/games/leaderboard"
+          element={
+            <AdminRoute>
+              <AdminLayout>
+                <GameLeaderboardAdmin />
               </AdminLayout>
             </AdminRoute>
           }

@@ -14,6 +14,8 @@ from app.core.rate_limit_middleware import limiter, user_limiter
 from app.users.models import User
 from app.users.schemas import UserResponse, UserProfileUpdate, UserPasswordChange
 from app.auth.dependencies import get_current_user
+from app.plugins.shared.xp_service import xp_service
+from app.plugins.shared.achievement_service import achievement_service
 import secrets
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -61,11 +63,18 @@ async def login(
         )
 
     safe_logger.info("User authenticated: {email} (Role: {role})", email=user.email, role=user.role)
-    
+
     # Update last login (using timezone-aware datetime)
     user.last_login = datetime.now(timezone.utc)
     user.login_count += 1
     db.commit()
+
+    # Check and update daily streak
+    streak_result = xp_service.check_and_update_streak(db, user.id)
+    safe_logger.info("Streak updated for {email}: {streak} days", email=user.email, streak=streak_result.get("streak", 0))
+
+    # Check for streak-based achievements
+    achievement_service.check_and_unlock_achievements(db, user.id, "daily_login", {"streak": streak_result.get("streak", 0)})
     
     # Create access token
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -121,7 +130,9 @@ async def login(
             "subscription_plan": user.subscription_plan,
             "total_points": user.total_points,
             "level": user.level,
+            "current_streak": user.current_streak,
         },
+        "streak": streak_result,  # Include streak info in response
         "csrf_token": csrf_token,
         "access_token": access_token,  # For WebSocket authentication
         "token_type": "bearer"

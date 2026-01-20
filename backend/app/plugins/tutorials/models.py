@@ -79,7 +79,18 @@ class Tutorial(Base):
 
 
 class TutorialStep(Base):
-    """Individual steps within a tutorial"""
+    """
+    Individual steps within a tutorial - ENHANCED WITH CONTENT BLOCKS
+
+    Supports multiple content types beyond just code:
+    - Text/markdown content
+    - Code examples with syntax highlighting
+    - Images with captions
+    - Videos (embedded or uploaded)
+    - Diagrams and terminal outputs
+    - Inline quizzes for knowledge checks
+    - Rich content blocks (like courses)
+    """
     __tablename__ = "tutorial_steps"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -89,15 +100,61 @@ class TutorialStep(Base):
     step_order = Column(Integer, nullable=False)
     title = Column(String(255), nullable=False)
 
-    # Content
-    content = Column(Text, nullable=True)  # Markdown content
+    # Step type - what kind of learning activity is this?
+    # theory: Reading/learning content
+    # practice: Hands-on exercise
+    # quiz: Knowledge check
+    # demonstration: Watch and learn
+    # exercise: Apply what you learned
+    step_type = Column(String(20), default="theory")  # theory, practice, quiz, demonstration, exercise
 
-    # Code example (optional)
+    # Main content (markdown)
+    content = Column(Text, nullable=True)
+
+    # CONTENT BLOCKS - Flexible array of content blocks (like courses)
+    # Each block: { "type": "text|heading|code|image|video|callout|quiz", "content": {...}, "order": 0 }
+    # Example:
+    # [
+    #   { "type": "text", "content": { "text": "Welcome to..." }, "order": 0 },
+    #   { "type": "code", "content": { "code": "print('Hello')", "language": "python" }, "order": 1 },
+    #   { "type": "image", "content": { "url": "...", "caption": "..." }, "order": 2 }
+    # ]
+    content_blocks = Column(JSON, default=list)
+
+    # Primary media for this step (legacy support + quick access)
+    # none: No media, just text content
+    # code: Code snippet
+    # image: Image/diagram
+    # video: Video content
+    # diagram: Technical diagram
+    # terminal: Terminal/CLI output
+    media_type = Column(String(20), default="none")  # none, code, image, video, diagram, terminal
+    media_content = Column(Text, nullable=True)  # URL, code, or embedded content
+    media_language = Column(String(50), nullable=True)  # For code: python, javascript, etc.
+    media_caption = Column(String(500), nullable=True)  # Alt text or caption
+
+    # Code example (legacy - kept for backward compatibility)
     code_example = Column(Text, nullable=True)
-    code_language = Column(String(50), nullable=True)  # python, javascript, bash, etc.
+    code_language = Column(String(50), nullable=True)
 
-    # Hints (progressive hints for learners)
-    hints = Column(JSON, default=list)  # ["Hint 1", "Hint 2", "Hint 3"]
+    # Enhanced hints - array of hint objects
+    # [{ "content": "Try...", "type": "text|code|link", "reveal_after_attempts": 1 }]
+    # Falls back to simple strings for backward compatibility
+    hints = Column(JSON, default=list)
+
+    # Optional inline quiz/knowledge check
+    # { "question": "...", "type": "multiple_choice|true_false|short_answer",
+    #   "options": [...], "correct_answer": ..., "explanation": "..." }
+    quiz_question = Column(JSON, nullable=True)
+
+    # What should the user do/accomplish in this step?
+    expected_action = Column(Text, nullable=True)
+
+    # Time estimate for this step
+    estimated_minutes = Column(Integer, default=5)
+
+    # XP reward for completing this step (0 = use default from config)
+    xp_reward = Column(Integer, default=0)
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)

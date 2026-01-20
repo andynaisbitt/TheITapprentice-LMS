@@ -17,6 +17,7 @@ import {
   BookOpen,
   Library,
   Keyboard,
+  ClipboardList,
   TrendingUp,
   Users,
   Shield,
@@ -93,6 +94,14 @@ export const adminNavigation: NavSection[] = [
           { label: 'All Courses', path: '/admin/courses' },
           { label: 'New Course', path: '/admin/courses/new' },
           { label: 'Enrollments', path: '/admin/courses/enrollments' },
+        ],
+      },
+      {
+        label: 'Quizzes',
+        icon: ClipboardList,
+        children: [
+          { label: 'All Quizzes', path: '/admin/quizzes' },
+          { label: 'New Quiz', path: '/admin/quizzes/new' },
         ],
       },
       {

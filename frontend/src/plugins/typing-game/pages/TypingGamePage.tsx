@@ -76,8 +76,7 @@ export const TypingGamePage: React.FC = () => {
       description: 'Challenge other players',
       icon: Swords,
       color: 'from-red-500 to-orange-600',
-      link: '/games/typing/pvp',
-      badge: 'Coming Soon'
+      link: '/games/typing/pvp'
     }
   ];
 
