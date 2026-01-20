@@ -147,7 +147,7 @@ class ActivityCreate(BaseModel):
     reference_type: Optional[str] = None
     reference_id: Optional[str] = None
     title: str
-    metadata: Optional[Dict[str, Any]] = None
+    activity_data: Optional[Dict[str, Any]] = None
     xp_earned: int = 0
 
 
@@ -159,7 +159,7 @@ class ActivityResponse(BaseModel):
     reference_type: Optional[str] = None
     reference_id: Optional[str] = None
     title: str
-    metadata: Optional[Dict[str, Any]] = None
+    activity_data: Optional[Dict[str, Any]] = None
     xp_earned: int
     created_at: datetime
 

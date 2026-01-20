@@ -58,7 +58,7 @@ def upgrade() -> None:
         sa.Column('reference_type', sa.String(50), nullable=True),
         sa.Column('reference_id', sa.String(100), nullable=True),
         sa.Column('title', sa.String(300), nullable=True),
-        sa.Column('metadata', sa.JSON, nullable=True),
+        sa.Column('activity_data', sa.JSON, nullable=True),
         sa.Column('xp_earned', sa.Integer, default=0),
         sa.Column('created_at', sa.DateTime, default=datetime.utcnow, index=True),
     )

@@ -120,7 +120,7 @@ class UserActivity(Base):
 
     # Activity details
     title = Column(String(300))  # Human-readable description
-    metadata = Column(JSON)  # Additional context data
+    activity_data = Column(JSON)  # Additional context data (renamed from 'metadata' - reserved by SQLAlchemy)
     xp_earned = Column(Integer, default=0)
 
     created_at = Column(DateTime, default=datetime.utcnow, index=True)

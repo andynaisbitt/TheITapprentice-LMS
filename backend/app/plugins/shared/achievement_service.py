@@ -310,7 +310,7 @@ class AchievementService:
         title: str,
         reference_type: Optional[str] = None,
         reference_id: Optional[str] = None,
-        metadata: Optional[Dict] = None,
+        activity_data: Optional[Dict] = None,
         xp_earned: int = 0
     ):
         """Log user activity"""
@@ -320,7 +320,7 @@ class AchievementService:
             title=title,
             reference_type=reference_type,
             reference_id=reference_id,
-            metadata=metadata,
+            activity_data=activity_data,
             xp_earned=xp_earned
         )
         db.add(activity)
@@ -356,13 +356,13 @@ class AchievementService:
         title: str,
         reference_type: Optional[str] = None,
         reference_id: Optional[str] = None,
-        metadata: Optional[Dict] = None,
+        activity_data: Optional[Dict] = None,
         xp_earned: int = 0
     ) -> UserActivity:
         """Public method to log activity"""
         self._log_activity(
             db, user_id, activity_type, title,
-            reference_type, reference_id, metadata, xp_earned
+            reference_type, reference_id, activity_data, xp_earned
         )
         db.commit()
         return db.query(UserActivity).filter(
