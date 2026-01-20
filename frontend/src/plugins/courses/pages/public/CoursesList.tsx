@@ -24,10 +24,13 @@ import { coursesApi } from '../../services/coursesApi';
 import { Course, CourseLevel, CourseFilters } from '../../types';
 
 // Placeholder components until fully implemented
-const XPBadge: React.FC<{ xp?: number }> = ({ xp }) => xp ? <span className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-2 py-1 rounded-full">{xp} XP</span> : null;
-const SkillBadges: React.FC<{ skills?: string[] }> = ({ skills }) => skills?.length ? <div className="flex gap-1 flex-wrap">{skills.map(s => <span key={s} className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">{s}</span>)}</div> : null;
-const CategoryBadge: React.FC<{ category?: string }> = ({ category }) => category ? <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">{category}</span> : null;
-const DailyChallengesWidget: React.FC = () => null;
+const XPBadge: React.FC<{ xp?: number; size?: string; variant?: string; showLabel?: boolean }> = ({ xp }) => xp ? <span className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-2 py-1 rounded-full">{xp} XP</span> : null;
+const SkillBadges: React.FC<{ skills?: string[]; limit?: number; size?: string; showIcon?: boolean }> = ({ skills, limit }) => {
+  const displaySkills = limit ? skills?.slice(0, limit) : skills;
+  return displaySkills?.length ? <div className="flex gap-1 flex-wrap">{displaySkills.map(s => <span key={s} className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">{s}</span>)}</div> : null;
+};
+const CategoryBadge: React.FC<{ category?: string; categoryId?: number; size?: string }> = ({ category }) => category ? <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">{category}</span> : null;
+const DailyChallengesWidget: React.FC<{ variant?: string }> = () => null;
 
 const CoursesList: React.FC = () => {
   const navigate = useNavigate();

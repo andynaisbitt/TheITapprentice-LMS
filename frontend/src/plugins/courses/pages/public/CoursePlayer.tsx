@@ -204,31 +204,15 @@ const CoursePlayer: React.FC = () => {
       }));
 
       // Show XP notification if course was just completed
-      if (result.course_complete && result.xp_gains && result.xp_gains.length > 0) {
-        showXPGain({
-          totalXP: result.total_xp_gained || 0,
-          skills: result.xp_gains.map((xp: any) => ({
-            name: xp.skill_name,
-            slug: xp.skill_slug,
-            xp: xp.xp_gained,
-            leveledUp: xp.leveled_up,
-            newLevel: xp.new_level
-          })),
-          source: 'course'
-        });
+      const resultAny = result as any;
+      if (result.course_complete && resultAny.xp_gains && resultAny.xp_gains.length > 0) {
+        showXPGain(resultAny.total_xp_gained || 0, 'Course completed');
 
         // Show achievement notifications if any were unlocked
-        result.xp_gains.forEach((xpGain: any) => {
+        resultAny.xp_gains.forEach((xpGain: any) => {
           if (xpGain.achievements_unlocked && xpGain.achievements_unlocked.length > 0) {
             xpGain.achievements_unlocked.forEach((achievement: any) => {
-              showAchievementUnlock({
-                achievement_id: achievement.achievement_id,
-                name: achievement.name,
-                description: achievement.description,
-                category: achievement.category,
-                tier: achievement.tier,
-                points: achievement.points
-              });
+              showAchievementUnlock(achievement);
             });
           }
         });
@@ -242,8 +226,8 @@ const CoursePlayer: React.FC = () => {
           module_completed: result.module_completed,
           course_complete: result.course_complete,
           was_already_complete: courseWasAlreadyComplete,
-          certificate: result.certificate,
-          certificate_id: result.certificate_id
+          certificate: resultAny.certificate,
+          certificate_id: resultAny.certificate_id
         });
         setCompletionData(result);
         setShowCompletionModal(true);

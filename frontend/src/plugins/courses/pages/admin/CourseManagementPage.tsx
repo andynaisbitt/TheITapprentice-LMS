@@ -84,7 +84,7 @@ const CourseManagementPage: React.FC = () => {
           <div className="mt-6 flex gap-4">
             <select
               value={filterStatus || ''}
-              onChange={(e) => setFilterStatus(e.target.value || undefined)}
+              onChange={(e) => setFilterStatus(e.target.value as CourseStatus || undefined)}
               className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
               <option value="">All Status</option>
