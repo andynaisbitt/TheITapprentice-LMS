@@ -112,7 +112,7 @@ export interface UsePVPWebSocketReturn {
 }
 
 export function usePVPWebSocket(options: UsePVPWebSocketOptions): UsePVPWebSocketReturn {
-  const { token } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -157,8 +157,8 @@ export function usePVPWebSocket(options: UsePVPWebSocketOptions): UsePVPWebSocke
 
   // Connect to WebSocket
   const connect = useCallback(() => {
-    if (!matchId || !token) {
-      setError('Missing match ID or authentication token');
+    if (!matchId || !isAuthenticated) {
+      setError('Missing match ID or not authenticated');
       return;
     }
 
@@ -169,10 +169,10 @@ export function usePVPWebSocket(options: UsePVPWebSocketOptions): UsePVPWebSocke
     setIsConnecting(true);
     setError(null);
 
-    // Build WebSocket URL
+    // Build WebSocket URL (cookies handle authentication)
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
-    const wsUrl = `${protocol}//${host}/ws/pvp/${matchId}?token=${encodeURIComponent(token)}`;
+    const wsUrl = `${protocol}//${host}/ws/pvp/${matchId}`;
 
     try {
       const ws = new WebSocket(wsUrl);
@@ -280,7 +280,7 @@ export function usePVPWebSocket(options: UsePVPWebSocketOptions): UsePVPWebSocke
       setError('Failed to connect to game server');
       setIsConnecting(false);
     }
-  }, [matchId, token, onMatchJoined, onOpponentJoined, onOpponentProgress, onOpponentReady, onRoundStarted, onOpponentFinished, onRoundEnded, onMatchEnded, onOpponentDisconnected, onOpponentFound, onChat, onError]);
+  }, [matchId, isAuthenticated, onMatchJoined, onOpponentJoined, onOpponentProgress, onOpponentReady, onRoundStarted, onOpponentFinished, onRoundEnded, onMatchEnded, onOpponentDisconnected, onOpponentFound, onChat, onError]);
 
   // Send message helper
   const sendMessage = useCallback((message: Record<string, unknown>) => {

@@ -53,7 +53,15 @@ export const TypingGamePage: React.FC = () => {
     fetchData();
   }, [isAuthenticated]);
 
-  const gameModes = [
+  const gameModes: Array<{
+    id: string;
+    title: string;
+    description: string;
+    icon: React.ComponentType<{ className?: string }>;
+    color: string;
+    link: string;
+    badge?: string;
+  }> = [
     {
       id: 'quick-brown-fox',
       title: 'Quick Brown Fox',

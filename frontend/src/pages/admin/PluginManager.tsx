@@ -17,7 +17,7 @@ import {
   ExternalLink,
   RefreshCw,
 } from 'lucide-react';
-import { api } from '../../api/client';
+import { apiClient } from '../../services/api/client';
 
 interface PluginStats {
   [key: string]: number | string;
@@ -58,7 +58,7 @@ export const PluginManager: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.get<PluginListResponse>('/api/v1/admin/plugins');
+      const response = await apiClient.get<PluginListResponse>('/api/v1/admin/plugins');
       setPlugins(response.data.plugins);
       setTotalEnabled(response.data.total_enabled);
       setTotalAvailable(response.data.total_available);
@@ -73,7 +73,7 @@ export const PluginManager: React.FC = () => {
   const togglePlugin = async (pluginId: string, currentEnabled: boolean) => {
     setSaving(pluginId);
     try {
-      const response = await api.put(`/api/v1/admin/plugins/${pluginId}/toggle`, {
+      const response = await apiClient.put(`/api/v1/admin/plugins/${pluginId}/toggle`, {
         enabled: !currentEnabled,
       });
 

@@ -3,7 +3,7 @@
  * Quiz Plugin Data Hooks
  */
 import { useState, useEffect, useCallback } from 'react';
-import { api } from '../../../api/client';
+import { apiClient } from '../../../services/api/client';
 import type {
   Quiz,
   QuizSummary,
@@ -43,7 +43,7 @@ export function useQuizzes(options: UseQuizzesOptions = {}) {
       if (options.skip) params.append('skip', options.skip.toString());
       if (options.limit) params.append('limit', options.limit.toString());
 
-      const response = await api.get(`${API_BASE}/?${params.toString()}`);
+      const response = await apiClient.get(`${API_BASE}/?${params.toString()}`);
       setQuizzes(response.data);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to load quizzes');
@@ -66,7 +66,7 @@ export function useFeaturedQuizzes(limit: number = 6) {
   useEffect(() => {
     const fetchFeatured = async () => {
       try {
-        const response = await api.get(`${API_BASE}/featured?limit=${limit}`);
+        const response = await apiClient.get(`${API_BASE}/featured?limit=${limit}`);
         setQuizzes(response.data);
       } catch (err) {
         console.error('Failed to load featured quizzes:', err);
@@ -95,7 +95,7 @@ export function useQuiz(quizId: string | undefined) {
       setLoading(true);
       setError(null);
       try {
-        const response = await api.get(`${API_BASE}/${quizId}`);
+        const response = await apiClient.get(`${API_BASE}/${quizId}`);
         setQuiz(response.data);
       } catch (err: any) {
         setError(err.response?.data?.detail || 'Failed to load quiz');
@@ -121,7 +121,7 @@ export function useQuizLeaderboard(quizId: string | undefined, limit: number = 1
 
     const fetchLeaderboard = async () => {
       try {
-        const response = await api.get(`${API_BASE}/${quizId}/leaderboard?limit=${limit}`);
+        const response = await apiClient.get(`${API_BASE}/${quizId}/leaderboard?limit=${limit}`);
         setLeaderboard(response.data);
       } catch (err) {
         console.error('Failed to load leaderboard:', err);
@@ -145,7 +145,7 @@ export function useMyAttempts(quizId?: string) {
     setLoading(true);
     try {
       const params = quizId ? `?quiz_id=${quizId}` : '';
-      const response = await api.get(`${API_BASE}/attempts/me${params}`);
+      const response = await apiClient.get(`${API_BASE}/attempts/me${params}`);
       setAttempts(response.data);
     } catch (err) {
       console.error('Failed to load attempts:', err);
@@ -168,7 +168,7 @@ export function useMyQuizStats() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await api.get(`${API_BASE}/stats/me`);
+        const response = await apiClient.get(`${API_BASE}/stats/me`);
         setStats(response.data);
       } catch (err) {
         console.error('Failed to load quiz stats:', err);
@@ -185,7 +185,7 @@ export function useMyQuizStats() {
 // ============== Quiz Taking Functions ==============
 
 export async function startQuizAttempt(quizId: string): Promise<QuizAttempt> {
-  const response = await api.post(`${API_BASE}/${quizId}/start`);
+  const response = await apiClient.post(`${API_BASE}/${quizId}/start`);
   return response.data;
 }
 
@@ -193,7 +193,7 @@ export async function submitQuizAttempt(
   quizId: string,
   submission: QuizSubmitInput
 ): Promise<QuizAttemptResult> {
-  const response = await api.post(`${API_BASE}/${quizId}/submit`, submission);
+  const response = await apiClient.post(`${API_BASE}/${quizId}/submit`, submission);
   return response.data;
 }
 
@@ -221,7 +221,7 @@ export function useAdminQuizzes(options: UseAdminQuizzesOptions = {}) {
       if (options.skip) params.append('skip', options.skip.toString());
       if (options.limit) params.append('limit', (options.limit || 50).toString());
 
-      const response = await api.get(`${API_BASE}/admin/all?${params.toString()}`);
+      const response = await apiClient.get(`${API_BASE}/admin/all?${params.toString()}`);
       setQuizzes(response.data);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to load quizzes');
@@ -251,7 +251,7 @@ export function useAdminQuiz(quizId: string | undefined) {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.get(`${API_BASE}/admin/${quizId}`);
+      const response = await apiClient.get(`${API_BASE}/admin/${quizId}`);
       setQuiz(response.data);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to load quiz');
@@ -270,7 +270,7 @@ export function useAdminQuiz(quizId: string | undefined) {
 // ============== Admin CRUD Functions ==============
 
 export async function createQuiz(quizData: QuizCreateInput): Promise<QuizAdminResponse> {
-  const response = await api.post(`${API_BASE}/admin`, quizData);
+  const response = await apiClient.post(`${API_BASE}/admin`, quizData);
   return response.data;
 }
 
@@ -278,19 +278,19 @@ export async function updateQuiz(
   quizId: string,
   quizData: Partial<QuizCreateInput>
 ): Promise<QuizAdminResponse> {
-  const response = await api.put(`${API_BASE}/admin/${quizId}`, quizData);
+  const response = await apiClient.put(`${API_BASE}/admin/${quizId}`, quizData);
   return response.data;
 }
 
 export async function deleteQuiz(quizId: string): Promise<void> {
-  await api.delete(`${API_BASE}/admin/${quizId}`);
+  await apiClient.delete(`${API_BASE}/admin/${quizId}`);
 }
 
 export async function addQuestion(
   quizId: string,
   questionData: any
 ): Promise<any> {
-  const response = await api.post(`${API_BASE}/admin/${quizId}/questions`, questionData);
+  const response = await apiClient.post(`${API_BASE}/admin/${quizId}/questions`, questionData);
   return response.data;
 }
 
@@ -298,17 +298,17 @@ export async function updateQuestion(
   questionId: number,
   questionData: any
 ): Promise<any> {
-  const response = await api.put(`${API_BASE}/admin/questions/${questionId}`, questionData);
+  const response = await apiClient.put(`${API_BASE}/admin/questions/${questionId}`, questionData);
   return response.data;
 }
 
 export async function deleteQuestion(questionId: number): Promise<void> {
-  await api.delete(`${API_BASE}/admin/questions/${questionId}`);
+  await apiClient.delete(`${API_BASE}/admin/questions/${questionId}`);
 }
 
 export async function reorderQuestions(
   quizId: string,
   questionOrder: number[]
 ): Promise<void> {
-  await api.post(`${API_BASE}/admin/${quizId}/questions/reorder`, questionOrder);
+  await apiClient.post(`${API_BASE}/admin/${quizId}/questions/reorder`, questionOrder);
 }

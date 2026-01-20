@@ -331,7 +331,7 @@ export const PVPPage: React.FC = () => {
           <PVPRoundResults
             result={roundResult}
             totalRounds={(currentMatch as PVPMatchDetail)?.total_rounds || 3}
-            playerName={user?.display_name || user?.username || 'You'}
+            playerName={user?.first_name || user?.username || 'You'}
             opponentName={opponentInfo?.username || 'Opponent'}
             onContinue={handleContinueAfterRound}
             isLastRound={roundResult.roundNumber >= ((currentMatch as PVPMatchDetail)?.total_rounds || 3)}
@@ -342,7 +342,7 @@ export const PVPPage: React.FC = () => {
         return matchResult ? (
           <PVPMatchResults
             result={matchResult}
-            playerName={user?.display_name || user?.username || 'You'}
+            playerName={user?.first_name || user?.username || 'You'}
             opponentName={opponentInfo?.username || 'Opponent'}
             onPlayAgain={handlePlayAgain}
             onBackToLobby={handleBackToLobby}
