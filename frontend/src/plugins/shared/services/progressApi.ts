@@ -3,7 +3,7 @@
  * API service for XP, Achievements, and Progress systems
  */
 
-import api from '../../../services/api/axios';
+import { apiClient as api } from '../../../services/api/client';
 import type {
   LevelProgress,
   XPLeaderboardEntry,

@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import { ModuleSection, ContentBlock, ContentBlockTemplate, SectionType } from '../../state/types/course.types';
+import { ModuleSection, ContentBlock, ContentBlockTemplate, SectionType } from '../../types';
 import { BlockPalette } from './BlockPalette';
 import { ContentBlockEditor } from './ContentBlockEditor';
 import { DragDropProvider, Draggable } from './DragDropContext';

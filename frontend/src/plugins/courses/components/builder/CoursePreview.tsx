@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import { Course, CourseModule, ModuleSection, ContentBlock } from '../../state/types/course.types';
+import { Course, CourseModule, ModuleSection, ContentBlock } from '../../types';
 import { X, ChevronLeft, ChevronRight, BookOpen, Clock } from 'lucide-react';
 
 interface CoursePreviewProps {

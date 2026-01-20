@@ -23,7 +23,6 @@ const CourseEditorPage: React.FC = () => {
     tags: [],
     requirements: [],
     objectives: [],
-    instructor_id: 1, // Will be set from current user
     is_premium: false,
     price: 0,
   });

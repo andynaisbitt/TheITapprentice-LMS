@@ -17,7 +17,7 @@ import {
   InteractiveBlockContent,
   DividerBlockContent,
   QuizQuestion
-} from '../../state/types/course.types';
+} from '../../types';
 import { 
   Trash2, 
   GripVertical, 

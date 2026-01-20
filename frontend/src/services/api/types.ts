@@ -36,6 +36,7 @@ export interface User {
   total_points: number;
   level: number;
   login_count: number;
+  current_streak?: number;
 
   // Timestamps
   created_at: string;

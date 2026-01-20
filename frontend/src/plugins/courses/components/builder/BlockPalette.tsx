@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { CONTENT_BLOCK_TEMPLATES, ContentBlockTemplate } from '../../state/types/course.types';
+import { CONTENT_BLOCK_TEMPLATES, ContentBlockTemplate } from '../../types';
 
 interface BlockPaletteProps {
   onSelectBlock: (template: ContentBlockTemplate) => void;

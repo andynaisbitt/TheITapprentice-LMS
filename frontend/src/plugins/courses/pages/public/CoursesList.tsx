@@ -20,12 +20,14 @@ import {
   Target,
   Zap
 } from 'lucide-react';
-import { coursesApi } from '../../services/api/courses.api';
-import { Course, CourseLevel, CourseFilters } from '../../state/types/course.types';
-import { XPBadge } from '../../components/XP/XPBadge';
-import { SkillBadges } from '../../components/Skills/SkillBadges';
-import { CategoryBadge } from '../../components/Admin/CategoryBadge';
-import { DailyChallengesWidget } from '../../components/Challenges/DailyChallengesWidget';
+import { coursesApi } from '../../services/coursesApi';
+import { Course, CourseLevel, CourseFilters } from '../../types';
+
+// Placeholder components until fully implemented
+const XPBadge: React.FC<{ xp?: number }> = ({ xp }) => xp ? <span className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-2 py-1 rounded-full">{xp} XP</span> : null;
+const SkillBadges: React.FC<{ skills?: string[] }> = ({ skills }) => skills?.length ? <div className="flex gap-1 flex-wrap">{skills.map(s => <span key={s} className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">{s}</span>)}</div> : null;
+const CategoryBadge: React.FC<{ category?: string }> = ({ category }) => category ? <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">{category}</span> : null;
+const DailyChallengesWidget: React.FC = () => null;
 
 const CoursesList: React.FC = () => {
   const navigate = useNavigate();

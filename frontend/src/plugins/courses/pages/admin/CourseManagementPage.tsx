@@ -6,15 +6,15 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { adminCoursesApi } from '../../services/coursesApi';
-import type { CourseListResponse, CourseLevel } from '../../types';
+import type { Course, CourseLevel, CourseStatus } from '../../types';
 
 const CourseManagementPage: React.FC = () => {
-  const [courses, setCourses] = useState<CourseListResponse[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [filterLevel, setFilterLevel] = useState<CourseLevel | undefined>(undefined);
-  const [filterStatus, setFilterStatus] = useState<string | undefined>(undefined);
+  const [filterStatus, setFilterStatus] = useState<CourseStatus | undefined>(undefined);
 
   const fetchCourses = async () => {
     try {

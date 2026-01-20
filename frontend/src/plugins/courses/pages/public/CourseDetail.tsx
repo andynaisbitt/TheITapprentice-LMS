@@ -23,8 +23,8 @@ import {
   Calendar,
   BarChart
 } from 'lucide-react';
-import { coursesApi } from '../../services/api/courses.api';
-import { Course, CourseModule } from '../../state/types/course.types';
+import { coursesApi } from '../../services/coursesApi';
+import { Course, CourseModule } from '../../types';
 
 const CourseDetail: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();

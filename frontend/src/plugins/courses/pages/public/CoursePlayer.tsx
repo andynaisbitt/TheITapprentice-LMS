@@ -12,10 +12,12 @@ import {
   Award,
   Medal
 } from 'lucide-react';
-import { coursesApi } from '../../services/api';
-import type { CourseDetail, CourseModule, ModuleSection, ContentBlock } from '../../services/api/types';
-import { useXPNotification } from '../../state/XPNotificationContext';
-import { useAchievementNotification } from '../../state/AchievementNotificationContext';
+import { coursesApi } from '../../services/coursesApi';
+import type { Course as CourseDetail, CourseModule, ModuleSection, ContentBlock } from '../../types';
+
+// Placeholder hooks until XP notification system is implemented
+const useXPNotification = () => ({ showXPGain: (_xp: number, _reason: string) => {} });
+const useAchievementNotification = () => ({ showAchievementUnlock: (_achievement: any) => {} });
 
 const CoursePlayer: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();

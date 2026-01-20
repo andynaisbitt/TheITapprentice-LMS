@@ -6,23 +6,23 @@
  */
 
 import { apiClient } from '../../../services/api/client';
-import type {
-  Course,
-  CourseModule,
-  ModuleSection,
-  CourseListResponse,
-  CourseFilters,
-  CreateCourseRequest,
-  UpdateCourseRequest,
-  CreateModuleRequest,
-  CreateSectionRequest,
-  UpdateSectionRequest,
-  EnrollmentRequest,
-  ProgressUpdateRequest,
-  BulkCourseCreate,
-  CourseEnrollment,
-  ContentBlockTemplate,
-  CONTENT_BLOCK_TEMPLATES
+import {
+  CONTENT_BLOCK_TEMPLATES,
+  type Course,
+  type CourseModule,
+  type ModuleSection,
+  type CourseListResponse,
+  type CourseFilters,
+  type CreateCourseRequest,
+  type UpdateCourseRequest,
+  type CreateModuleRequest,
+  type CreateSectionRequest,
+  type UpdateSectionRequest,
+  type EnrollmentRequest,
+  type ProgressUpdateRequest,
+  type BulkCourseCreate,
+  type CourseEnrollment,
+  type ContentBlockTemplate,
 } from '../types';
 
 // ============================================================================
