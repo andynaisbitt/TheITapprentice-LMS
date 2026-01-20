@@ -9,7 +9,7 @@ from sqlalchemy import or_
 from typing import List, Optional
 
 from app.core.database import get_db
-from app.api.v1.dependencies.auth import get_current_user, get_current_admin_user
+from app.auth.dependencies import get_current_user, get_current_admin_user
 from app.users.models import User
 from app.plugins.courses import models, schemas, crud
 
