@@ -492,8 +492,6 @@ const CourseEditorPage: React.FC = () => {
             </button>
           </div>
         </div>
-
-        </div>
         )}
         {/* End of Info Tab Content */}
       </div>
