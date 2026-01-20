@@ -5,10 +5,12 @@ Solo practice, PVP battles, leaderboards
 """
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import desc
 from typing import List, Optional
+from datetime import datetime, timedelta
 
 from app.core.database import get_db
-from app.auth.dependencies import get_current_user, get_current_user_optional, require_admin
+from app.auth.dependencies import get_current_user, get_optional_user, require_admin
 from app.users.models import User
 
 from . import crud, schemas, models
@@ -25,7 +27,7 @@ async def get_word_lists(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_current_user_optional)
+    current_user: Optional[User] = Depends(get_optional_user)
 ):
     """Get all available word lists"""
     word_lists = crud.get_word_lists(
@@ -56,7 +58,7 @@ async def get_word_lists(
 @router.get("/word-lists/featured", response_model=List[schemas.TypingWordListSummary])
 async def get_featured_word_lists(
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_current_user_optional)
+    current_user: Optional[User] = Depends(get_optional_user)
 ):
     """Get featured word lists"""
     word_lists = crud.get_featured_word_lists(db)
@@ -232,7 +234,7 @@ async def get_leaderboard(
     leaderboard_type: str = Query("wpm", description="wpm, accuracy, or pvp"),
     limit: int = Query(100, ge=1, le=500),
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_current_user_optional)
+    current_user: Optional[User] = Depends(get_optional_user)
 ):
     """Get typing game leaderboard"""
     if leaderboard_type == "pvp":
@@ -442,7 +444,6 @@ async def get_analytics(
 ):
     """Get typing game analytics (admin only)"""
     from sqlalchemy import func
-    from datetime import timedelta
 
     # Get total games
     total_games = db.query(models.TypingGameSession).filter(
