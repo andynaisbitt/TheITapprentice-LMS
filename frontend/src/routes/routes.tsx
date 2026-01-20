@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import { useAuth } from '../state/contexts/AuthContext';
 import { Layout } from '../components/layout/Layout';
+import { AdminLayout } from '../components/admin/layout';
 
 // Lazy load pages
 const BlogHome = lazy(() => import('../pages/BlogHome'));
@@ -335,14 +336,14 @@ export const AppRoutes = () => {
           }
         />
 
-        {/* Admin routes (protected, no footer) */}
+        {/* Admin routes with new sidebar layout */}
         <Route
           path="/admin"
           element={
             <AdminRoute>
-              <Layout hideFooter>
+              <AdminLayout>
                 <AdminDashboard />
-              </Layout>
+              </AdminLayout>
             </AdminRoute>
           }
         />
@@ -350,9 +351,9 @@ export const AppRoutes = () => {
           path="/admin/posts"
           element={
             <AdminRoute>
-              <Layout hideFooter>
+              <AdminLayout>
                 <BlogPostsList />
-              </Layout>
+              </AdminLayout>
             </AdminRoute>
           }
         />
@@ -360,9 +361,9 @@ export const AppRoutes = () => {
           path="/admin/blog"
           element={
             <AdminRoute>
-              <Layout hideFooter>
+              <AdminLayout>
                 <BlogEditor />
-              </Layout>
+              </AdminLayout>
             </AdminRoute>
           }
         />
@@ -370,9 +371,9 @@ export const AppRoutes = () => {
           path="/admin/blog/:id"
           element={
             <AdminRoute>
-              <Layout hideFooter>
+              <AdminLayout>
                 <BlogEditor />
-              </Layout>
+              </AdminLayout>
             </AdminRoute>
           }
         />
@@ -380,9 +381,9 @@ export const AppRoutes = () => {
           path="/admin/categories"
           element={
             <AdminRoute>
-              <Layout hideFooter>
+              <AdminLayout>
                 <CategoryManager />
-              </Layout>
+              </AdminLayout>
             </AdminRoute>
           }
         />
@@ -390,9 +391,9 @@ export const AppRoutes = () => {
           path="/admin/tags"
           element={
             <AdminRoute>
-              <Layout hideFooter>
+              <AdminLayout>
                 <TagManager />
-              </Layout>
+              </AdminLayout>
             </AdminRoute>
           }
         />
@@ -400,9 +401,9 @@ export const AppRoutes = () => {
           path="/admin/settings"
           element={
             <AdminRoute>
-              <Layout hideFooter>
+              <AdminLayout>
                 <SiteSettings />
-              </Layout>
+              </AdminLayout>
             </AdminRoute>
           }
         />
@@ -410,9 +411,9 @@ export const AppRoutes = () => {
           path="/admin/navigation"
           element={
             <AdminRoute>
-              <Layout hideFooter>
+              <AdminLayout>
                 <NavigationManager />
-              </Layout>
+              </AdminLayout>
             </AdminRoute>
           }
         />
@@ -420,9 +421,9 @@ export const AppRoutes = () => {
           path="/admin/newsletter"
           element={
             <AdminRoute>
-              <Layout hideFooter>
+              <AdminLayout>
                 <Newsletter />
-              </Layout>
+              </AdminLayout>
             </AdminRoute>
           }
         />
@@ -430,9 +431,9 @@ export const AppRoutes = () => {
           path="/admin/theme"
           element={
             <AdminRoute>
-              <Layout hideFooter>
+              <AdminLayout>
                 <ThemeCustomizer />
-              </Layout>
+              </AdminLayout>
             </AdminRoute>
           }
         />
@@ -440,9 +441,9 @@ export const AppRoutes = () => {
           path="/admin/pages"
           element={
             <AdminRoute>
-              <Layout hideFooter>
+              <AdminLayout>
                 <PagesList />
-              </Layout>
+              </AdminLayout>
             </AdminRoute>
           }
         />
@@ -450,9 +451,9 @@ export const AppRoutes = () => {
           path="/admin/pages/new"
           element={
             <AdminRoute>
-              <Layout hideFooter>
+              <AdminLayout>
                 <PageEditor />
-              </Layout>
+              </AdminLayout>
             </AdminRoute>
           }
         />
@@ -460,9 +461,9 @@ export const AppRoutes = () => {
           path="/admin/pages/:id"
           element={
             <AdminRoute>
-              <Layout hideFooter>
+              <AdminLayout>
                 <PageEditor />
-              </Layout>
+              </AdminLayout>
             </AdminRoute>
           }
         />
@@ -470,9 +471,9 @@ export const AppRoutes = () => {
           path="/admin/users"
           element={
             <AdminRoute>
-              <Layout hideFooter>
+              <AdminLayout>
                 <UserManagement />
-              </Layout>
+              </AdminLayout>
             </AdminRoute>
           }
         />
@@ -482,9 +483,9 @@ export const AppRoutes = () => {
           path="/admin/tutorials"
           element={
             <AdminRoute>
-              <Layout hideFooter>
+              <AdminLayout>
                 <TutorialManagementPage />
-              </Layout>
+              </AdminLayout>
             </AdminRoute>
           }
         />
@@ -492,9 +493,9 @@ export const AppRoutes = () => {
           path="/admin/tutorials/new"
           element={
             <AdminRoute>
-              <Layout hideFooter>
+              <AdminLayout>
                 <TutorialEditorPage />
-              </Layout>
+              </AdminLayout>
             </AdminRoute>
           }
         />
@@ -502,9 +503,9 @@ export const AppRoutes = () => {
           path="/admin/tutorials/:id/edit"
           element={
             <AdminRoute>
-              <Layout hideFooter>
+              <AdminLayout>
                 <TutorialEditorPage />
-              </Layout>
+              </AdminLayout>
             </AdminRoute>
           }
         />
@@ -512,9 +513,9 @@ export const AppRoutes = () => {
           path="/admin/tutorials/analytics"
           element={
             <AdminRoute>
-              <Layout hideFooter>
+              <AdminLayout>
                 <TutorialAnalyticsPage />
-              </Layout>
+              </AdminLayout>
             </AdminRoute>
           }
         />
@@ -522,9 +523,9 @@ export const AppRoutes = () => {
           path="/admin/tutorials/user-progress"
           element={
             <AdminRoute>
-              <Layout hideFooter>
+              <AdminLayout>
                 <UserProgressPage />
-              </Layout>
+              </AdminLayout>
             </AdminRoute>
           }
         />
@@ -534,9 +535,9 @@ export const AppRoutes = () => {
           path="/admin/courses"
           element={
             <AdminRoute>
-              <Layout hideFooter>
+              <AdminLayout>
                 <CourseManagementPage />
-              </Layout>
+              </AdminLayout>
             </AdminRoute>
           }
         />
@@ -544,9 +545,9 @@ export const AppRoutes = () => {
           path="/admin/courses/new"
           element={
             <AdminRoute>
-              <Layout hideFooter>
+              <AdminLayout>
                 <CourseEditorPage />
-              </Layout>
+              </AdminLayout>
             </AdminRoute>
           }
         />
@@ -554,9 +555,9 @@ export const AppRoutes = () => {
           path="/admin/courses/:id/edit"
           element={
             <AdminRoute>
-              <Layout hideFooter>
+              <AdminLayout>
                 <CourseEditorPage />
-              </Layout>
+              </AdminLayout>
             </AdminRoute>
           }
         />
