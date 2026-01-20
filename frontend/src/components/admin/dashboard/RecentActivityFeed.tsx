@@ -17,7 +17,7 @@ import {
 
 export interface ActivityItem {
   id: string;
-  type: 'post_published' | 'user_registered' | 'tutorial_completed' | 'achievement_unlocked' | 'game_played' | 'post_edited' | 'user_verified';
+  type: string;
   title: string;
   description?: string;
   timestamp: string;
@@ -33,7 +33,7 @@ interface RecentActivityFeedProps {
   maxItems?: number;
 }
 
-const activityConfig: Record<ActivityItem['type'], { icon: LucideIcon; color: string }> = {
+const activityConfig: Record<string, { icon: LucideIcon; color: string }> = {
   post_published: { icon: FileText, color: 'bg-blue-500' },
   post_edited: { icon: Edit, color: 'bg-blue-400' },
   user_registered: { icon: UserPlus, color: 'bg-green-500' },
@@ -41,6 +41,9 @@ const activityConfig: Record<ActivityItem['type'], { icon: LucideIcon; color: st
   tutorial_completed: { icon: BookOpen, color: 'bg-purple-500' },
   achievement_unlocked: { icon: Trophy, color: 'bg-yellow-500' },
   game_played: { icon: Keyboard, color: 'bg-pink-500' },
+  login: { icon: User, color: 'bg-gray-500' },
+  course_enrolled: { icon: BookOpen, color: 'bg-indigo-500' },
+  unknown: { icon: User, color: 'bg-gray-400' },
 };
 
 const formatTimeAgo = (timestamp: string): string => {
@@ -91,7 +94,7 @@ export const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({
   return (
     <div className="space-y-4">
       {displayedActivities.map((activity, index) => {
-        const config = activityConfig[activity.type];
+        const config = activityConfig[activity.type] || activityConfig.unknown;
         const Icon = config.icon;
 
         return (

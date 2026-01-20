@@ -15,7 +15,7 @@ import {
 
 export interface AttentionItem {
   id: string;
-  type: 'draft_posts' | 'pending_users' | 'tutorial_dropoff' | 'system_warning';
+  type: string;
   title: string;
   count?: number;
   description: string;
@@ -28,16 +28,18 @@ interface AttentionItemsProps {
   loading?: boolean;
 }
 
-const typeConfig: Record<
-  AttentionItem['type'],
-  { icon: LucideIcon; bgColor: string; iconColor: string }
-> = {
+const typeConfig: Record<string, { icon: LucideIcon; bgColor: string; iconColor: string }> = {
   draft_posts: {
     icon: FileText,
     bgColor: 'bg-yellow-50 dark:bg-yellow-900/20',
     iconColor: 'text-yellow-600 dark:text-yellow-400',
   },
   pending_users: {
+    icon: User,
+    bgColor: 'bg-blue-50 dark:bg-blue-900/20',
+    iconColor: 'text-blue-600 dark:text-blue-400',
+  },
+  unverified_users: {
     icon: User,
     bgColor: 'bg-blue-50 dark:bg-blue-900/20',
     iconColor: 'text-blue-600 dark:text-blue-400',
@@ -51,6 +53,11 @@ const typeConfig: Record<
     icon: AlertTriangle,
     bgColor: 'bg-red-50 dark:bg-red-900/20',
     iconColor: 'text-red-600 dark:text-red-400',
+  },
+  unknown: {
+    icon: AlertTriangle,
+    bgColor: 'bg-gray-50 dark:bg-gray-900/20',
+    iconColor: 'text-gray-600 dark:text-gray-400',
   },
 };
 
@@ -112,7 +119,7 @@ export const AttentionItems: React.FC<AttentionItemsProps> = ({
   return (
     <div className="space-y-3">
       {items.map((item) => {
-        const config = typeConfig[item.type];
+        const config = typeConfig[item.type] || typeConfig.unknown;
         const Icon = config.icon;
 
         return (
