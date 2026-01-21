@@ -37,7 +37,7 @@ class MenuItemUpdate(BaseModel):
 class MenuItemResponse(MenuItemBase):
     """Schema for menu item response"""
     id: int
-    created_at: datetime
+    created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     children: list['MenuItemResponse'] = []
 

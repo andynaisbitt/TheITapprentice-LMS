@@ -3,7 +3,7 @@
 Quiz System CRUD Operations
 """
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc
+from sqlalchemy import func, desc, text
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 import random
@@ -42,7 +42,8 @@ def get_quizzes(
     if difficulty:
         query = query.filter(Quiz.difficulty == difficulty)
     if status:
-        query = query.filter(Quiz.status == status)
+        # Use text() with .value for PostgreSQL enum compatibility
+        query = query.filter(Quiz.status == text(f"'{status.value}'::quizstatus"))
     if course_id:
         query = query.filter(Quiz.course_id == course_id)
     if featured_only:
