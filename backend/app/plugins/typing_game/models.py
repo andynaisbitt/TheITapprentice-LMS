@@ -338,6 +338,56 @@ class TypingChallenge(Base):
         return f"<TypingChallenge {self.name} ({self.category})>"
 
 
+# ==================== SENTENCE POOL ====================
+
+class SentencePool(Base):
+    """
+    Admin-configurable sentence pools for PVP rounds
+    Replaces random word generation with curated sentences
+    """
+    __tablename__ = "typing_sentence_pools"
+
+    id = Column(String(36), primary_key=True)  # UUID
+
+    # Pool info
+    name = Column(String(200), nullable=False)
+    description = Column(Text, nullable=True)
+
+    # Difficulty & Category
+    difficulty = Column(String(20), nullable=False, index=True)  # easy, medium, hard, expert
+    category = Column(String(50), nullable=False, index=True)  # general, tech, programming, quotes
+
+    # Content (JSON array of sentences)
+    sentences = Column(JSON, nullable=False)  # ["The quick brown fox...", "Hello world...", ...]
+
+    # Metadata
+    min_length = Column(Integer, default=20)  # Minimum sentence length (chars)
+    max_length = Column(Integer, default=200)  # Maximum sentence length (chars)
+    avg_word_count = Column(Float, default=0.0)  # Calculated average words per sentence
+
+    # Admin controls
+    is_active = Column(Boolean, default=True, nullable=False)
+    is_featured = Column(Boolean, default=False, nullable=False)
+    display_order = Column(Integer, default=0)
+
+    # PVP-specific settings
+    round_suitable = Column(JSON, default=list)  # [1, 2, 3] - which rounds this pool is good for
+    difficulty_weight = Column(Float, default=1.0)  # Weight for random selection
+
+    # Stats
+    times_used = Column(Integer, default=0)
+    avg_wpm = Column(Float, default=0.0)  # Average WPM when used
+    avg_accuracy = Column(Float, default=0.0)  # Average accuracy when used
+
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+
+    def __repr__(self):
+        return f"<SentencePool {self.id}: {self.name} ({self.difficulty})>"
+
+
 # ==================== LEADERBOARD ====================
 
 class TypingLeaderboard(Base):

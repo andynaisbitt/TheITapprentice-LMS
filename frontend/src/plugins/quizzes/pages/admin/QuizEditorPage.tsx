@@ -169,6 +169,38 @@ const QuizEditorPage: React.FC = () => {
   const handleSaveQuestion = async () => {
     if (!editingQuestion || !id) return;
 
+    // Validate required fields
+    if (!editingQuestion.question_text?.trim()) {
+      alert('Please enter a question text');
+      return;
+    }
+
+    // Validate correct answer for multiple choice
+    if (editingQuestion.question_type === 'multiple_choice' || editingQuestion.question_type === 'multiple_select') {
+      const hasCorrectAnswer = editingQuestion.options?.some(opt => opt.is_correct);
+      if (!hasCorrectAnswer) {
+        alert('Please select at least one correct answer');
+        return;
+      }
+      const hasEmptyOption = editingQuestion.options?.some(opt => !opt.text?.trim());
+      if (hasEmptyOption) {
+        alert('Please fill in all answer options');
+        return;
+      }
+    }
+
+    // Validate correct answer for true/false
+    if (editingQuestion.question_type === 'true_false' && !editingQuestion.correct_answer) {
+      alert('Please select the correct answer (True or False)');
+      return;
+    }
+
+    // Validate correct answer for short answer/fill blank
+    if ((editingQuestion.question_type === 'short_answer' || editingQuestion.question_type === 'fill_blank') && !editingQuestion.correct_answer) {
+      alert('Please enter the correct answer');
+      return;
+    }
+
     try {
       if (editingQuestion.id) {
         await updateQuestion(editingQuestion.id, editingQuestion);
@@ -668,7 +700,16 @@ const QuestionModal: React.FC<QuestionModalProps> = ({ question, onChange, onSav
   };
 
   const addOption = () => {
-    const newId = String.fromCharCode(97 + (question.options?.length || 0)); // a, b, c, d...
+    // Find the next available letter that's not already used
+    const existingIds = new Set(question.options?.map(opt => opt.id) || []);
+    let newId = 'a';
+    for (let i = 0; i < 26; i++) {
+      const letter = String.fromCharCode(97 + i); // a, b, c, d...
+      if (!existingIds.has(letter)) {
+        newId = letter;
+        break;
+      }
+    }
     onChange({
       ...question,
       options: [...(question.options || []), { id: newId, text: '', is_correct: false }],

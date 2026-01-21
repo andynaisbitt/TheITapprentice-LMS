@@ -513,6 +513,57 @@ class CoursePublishRequest(BaseModel):
 
 
 # ============================================================================
+# CERTIFICATE SCHEMAS
+# ============================================================================
+
+class CertificateBase(BaseModel):
+    """Base certificate schema"""
+    title: str
+    description: Optional[str] = None
+    verification_code: str
+    skills_acquired: List[str] = []
+    recipient_name: Optional[str] = None
+    instructor_name: Optional[str] = None
+    course_title: str
+    course_level: Optional[str] = None
+
+
+class CertificateResponse(CertificateBase):
+    """Certificate response schema"""
+    id: int
+    user_id: int
+    course_id: str
+    enrollment_id: int
+    total_modules: int
+    total_sections: int
+    issued_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class CertificateCompact(BaseModel):
+    """Compact certificate for completion response"""
+    title: str
+    description: str
+    verification_code: str
+    skills_acquired: List[str] = []
+
+
+class ModuleProgressResponse(BaseModel):
+    """Response after updating module progress"""
+    message: str = "Progress updated"
+    completed: bool
+    completed_sections: List[str]
+    time_spent: int
+    module_completed: bool = False
+    course_complete: bool = False
+    progress: int = 0
+    certificate: Optional[CertificateCompact] = None
+    certificate_id: Optional[int] = None
+
+
+# ============================================================================
 # CONTENT BLOCK HELPER SCHEMAS (for admin panel)
 # ============================================================================
 

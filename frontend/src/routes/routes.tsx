@@ -65,6 +65,7 @@ const PracticeGamePage = lazy(() => import('../plugins/typing-game/pages/Practic
 // Quiz plugin pages
 const QuizzesPage = lazy(() => import('../plugins/quizzes/pages/QuizzesPage'));
 const QuizPlayerPage = lazy(() => import('../plugins/quizzes/pages/QuizPlayerPage'));
+const QuizHistoryPage = lazy(() => import('../plugins/quizzes/pages/QuizHistoryPage'));
 
 // Quiz admin pages
 const QuizManagerPage = lazy(() => import('../plugins/quizzes/pages/admin/QuizManagerPage'));
@@ -87,6 +88,7 @@ const WordListsAdmin = lazy(() => import('../pages/admin/WordListsAdmin'));
 const TypingChallengesAdmin = lazy(() => import('../pages/admin/TypingChallengesAdmin'));
 const GameLeaderboardAdmin = lazy(() => import('../pages/admin/GameLeaderboardAdmin'));
 const DailyChallengesAdmin = lazy(() => import('../pages/admin/DailyChallengesAdmin'));
+const SentencePoolsAdmin = lazy(() => import('../pages/admin/SentencePoolsAdmin'));
 
 // Loading component
 const PageLoader = () => (
@@ -379,6 +381,16 @@ export const AppRoutes = () => {
             <Layout>
               <QuizzesPage />
             </Layout>
+          }
+        />
+        <Route
+          path="/quizzes/history"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <QuizHistoryPage />
+              </Layout>
+            </ProtectedRoute>
           }
         />
         <Route
@@ -825,6 +837,16 @@ export const AppRoutes = () => {
             <AdminRoute>
               <AdminLayout>
                 <GameLeaderboardAdmin />
+              </AdminLayout>
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/games/sentence-pools"
+          element={
+            <AdminRoute>
+              <AdminLayout>
+                <SentencePoolsAdmin />
               </AdminLayout>
             </AdminRoute>
           }

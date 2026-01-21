@@ -12,10 +12,12 @@ from datetime import datetime
 
 from app.plugins.courses.models import (
     Course, CourseModule, ModuleSection,
-    CourseEnrollment, ModuleProgress,
+    CourseEnrollment, ModuleProgress, Certificate,
     CourseLevel, CourseStatus, SectionType,
     SectionStatus, EnrollmentStatus
 )
+import secrets
+import string
 from app.plugins.courses.schemas import (
     CourseCreate, CourseUpdate,
     CourseModuleCreate, CourseModuleUpdate,
@@ -673,6 +675,28 @@ def update_module_progress(
 
                     logger.info(f"User {enrollment.user_id} completed course {enrollment.course_id}, awarded {course_xp_result.get('xp_awarded', 0)} XP")
 
+                    # Create certificate for course completion
+                    try:
+                        certificate = create_certificate(
+                            db=db,
+                            user_id=enrollment.user_id,
+                            course_id=enrollment.course_id,
+                            enrollment_id=enrollment.id
+                        )
+                        # Store certificate info on progress for return
+                        progress.certificate_info = {
+                            "id": certificate.id,
+                            "title": certificate.title,
+                            "description": certificate.description,
+                            "verification_code": certificate.verification_code,
+                            "skills_acquired": certificate.skills_acquired
+                        }
+                        logger.info(f"Certificate created: {certificate.verification_code}")
+                    except Exception as cert_err:
+                        logger.error(f"Failed to create certificate: {cert_err}")
+                        # Don't fail the whole operation if certificate creation fails
+                        progress.certificate_info = None
+
                     # Log course completion activity
                     achievement_service.log_activity(
                         db=db,
@@ -782,3 +806,128 @@ def get_course_progress(
         "module_progress": module_progress_data,
         "last_accessed": enrollment.last_accessed,
     }
+
+
+# ==================== CERTIFICATE CRUD ====================
+
+def generate_verification_code() -> str:
+    """Generate a unique verification code for certificates"""
+    # Format: CERT-XXXX-XXXX-XXXX (where X is alphanumeric)
+    chars = string.ascii_uppercase + string.digits
+    segments = [
+        ''.join(secrets.choice(chars) for _ in range(4))
+        for _ in range(3)
+    ]
+    return f"CERT-{'-'.join(segments)}"
+
+
+def get_certificate_by_verification_code(
+    db: Session,
+    verification_code: str
+) -> Optional[Certificate]:
+    """Get certificate by verification code"""
+    return db.query(Certificate)\
+        .filter(Certificate.verification_code == verification_code)\
+        .first()
+
+
+def get_user_certificates(
+    db: Session,
+    user_id: int
+) -> List[Certificate]:
+    """Get all certificates for a user"""
+    return db.query(Certificate)\
+        .filter(Certificate.user_id == user_id)\
+        .order_by(Certificate.issued_at.desc())\
+        .all()
+
+
+def get_user_course_certificate(
+    db: Session,
+    user_id: int,
+    course_id: str
+) -> Optional[Certificate]:
+    """Get certificate for a specific course and user"""
+    return db.query(Certificate)\
+        .filter(
+            Certificate.user_id == user_id,
+            Certificate.course_id == course_id
+        )\
+        .first()
+
+
+def create_certificate(
+    db: Session,
+    user_id: int,
+    course_id: str,
+    enrollment_id: int
+) -> Certificate:
+    """
+    Create a certificate for course completion.
+    Returns existing certificate if one already exists.
+    """
+    # Check for existing certificate
+    existing = get_user_course_certificate(db, user_id, course_id)
+    if existing:
+        logger.info(f"Certificate already exists for user {user_id}, course {course_id}")
+        return existing
+
+    # Get course details
+    course = get_course(db, course_id)
+    if not course:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Course not found"
+        )
+
+    # Get user details
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+    # Calculate total sections
+    total_sections = sum(
+        len(module.sections) if module.sections else 0
+        for module in (course.modules or [])
+    )
+
+    # Generate unique verification code
+    verification_code = generate_verification_code()
+    # Ensure uniqueness
+    while get_certificate_by_verification_code(db, verification_code):
+        verification_code = generate_verification_code()
+
+    # Build certificate description
+    description = (
+        f"This certifies that {user.username or user.email} has successfully completed "
+        f"all {len(course.modules or [])} modules and {total_sections} sections of the "
+        f"{course.title} course."
+    )
+
+    # Create certificate
+    certificate = Certificate(
+        user_id=user_id,
+        course_id=course_id,
+        enrollment_id=enrollment_id,
+        title=f"Certificate of Completion: {course.title}",
+        description=description,
+        verification_code=verification_code,
+        skills_acquired=course.skills or [],
+        recipient_name=user.username or user.email,
+        instructor_name=course.instructor_name,
+        course_title=course.title,
+        course_level=course.level.value if course.level else None,
+        total_modules=len(course.modules or []),
+        total_sections=total_sections
+    )
+
+    db.add(certificate)
+    db.commit()
+    db.refresh(certificate)
+
+    logger.info(f"Created certificate {verification_code} for user {user_id}, course {course_id}")
+
+    return certificate

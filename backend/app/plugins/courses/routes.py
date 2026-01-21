@@ -297,6 +297,14 @@ async def update_my_module_progress(
             detail="Not enrolled in this course"
         )
 
+    # Store previous completion state to detect if module/course was just completed
+    was_module_complete = False
+    existing_progress = crud.get_user_module_progress(db, enrollment.id, module_id)
+    if existing_progress:
+        was_module_complete = existing_progress.completed
+
+    was_course_complete = enrollment.is_complete
+
     # Update progress
     progress = crud.update_module_progress(
         db,
@@ -305,12 +313,34 @@ async def update_my_module_progress(
         progress_update
     )
 
-    return {
+    # Refresh enrollment to get updated state
+    db.refresh(enrollment)
+
+    # Build response
+    response = {
         "message": "Progress updated",
         "completed": progress.completed,
         "completed_sections": progress.completed_sections,
-        "time_spent": progress.time_spent
+        "time_spent": progress.time_spent,
+        "module_completed": progress.completed and not was_module_complete,
+        "course_complete": enrollment.is_complete and not was_course_complete,
+        "progress": enrollment.progress
     }
+
+    # Include certificate if course was just completed
+    if enrollment.is_complete and not was_course_complete:
+        # Get certificate (it was created in update_module_progress)
+        certificate = crud.get_user_course_certificate(db, current_user.id, course_id)
+        if certificate:
+            response["certificate"] = {
+                "title": certificate.title,
+                "description": certificate.description,
+                "verification_code": certificate.verification_code,
+                "skills_acquired": certificate.skills_acquired or []
+            }
+            response["certificate_id"] = certificate.id
+
+    return response
 
 
 # ============================================================================
@@ -564,3 +594,70 @@ async def admin_get_course_enrollments(
         "dropped": len([e for e in enrollments if e.status == models.EnrollmentStatus.DROPPED]),
         "enrollments": enrollments
     }
+
+
+# ============================================================================
+# CERTIFICATE ENDPOINTS
+# ============================================================================
+
+@router.get("/certificates/me", response_model=List[schemas.CertificateResponse])
+async def get_my_certificates(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get all certificates for the current user"""
+    certificates = crud.get_user_certificates(db, current_user.id)
+    return certificates
+
+
+@router.get("/certificates/verify/{verification_code}")
+async def verify_certificate(
+    verification_code: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Verify a certificate by its verification code.
+    Public endpoint - no authentication required.
+    """
+    certificate = crud.get_certificate_by_verification_code(db, verification_code)
+
+    if not certificate:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Certificate not found or invalid verification code"
+        )
+
+    return {
+        "valid": True,
+        "certificate": {
+            "title": certificate.title,
+            "description": certificate.description,
+            "verification_code": certificate.verification_code,
+            "recipient_name": certificate.recipient_name,
+            "course_title": certificate.course_title,
+            "course_level": certificate.course_level,
+            "skills_acquired": certificate.skills_acquired or [],
+            "total_modules": certificate.total_modules,
+            "total_sections": certificate.total_sections,
+            "issued_at": certificate.issued_at.isoformat() if certificate.issued_at else None,
+            "instructor_name": certificate.instructor_name
+        }
+    }
+
+
+@router.get("/certificates/{course_id}")
+async def get_certificate_for_course(
+    course_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get certificate for a specific course (if completed)"""
+    certificate = crud.get_user_course_certificate(db, current_user.id, course_id)
+
+    if not certificate:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Certificate not found. Complete the course to earn a certificate."
+        )
+
+    return certificate

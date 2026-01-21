@@ -353,7 +353,9 @@ async def submit_pvp_round(
         opponent_accuracy=result.get("opponent_accuracy", 0),
         match_status=result["match_status"],
         current_score=result["current_score"],
-        xp_earned=result.get("xp_earned")
+        xp_earned=result.get("xp_earned"),
+        next_round_content=result.get("next_round_content"),
+        next_round_word_count=result.get("next_round_word_count")
     )
 
 
@@ -500,3 +502,226 @@ async def get_analytics(
         pvp_matches_today=pvp_today,
         active_players_today=active_today or 0
     )
+
+
+# ==================== SENTENCE POOL ROUTES ====================
+
+@router.get("/sentence-pools", response_model=schemas.SentencePoolListResponse)
+async def get_sentence_pools(
+    difficulty: Optional[str] = Query(None, description="Filter by difficulty (easy, medium, hard, expert)"),
+    category: Optional[str] = Query(None, description="Filter by category"),
+    is_active: bool = Query(True, description="Filter by active status"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_user)
+):
+    """Get all sentence pools with optional filters"""
+    pools, total = crud.get_sentence_pools(
+        db=db,
+        difficulty=difficulty,
+        category=category,
+        is_active=is_active,
+        skip=skip,
+        limit=limit
+    )
+
+    return schemas.SentencePoolListResponse(
+        pools=[schemas.SentencePoolResponse.from_orm_with_count(p) for p in pools],
+        total=total,
+        page=skip // limit + 1,
+        page_size=limit
+    )
+
+
+@router.get("/sentence-pools/{pool_id}", response_model=schemas.SentencePoolResponse)
+async def get_sentence_pool(
+    pool_id: str,
+    db: Session = Depends(get_db)
+):
+    """Get sentence pool by ID"""
+    pool = crud.get_sentence_pool(db, pool_id)
+    if not pool:
+        raise HTTPException(status_code=404, detail="Sentence pool not found")
+
+    return schemas.SentencePoolResponse.from_orm_with_count(pool)
+
+
+@router.post("/admin/sentence-pools", response_model=schemas.SentencePoolResponse)
+async def create_sentence_pool(
+    pool_data: schemas.SentencePoolCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    """Create new sentence pool (admin only)"""
+    # Validate sentences
+    if not pool_data.sentences:
+        raise HTTPException(status_code=400, detail="At least one sentence is required")
+
+    # Validate sentence lengths
+    for sentence in pool_data.sentences:
+        if len(sentence) < pool_data.min_length:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Sentence too short: '{sentence[:50]}...' (min: {pool_data.min_length} chars)"
+            )
+        if len(sentence) > pool_data.max_length:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Sentence too long: '{sentence[:50]}...' (max: {pool_data.max_length} chars)"
+            )
+
+    pool = crud.create_sentence_pool(db, pool_data, created_by=current_user.id)
+    return schemas.SentencePoolResponse.from_orm_with_count(pool)
+
+
+@router.put("/admin/sentence-pools/{pool_id}", response_model=schemas.SentencePoolResponse)
+async def update_sentence_pool(
+    pool_id: str,
+    pool_data: schemas.SentencePoolUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    """Update sentence pool (admin only)"""
+    # Validate sentence lengths if sentences are being updated
+    if pool_data.sentences:
+        min_length = pool_data.min_length or 20
+        max_length = pool_data.max_length or 200
+
+        # Get existing pool to use its min/max if not being updated
+        existing = crud.get_sentence_pool(db, pool_id)
+        if existing:
+            min_length = pool_data.min_length if pool_data.min_length is not None else existing.min_length
+            max_length = pool_data.max_length if pool_data.max_length is not None else existing.max_length
+
+        for sentence in pool_data.sentences:
+            if len(sentence) < min_length:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Sentence too short: '{sentence[:50]}...' (min: {min_length} chars)"
+                )
+            if len(sentence) > max_length:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Sentence too long: '{sentence[:50]}...' (max: {max_length} chars)"
+                )
+
+    updated = crud.update_sentence_pool(db, pool_id, pool_data)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Sentence pool not found")
+
+    return schemas.SentencePoolResponse.from_orm_with_count(updated)
+
+
+@router.delete("/admin/sentence-pools/{pool_id}")
+async def delete_sentence_pool(
+    pool_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    """Delete sentence pool (admin only)"""
+    deleted = crud.delete_sentence_pool(db, pool_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Sentence pool not found")
+
+    return {"message": "Sentence pool deleted"}
+
+
+@router.post("/admin/sentence-pools/{pool_id}/add-sentences")
+async def add_sentences_to_pool(
+    pool_id: str,
+    sentences: List[str],
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    """Add sentences to an existing pool (admin only)"""
+    pool = crud.get_sentence_pool(db, pool_id)
+    if not pool:
+        raise HTTPException(status_code=404, detail="Sentence pool not found")
+
+    # Validate new sentences
+    for sentence in sentences:
+        if len(sentence) < pool.min_length:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Sentence too short: '{sentence[:50]}...' (min: {pool.min_length} chars)"
+            )
+        if len(sentence) > pool.max_length:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Sentence too long: '{sentence[:50]}...' (max: {pool.max_length} chars)"
+            )
+
+    # Add sentences to existing pool
+    existing_sentences = pool.sentences or []
+    new_sentences = existing_sentences + sentences
+
+    # Remove duplicates while preserving order
+    seen = set()
+    unique_sentences = []
+    for s in new_sentences:
+        if s not in seen:
+            seen.add(s)
+            unique_sentences.append(s)
+
+    update_data = schemas.SentencePoolUpdate(sentences=unique_sentences)
+    updated = crud.update_sentence_pool(db, pool_id, update_data)
+
+    return {
+        "message": f"Added {len(sentences)} sentences",
+        "total_sentences": len(unique_sentences),
+        "duplicates_removed": len(new_sentences) - len(unique_sentences)
+    }
+
+
+@router.get("/admin/sentence-pools/stats/summary")
+async def get_sentence_pool_stats(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    """Get summary statistics for all sentence pools (admin only)"""
+    from sqlalchemy import func
+
+    # Total pools
+    total_pools = db.query(models.SentencePool).count()
+    active_pools = db.query(models.SentencePool).filter(
+        models.SentencePool.is_active == True
+    ).count()
+
+    # Pool counts by difficulty
+    difficulty_counts = db.query(
+        models.SentencePool.difficulty,
+        func.count(models.SentencePool.id)
+    ).group_by(models.SentencePool.difficulty).all()
+
+    # Pool counts by category
+    category_counts = db.query(
+        models.SentencePool.category,
+        func.count(models.SentencePool.id)
+    ).group_by(models.SentencePool.category).all()
+
+    # Most used pools
+    top_pools = db.query(
+        models.SentencePool.id,
+        models.SentencePool.name,
+        models.SentencePool.times_used,
+        models.SentencePool.avg_wpm,
+        models.SentencePool.avg_accuracy
+    ).order_by(desc(models.SentencePool.times_used)).limit(10).all()
+
+    return {
+        "total_pools": total_pools,
+        "active_pools": active_pools,
+        "by_difficulty": {d: c for d, c in difficulty_counts},
+        "by_category": {c: cnt for c, cnt in category_counts},
+        "top_pools": [
+            {
+                "id": p[0],
+                "name": p[1],
+                "times_used": p[2],
+                "avg_wpm": round(p[3], 1) if p[3] else 0,
+                "avg_accuracy": round(p[4], 1) if p[4] else 0
+            }
+            for p in top_pools
+        ]
+    }

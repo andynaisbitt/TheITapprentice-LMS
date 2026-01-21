@@ -110,6 +110,7 @@ export function useTutorial(slug: string | undefined) {
   const [tutorial, setTutorial] = useState<TutorialDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refetchTrigger, setRefetchTrigger] = useState(0);
 
   useEffect(() => {
     if (!slug) {
@@ -133,9 +134,13 @@ export function useTutorial(slug: string | undefined) {
     }
 
     fetchTutorial();
-  }, [slug]);
+  }, [slug, refetchTrigger]);
 
-  return { tutorial, loading, error, refetch: () => setLoading(true) };
+  const refetch = () => {
+    setRefetchTrigger((prev) => prev + 1);
+  };
+
+  return { tutorial, loading, error, refetch };
 }
 
 /**

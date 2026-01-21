@@ -22,9 +22,7 @@ pvp_router = APIRouter()
 
 
 async def get_user_from_token(token: str, db: Session) -> Optional[User]:
-    """Validate token and return user. Simplified for now."""
-    # In production, this should properly validate JWT token
-    # For now, we'll accept user_id directly for simplicity
+    """Validate token and return user."""
     try:
         from app.auth.dependencies import get_current_user_from_token
         user = await get_current_user_from_token(token, db)
@@ -34,11 +32,44 @@ async def get_user_from_token(token: str, db: Session) -> Optional[User]:
         return None
 
 
+async def get_user_from_cookie(websocket: WebSocket, db: Session) -> Optional[User]:
+    """Validate user from cookie (same as HTTP requests)."""
+    try:
+        from app.auth.utils import verify_token
+        from app.core.config import settings
+
+        # Get token from cookie
+        cookies = websocket.cookies
+        access_token = cookies.get("access_token") or cookies.get("access_token_cookie")
+
+        if not access_token:
+            logger.debug("No access token cookie found")
+            return None
+
+        # Verify the token
+        payload = verify_token(access_token, settings.SECRET_KEY)
+        if not payload:
+            logger.debug("Token verification failed")
+            return None
+
+        user_id = payload.get("sub")
+        if not user_id:
+            logger.debug("No user ID in token payload")
+            return None
+
+        # Get user from database
+        user = db.query(User).filter(User.id == int(user_id)).first()
+        return user
+    except Exception as e:
+        logger.error(f"Cookie validation failed: {e}")
+        return None
+
+
 @pvp_router.websocket("/ws/pvp/{match_id}")
 async def pvp_websocket(
     websocket: WebSocket,
     match_id: str,
-    token: str = Query(...),
+    token: Optional[str] = Query(None),
 ):
     """
     WebSocket endpoint for PVP match communication.
@@ -65,17 +96,33 @@ async def pvp_websocket(
     from app.core.database import SessionLocal
     db = SessionLocal()
 
+    # Accept the WebSocket connection first (required for cookie access)
+    await websocket.accept()
+
     try:
-        # Validate user
-        user = await get_user_from_token(token, db)
+        # Try token authentication first, then cookie authentication
+        user = None
+        if token:
+            user = await get_user_from_token(token, db)
+            if user:
+                logger.info(f"User {user.id} authenticated via token")
+
         if not user:
+            # Try cookie-based auth
+            user = await get_user_from_cookie(websocket, db)
+            if user:
+                logger.info(f"User {user.id} authenticated via cookie")
+
+        if not user:
+            logger.warning("WebSocket authentication failed - no valid token or cookie")
+            await websocket.send_json({"type": "error", "message": "Authentication required"})
             await websocket.close(code=4001, reason="Invalid authentication")
             return
 
         user_id = user.id
 
         # Validate match exists and user is a participant
-        match = db.query(PVPMatch).filter(PVPMatch.match_id == match_id).first()
+        match = db.query(PVPMatch).filter(PVPMatch.id == match_id).first()
         if not match:
             await websocket.close(code=4004, reason="Match not found")
             return
@@ -195,7 +242,7 @@ async def handle_pvp_message(
 
     elif message_type == "forfeit":
         # User forfeits the match
-        match = db.query(PVPMatch).filter(PVPMatch.match_id == match_id).first()
+        match = db.query(PVPMatch).filter(PVPMatch.id == match_id).first()
         if match and match.status == MatchStatus.IN_PROGRESS:
             # Determine winner (the other player)
             winner_id = match.player2_id if user_id == match.player1_id else match.player1_id
@@ -280,4 +327,23 @@ async def notify_opponent_found(match_id: str, player1_id: int, player2_id: int,
         "type": "opponent_found",
         "match_id": match_id,
         "opponent": player1_info,
+    })
+
+
+async def notify_new_round(
+    match_id: str,
+    round_number: int,
+    text_content: str,
+    word_count: int,
+    time_limit: int = 60
+):
+    """Notify all users in a match that a new round is starting with new content."""
+    await manager.broadcast_to_match(match_id, {
+        "type": "new_round",
+        "match_id": match_id,
+        "round_number": round_number,
+        "text_content": text_content,
+        "word_count": word_count,
+        "time_limit": time_limit,
+        "timestamp": datetime.utcnow().isoformat(),
     })

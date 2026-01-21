@@ -22,8 +22,15 @@ import {
 import { typingGameApi } from '../services/typingGameApi';
 import type { PVPMatch, Difficulty, UserPVPStats } from '../types';
 
+export interface PVPGameSettings {
+  rounds: 1 | 3 | 5;
+  timePerRound: 30 | 60 | 90;
+  allowBackspace: boolean;
+  difficulty: Difficulty;
+}
+
 interface PVPMatchLobbyProps {
-  onMatchFound: (match: PVPMatch) => void;
+  onMatchFound: (match: PVPMatch, settings: PVPGameSettings) => void;
   onCancel: () => void;
 }
 
@@ -32,12 +39,20 @@ export const PVPMatchLobby: React.FC<PVPMatchLobbyProps> = ({
   onCancel,
 }) => {
   const [isSearching, setIsSearching] = useState(false);
-  const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>('medium');
   const [currentMatch, setCurrentMatch] = useState<PVPMatch | null>(null);
   const [pvpStats, setPvpStats] = useState<UserPVPStats | null>(null);
   const [searchTime, setSearchTime] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [loadingStats, setLoadingStats] = useState(true);
+  const [showSettings, setShowSettings] = useState(false);
+
+  // Game settings
+  const [settings, setSettings] = useState<PVPGameSettings>({
+    rounds: 3,
+    timePerRound: 60,
+    allowBackspace: true,
+    difficulty: 'medium',
+  });
 
   // Fetch PVP stats on mount
   useEffect(() => {
@@ -75,7 +90,7 @@ export const PVPMatchLobby: React.FC<PVPMatchLobbyProps> = ({
           const updatedMatch = await typingGameApi.getPVPMatch(currentMatch.id);
           if (updatedMatch.status === 'IN_PROGRESS' || updatedMatch.player2_id) {
             setCurrentMatch(updatedMatch);
-            onMatchFound(updatedMatch);
+            onMatchFound(updatedMatch, settings);
           }
         } catch (err) {
           console.error('Failed to poll match status:', err);
@@ -84,7 +99,7 @@ export const PVPMatchLobby: React.FC<PVPMatchLobbyProps> = ({
     }
 
     return () => clearInterval(pollInterval);
-  }, [currentMatch, onMatchFound]);
+  }, [currentMatch, onMatchFound, settings]);
 
   const handleFindMatch = useCallback(async () => {
     setIsSearching(true);
@@ -93,20 +108,20 @@ export const PVPMatchLobby: React.FC<PVPMatchLobbyProps> = ({
 
     try {
       const match = await typingGameApi.findPVPMatch({
-        difficulty: selectedDifficulty,
+        difficulty: settings.difficulty,
       });
 
       setCurrentMatch(match);
 
       // If match already has opponent, proceed immediately
       if (match.player2_id || match.status === 'IN_PROGRESS') {
-        onMatchFound(match);
+        onMatchFound(match, settings);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to find match');
       setIsSearching(false);
     }
-  }, [selectedDifficulty, onMatchFound]);
+  }, [settings, onMatchFound]);
 
   const handleCancelSearch = useCallback(async () => {
     if (currentMatch) {
@@ -297,9 +312,9 @@ export const PVPMatchLobby: React.FC<PVPMatchLobbyProps> = ({
                         {difficulties.map((diff) => (
                           <button
                             key={diff.value}
-                            onClick={() => setSelectedDifficulty(diff.value)}
+                            onClick={() => setSettings(s => ({ ...s, difficulty: diff.value }))}
                             className={`p-3 rounded-lg border-2 transition-all ${
-                              selectedDifficulty === diff.value
+                              settings.difficulty === diff.value
                                 ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
                                 : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                             }`}
@@ -312,6 +327,101 @@ export const PVPMatchLobby: React.FC<PVPMatchLobbyProps> = ({
                         ))}
                       </div>
                     </div>
+
+                    {/* Game Settings Toggle */}
+                    <button
+                      onClick={() => setShowSettings(!showSettings)}
+                      className="w-full py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white flex items-center justify-center gap-2"
+                    >
+                      <RefreshCw className={`w-4 h-4 transition-transform ${showSettings ? 'rotate-180' : ''}`} />
+                      {showSettings ? 'Hide' : 'Show'} Game Settings
+                    </button>
+
+                    {/* Expanded Settings Panel */}
+                    <AnimatePresence>
+                      {showSettings && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg space-y-4">
+                            {/* Rounds Selection */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Number of Rounds
+                              </label>
+                              <div className="flex gap-2">
+                                {[1, 3, 5].map((r) => (
+                                  <button
+                                    key={r}
+                                    onClick={() => setSettings(s => ({ ...s, rounds: r as 1 | 3 | 5 }))}
+                                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                                      settings.rounds === r
+                                        ? 'bg-blue-500 text-white'
+                                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
+                                    }`}
+                                  >
+                                    Best of {r}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Time Per Round */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Time Per Round
+                              </label>
+                              <div className="flex gap-2">
+                                {[30, 60, 90].map((t) => (
+                                  <button
+                                    key={t}
+                                    onClick={() => setSettings(s => ({ ...s, timePerRound: t as 30 | 60 | 90 }))}
+                                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                                      settings.timePerRound === t
+                                        ? 'bg-blue-500 text-white'
+                                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
+                                    }`}
+                                  >
+                                    {t}s
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Backspace Toggle */}
+                            <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                              <div>
+                                <div className="font-medium text-gray-900 dark:text-white text-sm">
+                                  Allow Corrections
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {settings.allowBackspace
+                                    ? 'Players can use backspace to fix mistakes'
+                                    : 'No backspace - mistakes are permanent'}
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => setSettings(s => ({ ...s, allowBackspace: !s.allowBackspace }))}
+                                className={`relative w-12 h-6 rounded-full transition-colors ${
+                                  settings.allowBackspace
+                                    ? 'bg-green-500'
+                                    : 'bg-gray-300 dark:bg-gray-600'
+                                }`}
+                              >
+                                <motion.div
+                                  className="absolute top-1 w-4 h-4 bg-white rounded-full shadow"
+                                  animate={{ left: settings.allowBackspace ? 28 : 4 }}
+                                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                                />
+                              </button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
 
                     {/* Error Message */}
                     {error && (
@@ -332,7 +442,10 @@ export const PVPMatchLobby: React.FC<PVPMatchLobbyProps> = ({
                     {/* Match Info */}
                     <div className="text-center text-sm text-gray-500">
                       <p>You'll be matched with a player of similar skill level</p>
-                      <p className="mt-1">Best of 3 rounds • 60 seconds per round</p>
+                      <p className="mt-1">
+                        Best of {settings.rounds} rounds • {settings.timePerRound}s per round
+                        {!settings.allowBackspace && ' • No corrections'}
+                      </p>
                     </div>
                   </motion.div>
                 ) : (
@@ -363,8 +476,12 @@ export const PVPMatchLobby: React.FC<PVPMatchLobbyProps> = ({
                     <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
                       Searching for Opponent...
                     </h3>
-                    <p className="text-gray-600 dark:text-gray-400 mb-4">
-                      {selectedDifficulty.charAt(0).toUpperCase() + selectedDifficulty.slice(1)} difficulty
+                    <p className="text-gray-600 dark:text-gray-400 mb-2">
+                      {settings.difficulty.charAt(0).toUpperCase() + settings.difficulty.slice(1)} difficulty
+                    </p>
+                    <p className="text-xs text-gray-500 mb-4">
+                      Best of {settings.rounds} • {settings.timePerRound}s rounds
+                      {!settings.allowBackspace && ' • No corrections'}
                     </p>
 
                     {/* Search Time */}

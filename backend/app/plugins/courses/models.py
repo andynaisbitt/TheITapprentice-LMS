@@ -83,6 +83,46 @@ class EnrollmentStatus(str, enum.Enum):
 
 
 # ============================================================================
+# CERTIFICATE MODEL
+# ============================================================================
+
+class Certificate(Base):
+    """
+    Course completion certificate - generated when a user completes a course
+    """
+    __tablename__ = "certificates"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    course_id = Column(String(100), ForeignKey("courses.id", ondelete="CASCADE"), nullable=False, index=True)
+    enrollment_id = Column(Integer, ForeignKey("course_enrollments.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    # Certificate details
+    title = Column(String(300), nullable=False)  # "Certificate of Completion: Python Fundamentals"
+    description = Column(Text, nullable=True)  # "Successfully completed all modules..."
+    verification_code = Column(String(50), unique=True, nullable=False, index=True)  # "CERT-ABC123XYZ"
+
+    # Skills acquired from the course
+    skills_acquired = Column(JSON, default=list)  # ["Python", "Git", "API Development"]
+
+    # Recipient information (cached for certificate display)
+    recipient_name = Column(String(200), nullable=True)  # User's name at time of completion
+    instructor_name = Column(String(200), nullable=True)  # Instructor's name
+
+    # Course info at time of completion (for historical accuracy)
+    course_title = Column(String(200), nullable=False)
+    course_level = Column(String(50), nullable=True)
+    total_modules = Column(Integer, default=0)
+    total_sections = Column(Integer, default=0)
+
+    # Timestamps
+    issued_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True)
+
+    def __repr__(self):
+        return f"<Certificate {self.verification_code}: {self.title}>"
+
+
+# ============================================================================
 # CORE MODELS
 # ============================================================================
 

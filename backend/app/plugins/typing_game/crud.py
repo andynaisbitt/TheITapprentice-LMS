@@ -407,13 +407,18 @@ def get_user_stats(db: Session, user_id: int) -> Optional[models.UserTypingStats
 def create_pvp_match(
     db: Session,
     player1_id: int,
-    difficulty: str = "medium"
+    difficulty: str = "medium",
+    use_sentences: bool = True
 ) -> models.PVPMatch:
     """Create new PVP match"""
     match_id = str(uuid.uuid4())
 
-    # Generate content
-    text_content = generate_default_text(50)
+    # Generate content - prefer sentences over random words
+    if use_sentences:
+        text_content = generate_sentence_for_pvp(db, difficulty, round_number=1)
+    else:
+        text_content = generate_default_text(50)
+
     checksum = hashlib.sha256(f"{match_id}:{text_content}".encode()).hexdigest()
 
     # Determine skill bracket based on user's rating
@@ -614,6 +619,20 @@ def submit_pvp_round(
         elif current_round < match.total_rounds:
             # Move to next round
             match.current_round += 1
+
+            # Generate new content for the next round
+            next_round_content = generate_sentence_for_pvp(
+                db, match.difficulty, round_number=match.current_round
+            )
+            match.content = next_round_content
+            match.checksum = hashlib.sha256(
+                f"{match.id}:{next_round_content}".encode()
+            ).hexdigest()
+            match.word_count = len(next_round_content.split())
+
+            # Store next round content in result for immediate access
+            result["next_round_content"] = next_round_content
+            result["next_round_word_count"] = match.word_count
 
     match.round_results = round_results
     db.commit()
@@ -869,3 +888,200 @@ def get_rating_tier(rating: int) -> str:
         return "Master"
     else:
         return "Grandmaster"
+
+
+# ==================== SENTENCE POOL CRUD ====================
+
+def get_sentence_pool(db: Session, pool_id: str) -> Optional[models.SentencePool]:
+    """Get sentence pool by ID"""
+    return db.query(models.SentencePool).filter(
+        models.SentencePool.id == pool_id
+    ).first()
+
+
+def get_sentence_pools(
+    db: Session,
+    difficulty: Optional[str] = None,
+    category: Optional[str] = None,
+    is_active: bool = True,
+    skip: int = 0,
+    limit: int = 100
+) -> Tuple[List[models.SentencePool], int]:
+    """Get all sentence pools with optional filters"""
+    query = db.query(models.SentencePool)
+
+    if is_active is not None:
+        query = query.filter(models.SentencePool.is_active == is_active)
+
+    if difficulty:
+        query = query.filter(models.SentencePool.difficulty == difficulty)
+
+    if category:
+        query = query.filter(models.SentencePool.category == category)
+
+    total = query.count()
+
+    pools = query.order_by(
+        models.SentencePool.display_order,
+        models.SentencePool.name
+    ).offset(skip).limit(limit).all()
+
+    return pools, total
+
+
+def get_sentence_pools_for_round(
+    db: Session,
+    difficulty: str,
+    round_number: int = 1
+) -> List[models.SentencePool]:
+    """Get sentence pools suitable for a specific PVP round"""
+    pools = db.query(models.SentencePool).filter(
+        models.SentencePool.is_active == True,
+        models.SentencePool.difficulty == difficulty
+    ).all()
+
+    # Filter by round suitability
+    suitable_pools = []
+    for pool in pools:
+        round_suitable = pool.round_suitable or [1, 2, 3]
+        if round_number in round_suitable:
+            suitable_pools.append(pool)
+
+    return suitable_pools if suitable_pools else pools
+
+
+def create_sentence_pool(
+    db: Session,
+    pool_data: schemas.SentencePoolCreate,
+    created_by: Optional[int] = None
+) -> models.SentencePool:
+    """Create new sentence pool (admin only)"""
+    pool_id = str(uuid.uuid4())
+
+    # Calculate average word count
+    sentences = pool_data.sentences
+    total_words = sum(len(s.split()) for s in sentences)
+    avg_word_count = total_words / len(sentences) if sentences else 0
+
+    db_pool = models.SentencePool(
+        id=pool_id,
+        name=pool_data.name,
+        description=pool_data.description,
+        difficulty=pool_data.difficulty,
+        category=pool_data.category,
+        sentences=sentences,
+        min_length=pool_data.min_length,
+        max_length=pool_data.max_length,
+        avg_word_count=round(avg_word_count, 1),
+        is_active=pool_data.is_active,
+        is_featured=pool_data.is_featured,
+        display_order=pool_data.display_order,
+        round_suitable=pool_data.round_suitable,
+        difficulty_weight=pool_data.difficulty_weight,
+        created_by=created_by
+    )
+
+    db.add(db_pool)
+    db.commit()
+    db.refresh(db_pool)
+    return db_pool
+
+
+def update_sentence_pool(
+    db: Session,
+    pool_id: str,
+    pool_data: schemas.SentencePoolUpdate
+) -> Optional[models.SentencePool]:
+    """Update sentence pool (admin only)"""
+    db_pool = get_sentence_pool(db, pool_id)
+    if not db_pool:
+        return None
+
+    update_data = pool_data.model_dump(exclude_unset=True)
+
+    # Recalculate avg_word_count if sentences are updated
+    if "sentences" in update_data and update_data["sentences"]:
+        sentences = update_data["sentences"]
+        total_words = sum(len(s.split()) for s in sentences)
+        update_data["avg_word_count"] = round(total_words / len(sentences), 1) if sentences else 0
+
+    for field, value in update_data.items():
+        setattr(db_pool, field, value)
+
+    db.commit()
+    db.refresh(db_pool)
+    return db_pool
+
+
+def delete_sentence_pool(db: Session, pool_id: str) -> bool:
+    """Delete sentence pool (admin only)"""
+    db_pool = get_sentence_pool(db, pool_id)
+    if not db_pool:
+        return False
+
+    db.delete(db_pool)
+    db.commit()
+    return True
+
+
+def generate_sentence_for_pvp(
+    db: Session,
+    difficulty: str,
+    round_number: int = 1
+) -> str:
+    """
+    Generate text content for PVP from sentence pools.
+    Falls back to default text if no suitable pools exist.
+    """
+    pools = get_sentence_pools_for_round(db, difficulty, round_number)
+
+    if not pools:
+        # Fallback to default word-based generation
+        return generate_default_text(50)
+
+    # Select pool based on difficulty weight
+    total_weight = sum(pool.difficulty_weight for pool in pools)
+    if total_weight == 0:
+        selected_pool = random.choice(pools)
+    else:
+        rand_value = random.uniform(0, total_weight)
+        cumulative_weight = 0
+        selected_pool = pools[0]
+        for pool in pools:
+            cumulative_weight += pool.difficulty_weight
+            if rand_value <= cumulative_weight:
+                selected_pool = pool
+                break
+
+    # Select random sentence from the pool
+    sentences = selected_pool.sentences or []
+    if not sentences:
+        return generate_default_text(50)
+
+    selected_sentence = random.choice(sentences)
+
+    # Update pool stats
+    selected_pool.times_used += 1
+    db.commit()
+
+    return selected_sentence
+
+
+def update_sentence_pool_stats(
+    db: Session,
+    pool_id: str,
+    wpm: float,
+    accuracy: float
+) -> None:
+    """Update sentence pool stats after a PVP round"""
+    pool = get_sentence_pool(db, pool_id)
+    if not pool:
+        return
+
+    times_used = pool.times_used or 1
+
+    # Update running averages
+    pool.avg_wpm = ((pool.avg_wpm * (times_used - 1)) + wpm) / times_used
+    pool.avg_accuracy = ((pool.avg_accuracy * (times_used - 1)) + accuracy) / times_used
+
+    db.commit()

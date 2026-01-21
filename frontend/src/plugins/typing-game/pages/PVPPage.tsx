@@ -10,14 +10,14 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../state/contexts/AuthContext';
 import { typingGameApi } from '../services/typingGameApi';
 import { usePVPWebSocket, MatchJoinedData, RoundStartedData, RoundEndedData, MatchEndedData } from '../hooks/usePVPWebSocket';
-import { PVPMatchLobby } from '../components/PVPMatchLobby';
+import { PVPMatchLobby, PVPGameSettings } from '../components/PVPMatchLobby';
 import { PVPGameInterface } from '../components/PVPGameInterface';
 import { PVPRoundResults, RoundResultData } from '../components/PVPRoundResults';
 import { PVPMatchResults, MatchResultData } from '../components/PVPMatchResults';
 import { RegistrationPrompt } from '../../../components/auth/RegistrationPrompt';
 import type { PVPMatch, PVPMatchDetail } from '../types';
 
-type GamePhase = 'lobby' | 'waiting' | 'playing' | 'round_results' | 'match_results';
+type GamePhase = 'lobby' | 'waiting' | 'countdown' | 'playing' | 'round_results' | 'match_results';
 
 export const PVPPage: React.FC = () => {
   const navigate = useNavigate();
@@ -37,6 +37,17 @@ export const PVPPage: React.FC = () => {
   // Results
   const [roundResult, setRoundResult] = useState<RoundResultData | null>(null);
   const [matchResult, setMatchResult] = useState<MatchResultData | null>(null);
+
+  // Countdown state
+  const [countdown, setCountdown] = useState(3);
+
+  // Game settings from lobby
+  const [gameSettings, setGameSettings] = useState<PVPGameSettings>({
+    rounds: 3,
+    timePerRound: 60,
+    allowBackspace: true,
+    difficulty: 'medium',
+  });
 
   // Score tracking
   const [playerScore, setPlayerScore] = useState(0);
@@ -87,8 +98,27 @@ export const PVPPage: React.FC = () => {
     console.log('[PVP] Round started:', data);
     setRoundText(data.text_content);
     setTimeLimit(data.time_limit);
-    setPhase('playing');
+
+    // Start countdown before playing
+    setCountdown(3);
+    setPhase('countdown');
   }, []);
+
+  // Countdown effect - when in countdown phase, count down to 0 then start playing
+  useEffect(() => {
+    if (phase !== 'countdown') return;
+
+    if (countdown <= 0) {
+      setPhase('playing');
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setCountdown(prev => prev - 1);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [phase, countdown]);
 
   const handleRoundEnded = useCallback((data: RoundEndedData) => {
     console.log('[PVP] Round ended:', data);
@@ -202,9 +232,11 @@ export const PVPPage: React.FC = () => {
   } : null;
 
   // Handle match found from lobby
-  const handleMatchFound = useCallback(async (match: PVPMatch) => {
-    console.log('[PVP] Match found:', match);
+  const handleMatchFound = useCallback(async (match: PVPMatch, settings: PVPGameSettings) => {
+    console.log('[PVP] Match found:', match, 'with settings:', settings);
     setCurrentMatch(match);
+    setGameSettings(settings);
+    setTimeLimit(settings.timePerRound);
     setPhase('waiting');
 
     // Fetch full match details
@@ -232,13 +264,21 @@ export const PVPPage: React.FC = () => {
     if (!currentMatch) return;
 
     try {
+      // Ensure all values are properly typed for the API
+      // time_elapsed must be an integer (backend validation)
+      // accuracy must be 0-100 range
+      const timeElapsedInt = Math.round(timeElapsed);
+      const accuracyBounded = Math.min(100, Math.max(0, accuracy));
+      const wpmBounded = Math.min(300, Math.max(0, wpm));
+      const wordsTyped = Math.floor(wpmBounded * (timeElapsedInt / 60));
+
       // Submit round results to API
       const result = await typingGameApi.submitPVPRound({
         match_id: currentMatch.id,
-        wpm,
-        accuracy,
-        time_elapsed: timeElapsed,
-        words_typed: Math.floor(wpm * (timeElapsed / 60)),
+        wpm: wpmBounded,
+        accuracy: accuracyBounded,
+        time_elapsed: timeElapsedInt,
+        words_typed: wordsTyped,
       });
 
       console.log('[PVP] Round submitted:', result);
@@ -319,6 +359,57 @@ export const PVPPage: React.FC = () => {
           </div>
         );
 
+      case 'countdown':
+        return (
+          <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+            <div className="text-center">
+              {/* Round indicator */}
+              <div className="mb-8">
+                <p className="text-gray-500 dark:text-gray-400 text-lg mb-2">Round {currentRound}</p>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Get Ready!</h2>
+              </div>
+
+              {/* Countdown number with animation */}
+              <div className="relative mb-8">
+                <div
+                  key={countdown}
+                  className="text-9xl font-bold text-blue-500 animate-bounce"
+                  style={{
+                    animation: 'pulse 1s ease-in-out',
+                    textShadow: '0 0 40px rgba(59, 130, 246, 0.5)',
+                  }}
+                >
+                  {countdown > 0 ? countdown : 'GO!'}
+                </div>
+                {/* Ripple effect */}
+                <div
+                  className="absolute inset-0 flex items-center justify-center"
+                  style={{ pointerEvents: 'none' }}
+                >
+                  <div
+                    key={`ripple-${countdown}`}
+                    className="w-32 h-32 rounded-full border-4 border-blue-500 animate-ping opacity-50"
+                  />
+                </div>
+              </div>
+
+              {/* Opponent info */}
+              {opponentInfo && (
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg inline-block">
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">Opponent</p>
+                  <p className="text-gray-900 dark:text-white font-semibold">{opponentInfo.username}</p>
+                  <p className="text-gray-400 text-xs">Rating: {opponentInfo.rating}</p>
+                </div>
+              )}
+
+              {/* Instructions */}
+              <p className="mt-8 text-gray-500 dark:text-gray-400 text-sm">
+                Type the text as fast and accurately as possible!
+              </p>
+            </div>
+          </div>
+        );
+
       case 'playing':
         return currentMatch ? (
           <PVPGameInterface
@@ -326,11 +417,12 @@ export const PVPPage: React.FC = () => {
             roundText={roundText}
             timeLimit={timeLimit}
             currentRound={currentRound}
-            totalRounds={(currentMatch as PVPMatchDetail).total_rounds || 3}
+            totalRounds={gameSettings.rounds}
             playerNumber={playerNumber}
             opponentInfo={opponentInfo || undefined}
             onRoundComplete={handleRoundComplete}
             onForfeit={handleForfeit}
+            allowBackspace={gameSettings.allowBackspace}
           />
         ) : null;
 
@@ -338,11 +430,11 @@ export const PVPPage: React.FC = () => {
         return roundResult ? (
           <PVPRoundResults
             result={roundResult}
-            totalRounds={(currentMatch as PVPMatchDetail)?.total_rounds || 3}
+            totalRounds={gameSettings.rounds}
             playerName={user?.first_name || user?.username || 'You'}
             opponentName={opponentInfo?.username || 'Opponent'}
             onContinue={handleContinueAfterRound}
-            isLastRound={roundResult.roundNumber >= ((currentMatch as PVPMatchDetail)?.total_rounds || 3)}
+            isLastRound={roundResult.roundNumber >= gameSettings.rounds}
           />
         ) : null;
 

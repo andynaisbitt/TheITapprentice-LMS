@@ -228,7 +228,7 @@ class PVPRoundSubmitRequest(BaseModel):
 
 class PVPRoundResultResponse(BaseModel):
     round_number: int
-    winner: str  # "player", "opponent", "tie"
+    winner: str  # "player", "opponent", "tie", "pending"
     player_wpm: float
     opponent_wpm: float
     player_accuracy: float
@@ -236,6 +236,9 @@ class PVPRoundResultResponse(BaseModel):
     match_status: str
     current_score: Dict[str, int]
     xp_earned: Optional[int] = None
+    # Next round content (only present if there's another round)
+    next_round_content: Optional[str] = None
+    next_round_word_count: Optional[int] = None
 
 
 class UserPVPStatsResponse(BaseModel):
@@ -327,6 +330,111 @@ class TypingChallengeUpdate(BaseModel):
     related_skills: Optional[List[str]] = None
     is_active: Optional[bool] = None
     round_order: Optional[int] = None
+
+
+# ==================== SENTENCE POOL SCHEMAS ====================
+
+class SentencePoolBase(BaseModel):
+    name: str = Field(..., min_length=1, max_length=200)
+    description: Optional[str] = None
+    difficulty: str = Field(..., pattern="^(easy|medium|hard|expert)$")
+    category: str = Field(..., min_length=1, max_length=50)
+    sentences: List[str] = Field(..., min_length=1)
+
+
+class SentencePoolCreate(SentencePoolBase):
+    min_length: int = Field(default=20, ge=5, le=500)
+    max_length: int = Field(default=200, ge=20, le=1000)
+    is_active: bool = True
+    is_featured: bool = False
+    display_order: int = 0
+    round_suitable: List[int] = Field(default_factory=lambda: [1, 2, 3])
+    difficulty_weight: float = Field(default=1.0, ge=0.1, le=10.0)
+
+
+class SentencePoolUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=200)
+    description: Optional[str] = None
+    difficulty: Optional[str] = Field(None, pattern="^(easy|medium|hard|expert)$")
+    category: Optional[str] = Field(None, min_length=1, max_length=50)
+    sentences: Optional[List[str]] = None
+    min_length: Optional[int] = Field(None, ge=5, le=500)
+    max_length: Optional[int] = Field(None, ge=20, le=1000)
+    is_active: Optional[bool] = None
+    is_featured: Optional[bool] = None
+    display_order: Optional[int] = None
+    round_suitable: Optional[List[int]] = None
+    difficulty_weight: Optional[float] = Field(None, ge=0.1, le=10.0)
+
+
+class SentencePoolResponse(BaseModel):
+    id: str
+    name: str
+    description: Optional[str]
+    difficulty: str
+    category: str
+    sentences: List[str]
+    min_length: int
+    max_length: int
+    avg_word_count: float
+    is_active: bool
+    is_featured: bool
+    display_order: int
+    round_suitable: List[int]
+    difficulty_weight: float
+    times_used: int
+    avg_wpm: float
+    avg_accuracy: float
+    created_at: datetime
+    updated_at: datetime
+    sentence_count: int = 0
+
+    class Config:
+        from_attributes = True
+
+    @classmethod
+    def from_orm_with_count(cls, obj):
+        """Create response with calculated sentence count"""
+        data = {
+            "id": obj.id,
+            "name": obj.name,
+            "description": obj.description,
+            "difficulty": obj.difficulty,
+            "category": obj.category,
+            "sentences": obj.sentences or [],
+            "min_length": obj.min_length,
+            "max_length": obj.max_length,
+            "avg_word_count": obj.avg_word_count,
+            "is_active": obj.is_active,
+            "is_featured": obj.is_featured,
+            "display_order": obj.display_order,
+            "round_suitable": obj.round_suitable or [1, 2, 3],
+            "difficulty_weight": obj.difficulty_weight,
+            "times_used": obj.times_used,
+            "avg_wpm": obj.avg_wpm,
+            "avg_accuracy": obj.avg_accuracy,
+            "created_at": obj.created_at,
+            "updated_at": obj.updated_at,
+            "sentence_count": len(obj.sentences) if obj.sentences else 0
+        }
+        return cls(**data)
+
+
+class SentencePoolSummary(BaseModel):
+    id: str
+    name: str
+    difficulty: str
+    category: str
+    sentence_count: int
+    is_active: bool
+    is_featured: bool
+
+
+class SentencePoolListResponse(BaseModel):
+    pools: List[SentencePoolResponse]
+    total: int
+    page: int
+    page_size: int
 
 
 # ==================== ADMIN SCHEMAS ====================
