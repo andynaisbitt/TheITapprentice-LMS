@@ -254,27 +254,27 @@ def create_sample_courses(db: Session, instructor_id: int = 1) -> List[Course]:
         # Create Module 1 and its sections
         mod_1 = create_module(
             db,
-            it_support_course.id,
-            CourseModuleCreate(**module_1)
+            CourseModuleCreate(**module_1),
+            it_support_course.id
         )
         for section_data in module_1_sections:
             create_section(
                 db,
-                mod_1.id,
-                ModuleSectionCreate(**section_data)
+                ModuleSectionCreate(**section_data),
+                mod_1.id
             )
 
         # Create Module 2 and its sections
         mod_2 = create_module(
             db,
-            it_support_course.id,
-            CourseModuleCreate(**module_2)
+            CourseModuleCreate(**module_2),
+            it_support_course.id
         )
         for section_data in module_2_sections:
             create_section(
                 db,
-                mod_2.id,
-                ModuleSectionCreate(**section_data)
+                ModuleSectionCreate(**section_data),
+                mod_2.id
             )
 
         courses.append(it_support_course)
@@ -391,13 +391,13 @@ def create_sample_courses(db: Session, instructor_id: int = 1) -> List[Course]:
 
         mod_net = create_module(
             db,
-            networking_course.id,
-            CourseModuleCreate(**networking_module_1)
+            CourseModuleCreate(**networking_module_1),
+            networking_course.id
         )
         create_section(
             db,
-            mod_net.id,
-            ModuleSectionCreate(**networking_section_1)
+            ModuleSectionCreate(**networking_section_1),
+            mod_net.id
         )
 
         courses.append(networking_course)
