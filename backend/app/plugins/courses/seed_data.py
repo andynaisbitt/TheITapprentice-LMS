@@ -10,7 +10,7 @@ from typing import List
 from app.users.models import User, UserRole
 from app.auth.email_verification import EmailVerification
 
-from app.plugins.courses.models import Course, CourseModule, ModuleSection
+from app.plugins.courses.models import Course, CourseModule, ModuleSection, CourseLevel, CourseStatus
 from app.plugins.courses.schemas import (
     CourseCreate,
     CourseModuleCreate,
@@ -233,12 +233,31 @@ def create_sample_courses(db: Session, instructor_id: int = 1) -> List[Course]:
         "status": "published"
     }
 
-    # Create Python course
-    from app.plugins.courses.crud import create_course, create_module, create_section
-
+    # Create Python course directly using model to avoid enum conversion issues
     try:
-        # Create course
-        python_course = create_course(db, CourseCreate(**python_course_data))
+        # Create course directly
+        python_course = Course(
+            id=python_course_data["id"],
+            title=python_course_data["title"],
+            description=python_course_data["description"],
+            short_description=python_course_data.get("short_description"),
+            level=CourseLevel.BEGINNER,  # Use model enum directly
+            status=CourseStatus.DRAFT,
+            category=python_course_data.get("category"),
+            instructor_id=python_course_data["instructor_id"],
+            is_premium=python_course_data.get("is_premium", False),
+            price=python_course_data.get("price", 0.0),
+            estimated_hours=python_course_data.get("estimated_hours", 0),
+            related_skills=python_course_data.get("related_skills", []),
+            xp_reward=python_course_data.get("xp_reward", 0),
+            requirements=python_course_data.get("requirements", []),
+            objectives=python_course_data.get("objectives", []),
+        )
+        db.add(python_course)
+        db.commit()
+        db.refresh(python_course)
+
+        from app.plugins.courses.crud import create_module, create_section
 
         # Create Module 1 and its sections
         mod_1 = create_module(
@@ -351,7 +370,27 @@ def create_sample_courses(db: Session, instructor_id: int = 1) -> List[Course]:
     }
 
     try:
-        react_course = create_course(db, CourseCreate(**react_course_data))
+        # Create React course directly using model to avoid enum conversion issues
+        react_course = Course(
+            id=react_course_data["id"],
+            title=react_course_data["title"],
+            description=react_course_data["description"],
+            short_description=react_course_data.get("short_description"),
+            level=CourseLevel.INTERMEDIATE,  # Use model enum directly
+            status=CourseStatus.DRAFT,
+            category=react_course_data.get("category"),
+            instructor_id=react_course_data["instructor_id"],
+            is_premium=react_course_data.get("is_premium", False),
+            price=react_course_data.get("price", 0.0),
+            estimated_hours=react_course_data.get("estimated_hours", 0),
+            related_skills=react_course_data.get("related_skills", []),
+            xp_reward=react_course_data.get("xp_reward", 0),
+            requirements=react_course_data.get("requirements", []),
+            objectives=react_course_data.get("objectives", []),
+        )
+        db.add(react_course)
+        db.commit()
+        db.refresh(react_course)
 
         mod_react = create_module(
             db,
