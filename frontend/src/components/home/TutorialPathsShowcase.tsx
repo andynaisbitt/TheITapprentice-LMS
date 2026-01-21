@@ -65,6 +65,13 @@ const TutorialPathsShowcase: React.FC = () => {
         // Fetch categories
         const cats = await getTutorialCategories();
 
+        // Defensive: ensure cats is an array
+        if (!Array.isArray(cats) || cats.length === 0) {
+          setCategories([]);
+          setLoading(false);
+          return;
+        }
+
         // Fetch tutorials for each category (limit 3 per category)
         const categoriesWithTutorials = await Promise.all(
           cats.slice(0, 4).map(async (cat) => {
@@ -76,7 +83,7 @@ const TutorialPathsShowcase: React.FC = () => {
               });
               return {
                 ...cat,
-                tutorials: tutorials || [],
+                tutorials: Array.isArray(tutorials) ? tutorials : [],
               };
             } catch {
               return { ...cat, tutorials: [] };
@@ -86,12 +93,13 @@ const TutorialPathsShowcase: React.FC = () => {
 
         // Filter out categories with no tutorials
         const nonEmptyCategories = categoriesWithTutorials.filter(
-          (cat) => cat.tutorials.length > 0
+          (cat) => cat.tutorials && cat.tutorials.length > 0
         );
 
         setCategories(nonEmptyCategories);
       } catch (error) {
         console.error('Failed to load tutorial paths:', error);
+        setCategories([]); // Ensure empty array on error
       } finally {
         setLoading(false);
       }

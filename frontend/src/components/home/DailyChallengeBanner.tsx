@@ -48,14 +48,16 @@ export const DailyChallengeBanner: React.FC = () => {
       try {
         const response = await challengesApi.getTodaysChallenges();
         setState({
-          challenges: response.challenges,
-          streak: response.streak_info,
+          // Defensive: ensure challenges is always an array
+          challenges: Array.isArray(response?.challenges) ? response.challenges : [],
+          streak: response?.streak_info || null,
           loading: false,
           error: null,
         });
       } catch {
         setState((prev) => ({
           ...prev,
+          challenges: [], // Ensure empty array on error
           loading: false,
           error: 'Failed to load challenges',
         }));
