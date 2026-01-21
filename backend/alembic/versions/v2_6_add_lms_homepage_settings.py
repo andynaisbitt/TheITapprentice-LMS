@@ -1,7 +1,7 @@
 """Add LMS homepage visibility settings
 
-Revision ID: v2_6_add_lms_homepage_settings
-Revises: v2_5_add_daily_challenges
+Revision ID: v2_6_lms_homepage
+Revises: v2_5_daily_challenges
 Create Date: 2026-01-21
 
 """
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'v2_6_add_lms_homepage_settings'
-down_revision = 'v2_5_add_daily_challenges'
+revision = 'v2_6_lms_homepage'
+down_revision = 'v2_5_daily_challenges'
 branch_labels = None
 depends_on = None
 

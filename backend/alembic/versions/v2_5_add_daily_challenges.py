@@ -1,7 +1,7 @@
 """v2.5 Add daily challenges system
 
 Revision ID: v2_5_daily_challenges
-Revises: v2_4_add_show_lms_navigation
+Revises: v2_4_lms_nav
 Create Date: 2026-01-21 10:00:00.000000
 
 """
@@ -12,7 +12,7 @@ import uuid
 
 # revision identifiers, used by Alembic.
 revision = 'v2_5_daily_challenges'
-down_revision = 'v2_4_add_show_lms_navigation'
+down_revision = 'v2_4_lms_nav'
 branch_labels = None
 depends_on = None
 
