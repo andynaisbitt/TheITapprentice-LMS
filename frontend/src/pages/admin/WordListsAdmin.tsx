@@ -60,66 +60,38 @@ export const WordListsAdmin: React.FC = () => {
   const loadWordLists = async () => {
     setLoading(true);
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/v1/games/typing/admin/word-lists');
+      const response = await fetch('/api/v1/games/typing/admin/word-lists', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
 
-      // Mock data
-      setWordLists([
-        {
-          id: 'common-words',
-          name: 'Common English Words',
-          description: 'The most frequently used English words',
-          difficulty: 'easy',
-          theme: 'general',
-          words: ['the', 'be', 'to', 'of', 'and', 'a', 'in', 'that', 'have', 'it'],
-          unlock_level: 1,
-          is_featured: true,
-          is_active: true,
-          times_played: 1523,
-          created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 90).toISOString(),
-        },
-        {
-          id: 'programming-terms',
-          name: 'Programming Keywords',
-          description: 'Common programming terms and keywords',
-          difficulty: 'medium',
-          theme: 'programming',
-          words: ['function', 'variable', 'const', 'return', 'import', 'export', 'class', 'interface'],
-          unlock_level: 3,
-          is_featured: true,
-          is_active: true,
-          times_played: 892,
-          created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 60).toISOString(),
-        },
-        {
-          id: 'linux-commands',
-          name: 'Linux Commands',
-          description: 'Essential Linux terminal commands',
-          difficulty: 'hard',
-          theme: 'technology',
-          words: ['chmod', 'grep', 'sudo', 'apt-get', 'systemctl', 'journalctl', 'docker'],
-          unlock_level: 5,
-          is_featured: false,
-          is_active: true,
-          times_played: 456,
-          created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString(),
-        },
-        {
-          id: 'code-snippets',
-          name: 'Code Snippets',
-          description: 'Real code patterns and syntax',
-          difficulty: 'expert',
-          theme: 'programming',
-          words: ['const handleSubmit = async (e) => {', 'import { useState } from "react"', 'export default function App()'],
-          unlock_level: 8,
-          is_featured: false,
-          is_active: true,
-          times_played: 234,
-          created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 15).toISOString(),
-        },
-      ]);
+      if (!response.ok) {
+        throw new Error('Failed to fetch word lists');
+      }
+
+      const data = await response.json();
+
+      // Map API response to our WordList type
+      const mappedLists: WordList[] = data.map((wl: any) => ({
+        id: wl.id,
+        name: wl.name,
+        description: wl.description || '',
+        difficulty: wl.difficulty || 'medium',
+        theme: wl.theme || 'general',
+        words: wl.words || [],
+        unlock_level: wl.unlock_level || 1,
+        is_featured: wl.is_featured || false,
+        is_active: wl.is_active ?? true,
+        times_played: wl.times_played || 0,
+        created_at: wl.created_at || new Date().toISOString(),
+      }));
+
+      setWordLists(mappedLists);
     } catch (error) {
       console.error('Failed to load word lists:', error);
+      // Fallback to empty array
+      setWordLists([]);
     } finally {
       setLoading(false);
     }
@@ -143,49 +115,104 @@ export const WordListsAdmin: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this word list?')) return;
-    // TODO: Implement delete API call
-    setWordLists(wordLists.filter(w => w.id !== id));
+
+    try {
+      const response = await fetch(`/api/v1/games/typing/admin/word-lists/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete word list');
+      }
+
+      setWordLists(wordLists.filter(w => w.id !== id));
+    } catch (error) {
+      console.error('Failed to delete word list:', error);
+      alert('Failed to delete word list');
+    }
   };
 
   const handleSave = async () => {
     const wordsArray = formData.words.split('\n').map(w => w.trim()).filter(Boolean);
 
-    if (editingList) {
-      setWordLists(wordLists.map(w =>
-        w.id === editingList.id
-          ? { ...w, ...formData, words: wordsArray }
-          : w
-      ));
-    } else {
-      const newList: WordList = {
-        id: formData.id || formData.name.toLowerCase().replace(/\s+/g, '-'),
-        name: formData.name,
-        description: formData.description,
-        difficulty: formData.difficulty,
-        theme: formData.theme,
-        words: wordsArray,
-        unlock_level: formData.unlock_level,
-        is_featured: formData.is_featured,
-        is_active: formData.is_active,
-        times_played: 0,
-        created_at: new Date().toISOString(),
-      };
-      setWordLists([...wordLists, newList]);
-    }
+    const payload = {
+      id: formData.id || formData.name.toLowerCase().replace(/\s+/g, '-'),
+      name: formData.name,
+      description: formData.description,
+      difficulty: formData.difficulty,
+      theme: formData.theme,
+      words: wordsArray,
+      unlock_level: formData.unlock_level,
+      is_featured: formData.is_featured,
+      is_active: formData.is_active,
+    };
 
-    setShowForm(false);
-    setEditingList(null);
-    setFormData({
-      id: '',
-      name: '',
-      description: '',
-      difficulty: 'medium',
-      theme: 'general',
-      words: '',
-      unlock_level: 1,
-      is_featured: false,
-      is_active: true,
-    });
+    try {
+      if (editingList) {
+        // Update existing word list
+        const response = await fetch(`/api/v1/games/typing/admin/word-lists/${editingList.id}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to update word list');
+        }
+
+        const updatedList = await response.json();
+        setWordLists(wordLists.map(w =>
+          w.id === editingList.id
+            ? { ...w, ...updatedList, words: updatedList.words || wordsArray }
+            : w
+        ));
+      } else {
+        // Create new word list
+        const response = await fetch('/api/v1/games/typing/admin/word-lists', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to create word list');
+        }
+
+        const newList = await response.json();
+        setWordLists([...wordLists, {
+          ...newList,
+          words: newList.words || wordsArray,
+          times_played: 0,
+          created_at: newList.created_at || new Date().toISOString(),
+        }]);
+      }
+
+      setShowForm(false);
+      setEditingList(null);
+      setFormData({
+        id: '',
+        name: '',
+        description: '',
+        difficulty: 'medium',
+        theme: 'general',
+        words: '',
+        unlock_level: 1,
+        is_featured: false,
+        is_active: true,
+      });
+    } catch (error) {
+      console.error('Failed to save word list:', error);
+      alert('Failed to save word list');
+    }
   };
 
   const getDifficultyColor = (difficulty: string) => {

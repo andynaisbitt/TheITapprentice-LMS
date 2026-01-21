@@ -89,24 +89,38 @@ export const AchievementsAdmin: React.FC = () => {
   const loadAchievements = async () => {
     setLoading(true);
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/v1/progress/admin/achievements');
-      // const data = await response.json();
-      // setAchievements(data);
+      const response = await fetch('/api/v1/progress/admin/achievements', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
 
-      // Mock data based on actual seeded achievements
-      setAchievements([
-        { id: 'first_tutorial', name: 'First Steps', description: 'Complete your first tutorial', icon: 'BookOpen', category: 'tutorials', rarity: 'common', xp_reward: 50, unlock_condition: { type: 'count', action: 'tutorial_complete', count: 1 }, is_hidden: false, is_active: true, unlock_count: 45 },
-        { id: 'tutorial_explorer', name: 'Tutorial Explorer', description: 'Complete 5 tutorials', icon: 'Compass', category: 'tutorials', rarity: 'uncommon', xp_reward: 100, unlock_condition: { type: 'count', action: 'tutorial_complete', count: 5 }, is_hidden: false, is_active: true, unlock_count: 23 },
-        { id: 'tutorial_master', name: 'Tutorial Master', description: 'Complete 25 tutorials', icon: 'GraduationCap', category: 'tutorials', rarity: 'rare', xp_reward: 250, unlock_condition: { type: 'count', action: 'tutorial_complete', count: 25 }, is_hidden: false, is_active: true, unlock_count: 5 },
-        { id: 'speed_demon_80', name: 'Speed Demon', description: 'Reach 80+ WPM in typing game', icon: 'Zap', category: 'typing', rarity: 'uncommon', xp_reward: 150, unlock_condition: { type: 'value', metric: 'wpm', operator: '>=', value: 80 }, is_hidden: false, is_active: true, unlock_count: 12 },
-        { id: 'speed_demon_100', name: 'Lightning Fingers', description: 'Reach 100+ WPM in typing game', icon: 'Flame', category: 'typing', rarity: 'rare', xp_reward: 300, unlock_condition: { type: 'value', metric: 'wpm', operator: '>=', value: 100 }, is_hidden: false, is_active: true, unlock_count: 3 },
-        { id: 'streak_7', name: 'Week Warrior', description: 'Maintain a 7-day streak', icon: 'Calendar', category: 'streak', rarity: 'uncommon', xp_reward: 75, unlock_condition: { type: 'streak', days: 7 }, is_hidden: false, is_active: true, unlock_count: 18 },
-        { id: 'streak_30', name: 'Monthly Master', description: 'Maintain a 30-day streak', icon: 'Flame', category: 'streak', rarity: 'rare', xp_reward: 250, unlock_condition: { type: 'streak', days: 30 }, is_hidden: false, is_active: true, unlock_count: 2 },
-        { id: 'early_adopter', name: 'Early Adopter', description: 'Joined during beta', icon: 'Star', category: 'special', rarity: 'epic', xp_reward: 100, unlock_condition: { type: 'special', trigger: 'manual' }, is_hidden: true, is_active: true, unlock_count: 8 },
-      ]);
+      if (!response.ok) {
+        throw new Error('Failed to fetch achievements');
+      }
+
+      const data = await response.json();
+
+      // Map API response to our Achievement type
+      const mappedAchievements: Achievement[] = data.map((a: any) => ({
+        id: a.id,
+        name: a.name,
+        description: a.description,
+        icon: a.icon || 'Trophy',
+        category: a.category || 'special',
+        rarity: a.rarity || 'common',
+        xp_reward: a.xp_reward || 0,
+        unlock_condition: a.unlock_condition || {},
+        is_hidden: a.is_hidden || false,
+        is_active: a.is_active ?? true,
+        unlock_count: a.unlock_count || 0,
+      }));
+
+      setAchievements(mappedAchievements);
     } catch (error) {
       console.error('Failed to load achievements:', error);
+      // Fallback to empty array if API fails
+      setAchievements([]);
     } finally {
       setLoading(false);
     }
@@ -115,8 +129,23 @@ export const AchievementsAdmin: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this achievement?')) return;
 
-    // TODO: Implement delete API call
-    setAchievements(achievements.filter(a => a.id !== id));
+    try {
+      const response = await fetch(`/api/v1/progress/admin/achievements/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete achievement');
+      }
+
+      setAchievements(achievements.filter(a => a.id !== id));
+    } catch (error) {
+      console.error('Failed to delete achievement:', error);
+      alert('Failed to delete achievement');
+    }
   };
 
   const filteredAchievements = achievements.filter(a => {

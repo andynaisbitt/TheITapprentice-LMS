@@ -45,58 +45,39 @@ export const ActivityLogPage: React.FC = () => {
   const loadActivities = async () => {
     setLoading(true);
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch(`/api/v1/admin/activities?type=${filter}`);
-      // const data = await response.json();
-      // setActivities(data);
+      const typeParam = filter !== 'all' ? `&activity_type=${filter}` : '';
+      const response = await fetch(`/api/v1/admin/activities?page=1&page_size=50${typeParam}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
 
-      // Mock data
-      setActivities([
-        {
-          id: '1',
-          type: 'tutorial_complete',
-          title: 'Completed tutorial: Python Basics',
-          user: { id: 1, username: 'john_doe' },
-          timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-          xp_earned: 100,
+      if (!response.ok) {
+        throw new Error('Failed to fetch activities');
+      }
+
+      const data = await response.json();
+
+      // Map API response to our ActivityLogItem type
+      const mappedActivities: ActivityLogItem[] = data.activities.map((a: any) => ({
+        id: String(a.id),
+        type: a.type || 'unknown',
+        title: a.title || 'Activity',
+        description: a.description,
+        user: {
+          id: a.user.id,
+          username: a.user.username,
+          avatar: a.user.avatar,
         },
-        {
-          id: '2',
-          type: 'achievement_unlock',
-          title: 'Unlocked achievement: Speed Demon',
-          description: 'Reached 80+ WPM in typing game',
-          user: { id: 2, username: 'jane_smith' },
-          timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
-          xp_earned: 150,
-        },
-        {
-          id: '3',
-          type: 'login',
-          title: 'User logged in',
-          user: { id: 3, username: 'bob_wilson' },
-          timestamp: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
-          xp_earned: 10,
-        },
-        {
-          id: '4',
-          type: 'typing_game',
-          title: 'Completed typing game',
-          description: '65 WPM, 95% accuracy',
-          user: { id: 1, username: 'john_doe' },
-          timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-          xp_earned: 50,
-        },
-        {
-          id: '5',
-          type: 'post_view',
-          title: 'Viewed blog post',
-          description: 'Docker Guide for Beginners',
-          user: { id: 4, username: 'alice_chen' },
-          timestamp: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
-        },
-      ]);
+        timestamp: a.timestamp,
+        xp_earned: a.xp_earned,
+      }));
+
+      setActivities(mappedActivities);
     } catch (error) {
       console.error('Failed to load activities:', error);
+      // Fallback to empty array if API fails
+      setActivities([]);
     } finally {
       setLoading(false);
     }

@@ -60,6 +60,7 @@ const TypingGamePage = lazy(() => import('../plugins/typing-game/pages/TypingGam
 const TypingGamePlayPage = lazy(() => import('../plugins/typing-game/pages/TypingGamePlayPage'));
 const TypingLeaderboardPage = lazy(() => import('../plugins/typing-game/pages/TypingLeaderboardPage'));
 const PVPPage = lazy(() => import('../plugins/typing-game/pages/PVPPage'));
+const PracticeGamePage = lazy(() => import('../plugins/typing-game/pages/PracticeGamePage'));
 
 // Quiz plugin pages
 const QuizzesPage = lazy(() => import('../plugins/quizzes/pages/QuizzesPage'));
@@ -360,6 +361,14 @@ export const AppRoutes = () => {
                 <PVPPage />
               </Layout>
             </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/games/typing/practice"
+          element={
+            <Layout>
+              <PracticeGamePage />
+            </Layout>
           }
         />
 

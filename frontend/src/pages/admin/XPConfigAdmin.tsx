@@ -44,7 +44,14 @@ const DEFAULT_LEVELS: LevelConfig[] = [
   { level: 8, xp_required: 5500, title: 'Master', badge_color: '#A855F7' },
   { level: 9, xp_required: 8000, title: 'Grandmaster', badge_color: '#EC4899' },
   { level: 10, xp_required: 12000, title: 'Legend', badge_color: '#F59E0B' },
+  { level: 11, xp_required: 17000, title: 'Mythic', badge_color: '#EF4444' },
+  { level: 12, xp_required: 23000, title: 'Divine', badge_color: '#DC2626' },
+  { level: 13, xp_required: 30000, title: 'Celestial', badge_color: '#B91C1C' },
+  { level: 14, xp_required: 38000, title: 'Transcendent', badge_color: '#991B1B' },
+  { level: 15, xp_required: 47000, title: 'Immortal', badge_color: '#7F1D1D' },
 ];
+
+const MAX_CONFIGURABLE_LEVEL = 100;
 
 const DEFAULT_REWARDS: XPReward[] = [
   { id: 'login_daily', action: 'Daily Login', description: 'First login of the day', base_xp: 10, multiplier: 1, category: 'Activity' },
@@ -109,6 +116,35 @@ export const XPConfigAdmin: React.FC = () => {
     setRewards(rewards.map(r =>
       r.id === id ? { ...r, [field]: value } : r
     ));
+  };
+
+  const addLevel = () => {
+    const maxLevel = Math.max(...levels.map(l => l.level));
+    if (maxLevel >= MAX_CONFIGURABLE_LEVEL) {
+      alert(`Maximum level is ${MAX_CONFIGURABLE_LEVEL}`);
+      return;
+    }
+    const lastLevel = levels.find(l => l.level === maxLevel);
+    const newXp = lastLevel ? Math.round(lastLevel.xp_required * 1.4) : 0;
+    const newLevel: LevelConfig = {
+      level: maxLevel + 1,
+      xp_required: newXp,
+      title: `Level ${maxLevel + 1}`,
+      badge_color: '#6B7280',
+    };
+    setLevels([...levels, newLevel].sort((a, b) => a.level - b.level));
+  };
+
+  const deleteLevel = (levelNum: number) => {
+    if (levelNum === 1) {
+      alert('Cannot delete level 1');
+      return;
+    }
+    if (levels.length <= 5) {
+      alert('Must have at least 5 levels');
+      return;
+    }
+    setLevels(levels.filter(l => l.level !== levelNum));
   };
 
   if (loading) {
@@ -199,6 +235,9 @@ export const XPConfigAdmin: React.FC = () => {
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Preview
                   </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -245,10 +284,35 @@ export const XPConfigAdmin: React.FC = () => {
                         Lv.{level.level} {level.title}
                       </span>
                     </td>
+                    <td className="px-4 py-3">
+                      {level.level > 1 && (
+                        <button
+                          onClick={() => deleteLevel(level.level)}
+                          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                          title="Delete level"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+          {/* Add Level Button */}
+          <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+            <button
+              onClick={addLevel}
+              disabled={levels.length >= MAX_CONFIGURABLE_LEVEL}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Plus className="w-4 h-4" />
+              Add Level
+            </button>
+            <span className="ml-3 text-sm text-gray-500 dark:text-gray-400">
+              {levels.length} / {MAX_CONFIGURABLE_LEVEL} levels configured
+            </span>
           </div>
         </div>
       )}

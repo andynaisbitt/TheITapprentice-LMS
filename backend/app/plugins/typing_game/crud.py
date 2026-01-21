@@ -643,9 +643,44 @@ def get_or_create_pvp_stats(db: Session, user_id: int) -> models.UserPVPStats:
 
 
 def update_pvp_stats_after_match(db: Session, match: models.PVPMatch):
-    """Update PVP stats for both players after match"""
+    """Update PVP stats for both players after match and award XP"""
     p1_stats = get_or_create_pvp_stats(db, match.player1_id)
     p2_stats = get_or_create_pvp_stats(db, match.player2_id)
+
+    # Determine winners for XP awarding
+    p1_is_winner = match.winner_id == match.player1_id
+    p2_is_winner = match.winner_id == match.player2_id
+
+    # Award XP to both players
+    xp_service.award_typing_game_xp(
+        db=db,
+        user_id=match.player1_id,
+        wpm=match.player1_wpm or 0,
+        accuracy=match.player1_accuracy or 0,
+        is_pvp_win=p1_is_winner
+    )
+
+    xp_service.award_typing_game_xp(
+        db=db,
+        user_id=match.player2_id,
+        wpm=match.player2_wpm or 0,
+        accuracy=match.player2_accuracy or 0,
+        is_pvp_win=p2_is_winner
+    )
+
+    # Track PVP game completion for challenges
+    challenge_service.increment_progress(
+        db=db,
+        user_id=match.player1_id,
+        challenge_type=ChallengeType.TYPING_GAME,
+        amount=1
+    )
+    challenge_service.increment_progress(
+        db=db,
+        user_id=match.player2_id,
+        challenge_type=ChallengeType.TYPING_GAME,
+        amount=1
+    )
 
     # Calculate ELO changes (simplified)
     k_factor = 32
