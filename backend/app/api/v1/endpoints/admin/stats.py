@@ -128,12 +128,12 @@ async def get_dashboard_stats(
 
     # Course stats
     if settings.PLUGINS_ENABLED.get("courses", False):
-        from app.plugins.courses.models import Course, CourseStatus, Enrollment
+        from app.plugins.courses.models import Course, CourseStatus, CourseEnrollment
         total_courses = db.query(Course).count()
         courses_published = db.query(Course).filter(
             Course.status == CourseStatus.PUBLISHED
         ).count()
-        total_enrollments = db.query(Enrollment).count()
+        total_enrollments = db.query(CourseEnrollment).count()
 
     # Typing game stats
     if settings.PLUGINS_ENABLED.get("typing_game", False):
