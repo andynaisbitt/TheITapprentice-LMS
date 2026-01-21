@@ -99,7 +99,7 @@ async def get_dashboard_stats(
 
     # Blog stats
     total_posts = db.query(BlogPost).count()
-    draft_posts = db.query(BlogPost).filter(BlogPost.status == "draft").count()
+    draft_posts = db.query(BlogPost).filter(BlogPost.published == False).count()
     total_categories = db.query(BlogCategory).count()
     total_tags = db.query(BlogTag).count()
     total_views = db.query(func.sum(BlogPost.view_count)).scalar() or 0
@@ -362,8 +362,8 @@ async def get_content_stats(
     stats = {
         "blog": {
             "total_posts": db.query(BlogPost).count(),
-            "published": db.query(BlogPost).filter(BlogPost.status == "published").count(),
-            "drafts": db.query(BlogPost).filter(BlogPost.status == "draft").count(),
+            "published": db.query(BlogPost).filter(BlogPost.published == True).count(),
+            "drafts": db.query(BlogPost).filter(BlogPost.published == False).count(),
             "total_views": db.query(func.sum(BlogPost.view_count)).scalar() or 0,
             "categories": db.query(BlogCategory).count()
         },
