@@ -16,17 +16,19 @@ import enum
 
 
 class CourseLevel(str, enum.Enum):
-    """Course difficulty levels - matches frontend"""
-    BEGINNER = "beginner"
-    INTERMEDIATE = "intermediate"
-    ADVANCED = "advanced"
+    """Course difficulty levels - matches frontend and PostgreSQL enum"""
+    # Use lowercase names to match PostgreSQL enum values
+    beginner = "beginner"
+    intermediate = "intermediate"
+    advanced = "advanced"
 
 
 class CourseStatus(str, enum.Enum):
     """Course publication status"""
-    DRAFT = "draft"
-    PUBLISHED = "published"
-    ARCHIVED = "archived"
+    # Use lowercase names to match PostgreSQL enum values
+    draft = "draft"
+    published = "published"
+    archived = "archived"
 
 
 class SectionType(str, enum.Enum):
@@ -121,7 +123,7 @@ class Course(Base):
     instructor_name = Column(String(100), nullable=True)  # Cached for performance
 
     # Status & visibility
-    status = Column(SQLEnum(CourseStatus), default=CourseStatus.DRAFT, nullable=False, index=True)
+    status = Column(SQLEnum(CourseStatus), default=CourseStatus.draft, nullable=False, index=True)
     is_featured = Column(Boolean, default=False, index=True)
     is_premium = Column(Boolean, default=False, nullable=False)
 

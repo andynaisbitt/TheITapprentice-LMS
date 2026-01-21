@@ -1,6 +1,6 @@
 """
 Seed Data for Courses Plugin
-Creates sample courses with modules, sections, and content blocks for testing.
+Creates sample IT courses with modules, sections, and content blocks for TheITApprentice.
 """
 from sqlalchemy.orm import Session
 from datetime import datetime
@@ -10,9 +10,8 @@ from typing import List
 from app.users.models import User, UserRole
 from app.auth.email_verification import EmailVerification
 
-from app.plugins.courses.models import Course, CourseModule, ModuleSection, CourseLevel, CourseStatus
+from app.plugins.courses.models import Course, CourseModule, ModuleSection
 from app.plugins.courses.schemas import (
-    CourseCreate,
     CourseModuleCreate,
     ModuleSectionCreate,
 )
@@ -20,7 +19,7 @@ from app.plugins.courses.schemas import (
 
 def create_sample_courses(db: Session, instructor_id: int = 1) -> List[Course]:
     """
-    Create sample courses for testing the LMS plugin.
+    Create sample IT courses for TheITApprentice platform.
 
     Args:
         db: Database session
@@ -31,49 +30,48 @@ def create_sample_courses(db: Session, instructor_id: int = 1) -> List[Course]:
     """
     courses = []
 
-    # Course 1: Python Fundamentals
-    python_course_data = {
-        "id": "python-fundamentals",
-        "title": "Python Programming Fundamentals",
-        "description": "Master the basics of Python programming with hands-on examples and interactive exercises. This comprehensive course covers everything from variables and data types to functions and object-oriented programming.",
-        "short_description": "Learn Python from scratch with practical examples",
-        "level": "beginner",
-        "category": "Programming",
+    # Course 1: IT Support Fundamentals
+    it_support_course_data = {
+        "id": "it-support-fundamentals",
+        "title": "IT Support Fundamentals",
+        "description": "Start your IT career with essential help desk and support skills. Learn how to troubleshoot common issues, provide excellent customer service, and handle tickets professionally. Perfect for aspiring IT support technicians.",
+        "short_description": "Master the basics of IT support and help desk operations",
+        "level": "beginner",  # Use lowercase string directly
+        "category": "IT Support",
         "instructor_id": instructor_id,
         "is_premium": False,
         "price": 0.0,
-        "estimated_hours": 12,
-        "related_skills": ["python", "programming", "problem-solving", "debugging"],
-        "xp_reward": 500,
+        "estimated_hours": 8,
+        "related_skills": ["troubleshooting", "customer-service", "ticketing", "communication"],
+        "xp_reward": 400,
         "requirements": [
-            "No prior programming experience required",
-            "A computer with internet connection",
-            "Willingness to practice coding regularly"
+            "No prior IT experience required",
+            "Basic computer skills (using mouse, keyboard, web browser)",
+            "Willingness to help others solve problems"
         ],
         "objectives": [
-            "Understand Python syntax and basic programming concepts",
-            "Write functions and work with different data types",
-            "Use control flow statements (if/else, loops)",
-            "Handle errors and exceptions gracefully",
-            "Create and use classes and objects",
-            "Work with files and external data"
+            "Understand the role of IT support in organisations",
+            "Learn professional ticket handling and documentation",
+            "Troubleshoot common hardware and software issues",
+            "Provide excellent customer service to end users",
+            "Use remote support tools effectively",
+            "Escalate issues appropriately"
         ],
         "is_featured": True,
         "status": "published",
-        "published_at": datetime.utcnow()
     }
 
-    # Module 1: Getting Started
+    # Module 1: Introduction to IT Support
     module_1_sections = [
         {
-            "id": "python-fund-m1-s1",
-            "title": "Introduction to Python",
+            "id": "it-support-m1-s1",
+            "title": "What is IT Support?",
             "content_blocks": [
                 {
                     "id": "block-1",
                     "type": "heading",
                     "content": {
-                        "text": "Welcome to Python Programming!",
+                        "text": "Welcome to IT Support!",
                         "level": 1
                     }
                 },
@@ -81,7 +79,7 @@ def create_sample_courses(db: Session, instructor_id: int = 1) -> List[Course]:
                     "id": "block-2",
                     "type": "text",
                     "content": {
-                        "text": "Python is one of the most popular programming languages in the world. It's known for its simplicity, readability, and versatility. Whether you want to build web applications, analyze data, or create automation scripts, Python is an excellent choice.",
+                        "text": "IT Support is the backbone of every organisation's technology operations. As an IT support technician, you'll be the first point of contact when users experience technical problems. Your role is crucial in keeping businesses running smoothly.",
                         "markdown": True
                     }
                 },
@@ -90,17 +88,16 @@ def create_sample_courses(db: Session, instructor_id: int = 1) -> List[Course]:
                     "type": "callout",
                     "content": {
                         "type": "info",
-                        "title": "Why Learn Python?",
-                        "message": "Python is beginner-friendly, has a massive community, extensive libraries, and is used by tech giants like Google, Netflix, and NASA!"
+                        "title": "Career Opportunity",
+                        "message": "IT Support roles are in high demand! Entry-level positions often lead to specialised careers in networking, security, or system administration."
                     }
                 },
                 {
                     "id": "block-4",
-                    "type": "video",
+                    "type": "text",
                     "content": {
-                        "url": "https://www.youtube.com/watch?v=example",
-                        "title": "What is Python?",
-                        "duration": "5:30"
+                        "text": "### Key Responsibilities\n\n- Responding to help desk tickets and phone calls\n- Troubleshooting hardware and software issues\n- Setting up new user accounts and equipment\n- Documenting solutions for future reference\n- Escalating complex issues to senior technicians",
+                        "markdown": True
                     }
                 }
             ],
@@ -109,14 +106,14 @@ def create_sample_courses(db: Session, instructor_id: int = 1) -> List[Course]:
             "is_required": True
         },
         {
-            "id": "python-fund-m1-s2",
-            "title": "Your First Python Program",
+            "id": "it-support-m1-s2",
+            "title": "The Help Desk Workflow",
             "content_blocks": [
                 {
                     "id": "block-5",
                     "type": "heading",
                     "content": {
-                        "text": "Hello, World!",
+                        "text": "Understanding the Ticket Lifecycle",
                         "level": 2
                     }
                 },
@@ -124,18 +121,16 @@ def create_sample_courses(db: Session, instructor_id: int = 1) -> List[Course]:
                     "id": "block-6",
                     "type": "text",
                     "content": {
-                        "text": "Let's write your first Python program. The traditional first program in any language is 'Hello, World!'",
+                        "text": "Every IT support request follows a lifecycle from creation to resolution. Understanding this workflow helps you provide consistent, professional service.",
                         "markdown": True
                     }
                 },
                 {
                     "id": "block-7",
-                    "type": "code",
+                    "type": "text",
                     "content": {
-                        "code": "print('Hello, World!')",
-                        "language": "python",
-                        "caption": "Your first Python program",
-                        "runnable": True
+                        "text": "### Ticket Stages\n\n1. **New** - User submits a request\n2. **Assigned** - Ticket routed to technician\n3. **In Progress** - Active troubleshooting\n4. **Pending** - Waiting for user or parts\n5. **Resolved** - Issue fixed\n6. **Closed** - User confirms resolution",
+                        "markdown": True
                     }
                 },
                 {
@@ -145,16 +140,16 @@ def create_sample_courses(db: Session, instructor_id: int = 1) -> List[Course]:
                         "questions": [
                             {
                                 "id": "q1",
-                                "question": "What does the print() function do in Python?",
+                                "question": "What should you do first when receiving a new support ticket?",
                                 "type": "multiple_choice",
                                 "options": [
-                                    "Displays output to the console",
-                                    "Saves data to a file",
-                                    "Performs calculations",
-                                    "Creates a new variable"
+                                    "Read the full description and acknowledge receipt",
+                                    "Immediately escalate to a senior technician",
+                                    "Close the ticket without reading",
+                                    "Delete the ticket"
                                 ],
                                 "correct_answer": 0,
-                                "explanation": "The print() function displays output to the console/terminal."
+                                "explanation": "Always read the full ticket description first and acknowledge receipt so the user knows their request is being handled."
                             }
                         ],
                         "passing_score": 70
@@ -168,25 +163,25 @@ def create_sample_courses(db: Session, instructor_id: int = 1) -> List[Course]:
     ]
 
     module_1 = {
-        "id": "python-fund-module-1",
-        "title": "Getting Started with Python",
-        "description": "Introduction to Python and your first program",
+        "id": "it-support-module-1",
+        "title": "Introduction to IT Support",
+        "description": "Learn what IT support is and how the help desk operates",
         "order_index": 0,
         "duration": "35 minutes",
         "status": "published"
     }
 
-    # Module 2: Variables and Data Types
+    # Module 2: Troubleshooting Basics
     module_2_sections = [
         {
-            "id": "python-fund-m2-s1",
-            "title": "Understanding Variables",
+            "id": "it-support-m2-s1",
+            "title": "The Troubleshooting Process",
             "content_blocks": [
                 {
                     "id": "block-9",
                     "type": "heading",
                     "content": {
-                        "text": "Variables in Python",
+                        "text": "Systematic Troubleshooting",
                         "level": 2
                     }
                 },
@@ -194,18 +189,16 @@ def create_sample_courses(db: Session, instructor_id: int = 1) -> List[Course]:
                     "id": "block-10",
                     "type": "text",
                     "content": {
-                        "text": "Variables are containers for storing data values. Unlike other languages, Python has no command for declaring a variable - you create one the moment you assign a value to it.",
+                        "text": "Good troubleshooting is like being a detective. You gather clues, form theories, and test them until you find the solution. Following a systematic approach saves time and ensures you don't miss anything.",
                         "markdown": True
                     }
                 },
                 {
                     "id": "block-11",
-                    "type": "code",
+                    "type": "text",
                     "content": {
-                        "code": "# Creating variables\nname = 'Alice'\nage = 25\nheight = 5.6\nis_student = True\n\nprint(f'{name} is {age} years old')",
-                        "language": "python",
-                        "caption": "Variable examples",
-                        "runnable": True
+                        "text": "### The 6-Step Troubleshooting Method\n\n1. **Identify the problem** - Ask questions, gather information\n2. **Establish a theory** - What might be causing this?\n3. **Test the theory** - Try your solution\n4. **Create an action plan** - Steps to fix if theory is correct\n5. **Implement the fix** - Apply the solution\n6. **Document everything** - Record what worked for future reference",
+                        "markdown": True
                     }
                 },
                 {
@@ -213,8 +206,8 @@ def create_sample_courses(db: Session, instructor_id: int = 1) -> List[Course]:
                     "type": "callout",
                     "content": {
                         "type": "tip",
-                        "title": "Naming Conventions",
-                        "message": "Use descriptive variable names in lowercase with underscores (snake_case). Avoid single letters except for counters."
+                        "title": "Pro Tip",
+                        "message": "Always ask 'What changed recently?' - Many issues occur right after updates, new software installations, or configuration changes."
                     }
                 }
             ],
@@ -225,44 +218,43 @@ def create_sample_courses(db: Session, instructor_id: int = 1) -> List[Course]:
     ]
 
     module_2 = {
-        "id": "python-fund-module-2",
-        "title": "Variables and Data Types",
-        "description": "Learn how to work with different types of data in Python",
+        "id": "it-support-module-2",
+        "title": "Troubleshooting Basics",
+        "description": "Learn systematic approaches to solving IT problems",
         "order_index": 1,
-        "duration": "60 minutes",
+        "duration": "45 minutes",
         "status": "published"
     }
 
-    # Create Python course directly using model to avoid enum conversion issues
+    # Create IT Support course directly with string values
     try:
-        # Create course directly
-        python_course = Course(
-            id=python_course_data["id"],
-            title=python_course_data["title"],
-            description=python_course_data["description"],
-            short_description=python_course_data.get("short_description"),
-            level=CourseLevel.BEGINNER,  # Use model enum directly
-            status=CourseStatus.DRAFT,
-            category=python_course_data.get("category"),
-            instructor_id=python_course_data["instructor_id"],
-            is_premium=python_course_data.get("is_premium", False),
-            price=python_course_data.get("price", 0.0),
-            estimated_hours=python_course_data.get("estimated_hours", 0),
-            related_skills=python_course_data.get("related_skills", []),
-            xp_reward=python_course_data.get("xp_reward", 0),
-            requirements=python_course_data.get("requirements", []),
-            objectives=python_course_data.get("objectives", []),
-        )
-        db.add(python_course)
-        db.commit()
-        db.refresh(python_course)
-
         from app.plugins.courses.crud import create_module, create_section
+
+        it_support_course = Course(
+            id=it_support_course_data["id"],
+            title=it_support_course_data["title"],
+            description=it_support_course_data["description"],
+            short_description=it_support_course_data.get("short_description"),
+            level="beginner",  # Use string directly
+            status="draft",    # Use string directly
+            category=it_support_course_data.get("category"),
+            instructor_id=it_support_course_data["instructor_id"],
+            is_premium=it_support_course_data.get("is_premium", False),
+            price=it_support_course_data.get("price", 0.0),
+            estimated_hours=it_support_course_data.get("estimated_hours", 0),
+            related_skills=it_support_course_data.get("related_skills", []),
+            xp_reward=it_support_course_data.get("xp_reward", 0),
+            requirements=it_support_course_data.get("requirements", []),
+            objectives=it_support_course_data.get("objectives", []),
+        )
+        db.add(it_support_course)
+        db.commit()
+        db.refresh(it_support_course)
 
         # Create Module 1 and its sections
         mod_1 = create_module(
             db,
-            python_course.id,
+            it_support_course.id,
             CourseModuleCreate(**module_1)
         )
         for section_data in module_1_sections:
@@ -275,7 +267,7 @@ def create_sample_courses(db: Session, instructor_id: int = 1) -> List[Course]:
         # Create Module 2 and its sections
         mod_2 = create_module(
             db,
-            python_course.id,
+            it_support_course.id,
             CourseModuleCreate(**module_2)
         )
         for section_data in module_2_sections:
@@ -285,129 +277,134 @@ def create_sample_courses(db: Session, instructor_id: int = 1) -> List[Course]:
                 ModuleSectionCreate(**section_data)
             )
 
-        courses.append(python_course)
-        print(f"✅ Created course: {python_course.title}")
+        courses.append(it_support_course)
+        print(f"Created course: {it_support_course.title}")
 
     except Exception as e:
-        print(f"❌ Error creating Python course: {str(e)}")
+        print(f"Error creating IT Support course: {str(e)}")
         db.rollback()
 
-    # Course 2: Web Development with React
-    react_course_data = {
-        "id": "react-fundamentals",
-        "title": "React Web Development",
-        "description": "Build modern, interactive web applications with React. Learn components, hooks, state management, and best practices for building scalable React applications.",
-        "short_description": "Master React for building modern web apps",
+    # Course 2: Networking Essentials
+    networking_course_data = {
+        "id": "networking-essentials",
+        "title": "Networking Essentials",
+        "description": "Understand how computer networks work and learn to configure basic network settings. This course covers IP addressing, DNS, DHCP, and common network troubleshooting - essential knowledge for any IT professional.",
+        "short_description": "Learn the fundamentals of computer networking",
         "level": "intermediate",
-        "category": "Web Development",
+        "category": "Networking",
         "instructor_id": instructor_id,
         "is_premium": True,
-        "price": 49.99,
-        "estimated_hours": 20,
-        "related_skills": ["react", "javascript", "web-development", "frontend"],
-        "xp_reward": 800,
+        "price": 29.99,
+        "estimated_hours": 12,
+        "related_skills": ["networking", "tcp-ip", "troubleshooting", "infrastructure"],
+        "xp_reward": 600,
         "requirements": [
-            "Basic JavaScript knowledge",
-            "Understanding of HTML and CSS",
-            "Node.js installed on your computer"
+            "Basic IT knowledge (IT Support Fundamentals recommended)",
+            "Access to a computer for hands-on practice",
+            "Curiosity about how the internet works"
         ],
         "objectives": [
-            "Build React components using modern hooks",
-            "Manage application state effectively",
-            "Handle user events and forms",
-            "Make API calls and handle async data",
-            "Implement routing in single-page applications",
-            "Deploy React applications to production"
+            "Understand the OSI and TCP/IP networking models",
+            "Configure IP addresses and subnet masks",
+            "Explain how DNS and DHCP work",
+            "Use command-line tools to diagnose network issues",
+            "Identify common network hardware and their purposes",
+            "Troubleshoot basic connectivity problems"
         ],
         "is_featured": True,
         "status": "published",
-        "published_at": datetime.utcnow()
     }
 
-    react_module_1 = {
-        "id": "react-fund-module-1",
-        "title": "React Basics",
-        "description": "Introduction to React and JSX",
+    networking_module_1 = {
+        "id": "networking-module-1",
+        "title": "How Networks Work",
+        "description": "Understanding the basics of computer networking",
         "order_index": 0,
-        "duration": "90 minutes",
+        "duration": "60 minutes",
         "status": "published"
     }
 
-    react_section_1 = {
-        "id": "react-fund-m1-s1",
-        "title": "What is React?",
+    networking_section_1 = {
+        "id": "networking-m1-s1",
+        "title": "Introduction to Networks",
         "content_blocks": [
             {
-                "id": "block-react-1",
+                "id": "block-net-1",
                 "type": "heading",
                 "content": {
-                    "text": "Introduction to React",
+                    "text": "What is a Computer Network?",
                     "level": 1
                 }
             },
             {
-                "id": "block-react-2",
+                "id": "block-net-2",
                 "type": "text",
                 "content": {
-                    "text": "React is a JavaScript library for building user interfaces. It was developed by Facebook and is now maintained by Meta and a community of developers. React makes it painless to create interactive UIs.",
+                    "text": "A computer network is simply two or more devices connected together to share resources and communicate. From your home Wi-Fi to the global internet, networks are everywhere in modern life.",
                     "markdown": True
                 }
             },
             {
-                "id": "block-react-3",
-                "type": "code",
+                "id": "block-net-3",
+                "type": "text",
                 "content": {
-                    "code": "import React from 'react';\n\nfunction Welcome() {\n  return <h1>Hello, React!</h1>;\n}\n\nexport default Welcome;",
-                    "language": "javascript",
-                    "caption": "A simple React component",
-                    "runnable": False
+                    "text": "### Types of Networks\n\n- **LAN (Local Area Network)** - A network in a single location, like an office\n- **WAN (Wide Area Network)** - Networks spanning large distances, like the internet\n- **WLAN (Wireless LAN)** - A LAN that uses Wi-Fi\n- **VPN (Virtual Private Network)** - A secure tunnel over public networks",
+                    "markdown": True
+                }
+            },
+            {
+                "id": "block-net-4",
+                "type": "callout",
+                "content": {
+                    "type": "info",
+                    "title": "Fun Fact",
+                    "message": "The internet is essentially a network of networks - millions of LANs connected together through WANs!"
                 }
             }
         ],
         "order_index": 0,
-        "duration": "30 minutes",
+        "duration": "20 minutes",
         "is_required": True
     }
 
     try:
-        # Create React course directly using model to avoid enum conversion issues
-        react_course = Course(
-            id=react_course_data["id"],
-            title=react_course_data["title"],
-            description=react_course_data["description"],
-            short_description=react_course_data.get("short_description"),
-            level=CourseLevel.INTERMEDIATE,  # Use model enum directly
-            status=CourseStatus.DRAFT,
-            category=react_course_data.get("category"),
-            instructor_id=react_course_data["instructor_id"],
-            is_premium=react_course_data.get("is_premium", False),
-            price=react_course_data.get("price", 0.0),
-            estimated_hours=react_course_data.get("estimated_hours", 0),
-            related_skills=react_course_data.get("related_skills", []),
-            xp_reward=react_course_data.get("xp_reward", 0),
-            requirements=react_course_data.get("requirements", []),
-            objectives=react_course_data.get("objectives", []),
+        networking_course = Course(
+            id=networking_course_data["id"],
+            title=networking_course_data["title"],
+            description=networking_course_data["description"],
+            short_description=networking_course_data.get("short_description"),
+            level="intermediate",  # Use string directly
+            status="draft",        # Use string directly
+            category=networking_course_data.get("category"),
+            instructor_id=networking_course_data["instructor_id"],
+            is_premium=networking_course_data.get("is_premium", False),
+            price=networking_course_data.get("price", 0.0),
+            estimated_hours=networking_course_data.get("estimated_hours", 0),
+            related_skills=networking_course_data.get("related_skills", []),
+            xp_reward=networking_course_data.get("xp_reward", 0),
+            requirements=networking_course_data.get("requirements", []),
+            objectives=networking_course_data.get("objectives", []),
         )
-        db.add(react_course)
+        db.add(networking_course)
         db.commit()
-        db.refresh(react_course)
+        db.refresh(networking_course)
 
-        mod_react = create_module(
+        mod_net = create_module(
             db,
-            react_course.id,
-            CourseModuleCreate(**react_module_1)
+            networking_course.id,
+            CourseModuleCreate(**networking_module_1)
         )
         create_section(
             db,
-            mod_react.id,
-            ModuleSectionCreate(**react_section_1)
+            mod_net.id,
+            ModuleSectionCreate(**networking_section_1)
         )
 
-        courses.append(react_course)
-        print(f"✅ Created course: {react_course.title}")
+        courses.append(networking_course)
+        print(f"Created course: {networking_course.title}")
 
     except Exception as e:
-        print(f"❌ Error creating React course: {str(e)}")
+        print(f"Error creating Networking course: {str(e)}")
         db.rollback()
 
     db.commit()
@@ -423,13 +420,13 @@ def run_seed():
 
     db = SessionLocal()
     try:
-        print("🌱 Seeding course data...")
+        print("Seeding IT course data...")
         courses = create_sample_courses(db, instructor_id=1)
-        print(f"\n✨ Successfully created {len(courses)} courses!")
+        print(f"\nSuccessfully created {len(courses)} courses!")
         for course in courses:
             print(f"  - {course.title} ({course.id})")
     except Exception as e:
-        print(f"\n❌ Error seeding data: {str(e)}")
+        print(f"\nError seeding data: {str(e)}")
         db.rollback()
     finally:
         db.close()

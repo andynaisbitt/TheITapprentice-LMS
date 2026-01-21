@@ -122,7 +122,7 @@ async def list_published_courses(
     - **page_size**: Items per page (default: 12, max: 100)
     """
     query = db.query(models.Course).filter(
-        models.Course.status == models.CourseStatus.PUBLISHED
+        models.Course.status == models.CourseStatus.published
     )
 
     # Apply filters
@@ -177,7 +177,7 @@ async def get_featured_courses(
 ):
     """Get featured courses for homepage"""
     courses = db.query(models.Course).filter(
-        models.Course.status == models.CourseStatus.PUBLISHED,
+        models.Course.status == models.CourseStatus.published,
         models.Course.is_featured == True
     ).limit(limit).all()
 
@@ -192,7 +192,7 @@ async def get_featured_courses(
 async def get_course_categories(db: Session = Depends(get_db)):
     """Get list of all course categories"""
     categories = db.query(models.Course.category).filter(
-        models.Course.status == models.CourseStatus.PUBLISHED,
+        models.Course.status == models.CourseStatus.published,
         models.Course.category.isnot(None)
     ).distinct().all()
 
@@ -214,7 +214,7 @@ async def get_course(
         )
 
     # Only allow published courses for public access
-    if course.status != models.CourseStatus.PUBLISHED:
+    if course.status != models.CourseStatus.published:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Course not found"

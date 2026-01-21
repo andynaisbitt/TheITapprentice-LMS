@@ -107,7 +107,7 @@ def create_course(db: Session, course: CourseCreate) -> Course:
             price=course.price,
             related_skills=course.related_skills or ["problem-solving"],
             xp_reward=course.xp_reward,
-            status=CourseStatus.DRAFT,
+            status=CourseStatus.draft,
         )
         db.add(db_course)
         db.commit()
