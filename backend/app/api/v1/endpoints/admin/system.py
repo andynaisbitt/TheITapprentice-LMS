@@ -274,15 +274,15 @@ async def get_system_stats(
         stats["tutorials"] = {
             "total": db.query(Tutorial).count(),
             "published": db.query(Tutorial).filter(Tutorial.is_published == True).count(),
-            "completions": db.query(TutorialProgress).filter(TutorialProgress.is_completed == True).count()
+            "completions": db.query(TutorialProgress).filter(TutorialProgress.status == "completed").count()
         }
 
     if settings.PLUGINS_ENABLED.get("courses", False):
-        from app.plugins.courses.models import Course, CourseStatus, Enrollment
+        from app.plugins.courses.models import Course, CourseEnrollment
         stats["courses"] = {
             "total": db.query(Course).count(),
-            "published": db.query(Course).filter(Course.status == CourseStatus.PUBLISHED).count(),
-            "enrollments": db.query(Enrollment).count()
+            "published": db.query(Course).filter(Course.status == "published").count(),
+            "enrollments": db.query(CourseEnrollment).count()
         }
 
     if settings.PLUGINS_ENABLED.get("typing_game", False):

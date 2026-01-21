@@ -154,7 +154,7 @@ async def get_my_dashboard(
     # Get tutorial count
     tutorials_completed = db.query(TutorialProgress).filter(
         TutorialProgress.user_id == current_user.id,
-        TutorialProgress.is_completed == True
+        TutorialProgress.status == "completed"
     ).count()
 
     # Get typing stats
@@ -214,7 +214,7 @@ async def get_my_dashboard(
     # In-progress tutorials
     tutorial_progress = db.query(TutorialProgress).filter(
         TutorialProgress.user_id == current_user.id,
-        TutorialProgress.is_completed == False
+        TutorialProgress.status == "in_progress"
     ).limit(3).all()
 
     for tp in tutorial_progress:
