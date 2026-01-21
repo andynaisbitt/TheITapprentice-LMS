@@ -24,7 +24,8 @@ from app.plugins.courses.schemas import (
 )
 from app.plugins.shared.xp_service import xp_service
 from app.plugins.shared.achievement_service import achievement_service
-from app.plugins.shared.models import ActivityType
+from app.plugins.shared.models import ActivityType, ChallengeType
+from app.plugins.shared.challenge_service import challenge_service
 from app.users.models import User
 import logging
 
@@ -605,6 +606,23 @@ def update_module_progress(
                     }
                 )
 
+                # Track challenge progress for module/course section completion
+                challenge_service.increment_progress(
+                    db=db,
+                    user_id=enrollment.user_id,
+                    challenge_type=ChallengeType.COURSE_SECTION,
+                    amount=1
+                )
+
+                # Track XP earned for XP challenges
+                if xp_result.get("xp_awarded", 0) > 0:
+                    challenge_service.increment_progress(
+                        db=db,
+                        user_id=enrollment.user_id,
+                        challenge_type=ChallengeType.XP_EARN,
+                        amount=xp_result.get("xp_awarded", 0)
+                    )
+
                 # Calculate overall course progress
                 total_modules = db.query(CourseModule)\
                     .filter(CourseModule.course_id == enrollment.course_id)\
@@ -701,6 +719,15 @@ def update_module_progress(
 
                     if unlocked:
                         logger.info(f"User {enrollment.user_id} unlocked {len(unlocked)} achievement(s) from course completion")
+
+                    # Track XP earned for XP challenges (course completion)
+                    if course_xp_result.get("xp_awarded", 0) > 0:
+                        challenge_service.increment_progress(
+                            db=db,
+                            user_id=enrollment.user_id,
+                            challenge_type=ChallengeType.XP_EARN,
+                            amount=course_xp_result.get("xp_awarded", 0)
+                        )
 
     db.commit()
     db.refresh(progress)

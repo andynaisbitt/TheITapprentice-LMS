@@ -16,11 +16,22 @@ import type {
   CreateAchievementInput,
   UpdateAchievementInput,
   AchievementCategory,
+  HomepageStats,
 } from '../types';
 
 const BASE_URL = '/progress';
 
 export const progressApi = {
+  // ============== Homepage Stats Endpoints ==============
+
+  /**
+   * Get public platform stats for homepage (no auth required)
+   */
+  async getHomepageStats(): Promise<HomepageStats> {
+    const response = await api.get<HomepageStats>(`${BASE_URL}/stats/homepage`);
+    return response.data;
+  },
+
   // ============== XP Endpoints ==============
 
   /**

@@ -96,6 +96,15 @@ class SiteSettingsBase(BaseModel):
     smtp_from_email: Optional[str] = Field(None, max_length=255)
     smtp_from_name: Optional[str] = Field(None, max_length=255)
 
+    # LMS Homepage Section Visibility
+    show_featured_courses: bool = Field(default=True)
+    show_typing_challenge: bool = Field(default=True)
+    show_quick_quiz: bool = Field(default=True)
+    show_tutorial_paths: bool = Field(default=True)
+    show_leaderboard_preview: bool = Field(default=True)
+    show_daily_challenge_banner: bool = Field(default=True)
+    show_homepage_stats: bool = Field(default=True)
+
 
 class SiteSettingsUpdate(BaseModel):
     """Schema for updating site settings (all fields optional)"""
@@ -188,6 +197,15 @@ class SiteSettingsUpdate(BaseModel):
     smtp_use_tls: Optional[bool] = Field(None)
     smtp_from_email: Optional[str] = Field(None, max_length=255)
     smtp_from_name: Optional[str] = Field(None, max_length=255)
+
+    # LMS Homepage Section Visibility
+    show_featured_courses: Optional[bool] = Field(None)
+    show_typing_challenge: Optional[bool] = Field(None)
+    show_quick_quiz: Optional[bool] = Field(None)
+    show_tutorial_paths: Optional[bool] = Field(None)
+    show_leaderboard_preview: Optional[bool] = Field(None)
+    show_daily_challenge_banner: Optional[bool] = Field(None)
+    show_homepage_stats: Optional[bool] = Field(None)
 
 
 class SiteSettingsResponse(SiteSettingsBase):

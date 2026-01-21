@@ -3,13 +3,18 @@
 The IT Apprentice LMS - Learning Management System
 FastAPI application with JWT authentication, CMS, and LMS plugins
 """
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
+import logging
 
 from app.core.config import settings
 from app.core.database import engine, Base
+from app.core.scheduler import init_scheduler, start_scheduler, shutdown_scheduler
+
+logger = logging.getLogger(__name__)
 
 # Import routers
 from app.auth.routes import router as auth_router
@@ -58,13 +63,38 @@ from app.plugins.shared.routes import router as progress_router
 if settings.ENVIRONMENT == "development":
     Base.metadata.create_all(bind=engine)
 
+
+# Lifespan context manager for startup/shutdown events
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Lifespan context manager for FastAPI application.
+    Handles startup and shutdown events.
+    """
+    # Startup
+    logger.info("Starting application...")
+
+    # Initialize and start the background scheduler
+    init_scheduler()
+    start_scheduler()
+    logger.info("Background scheduler started for daily challenge generation")
+
+    yield
+
+    # Shutdown
+    logger.info("Shutting down application...")
+    shutdown_scheduler()
+    logger.info("Background scheduler stopped")
+
+
 # Initialize FastAPI app
 app = FastAPI(
     title="The IT Apprentice LMS API",
     description="Learning Management System with tutorials, typing games, XP/achievements, and CMS",
     version="2.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 # CORS middleware

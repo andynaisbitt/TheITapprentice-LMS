@@ -28,6 +28,7 @@ alembic==1.12.1
 python-dotenv==1.0.0
 slowapi==0.1.9  # Rate limiting
 Pillow==12.0.0  # Image processing for media uploads
+apscheduler==3.10.4  # Background task scheduling
 
 # ============================================================================
 # DEVELOPMENT (Optional)

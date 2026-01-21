@@ -33,6 +33,7 @@ const CanonicalResolver = lazy(() => import('../components/CanonicalResolver'));
 const UserDashboard = lazy(() => import('../pages/user/UserDashboard'));
 const Profile = lazy(() => import('../pages/user/Profile'));
 const XPLeaderboardPage = lazy(() => import('../pages/user/XPLeaderboardPage'));
+const ChallengeHistoryPage = lazy(() => import('../pages/user/ChallengeHistoryPage'));
 
 // Tutorial plugin pages
 const TutorialsPage = lazy(() => import('../plugins/tutorials/pages/TutorialsPage'));
@@ -84,6 +85,7 @@ const CourseEnrollmentsAdmin = lazy(() => import('../pages/admin/CourseEnrollmen
 const WordListsAdmin = lazy(() => import('../pages/admin/WordListsAdmin'));
 const TypingChallengesAdmin = lazy(() => import('../pages/admin/TypingChallengesAdmin'));
 const GameLeaderboardAdmin = lazy(() => import('../pages/admin/GameLeaderboardAdmin'));
+const DailyChallengesAdmin = lazy(() => import('../pages/admin/DailyChallengesAdmin'));
 
 // Loading component
 const PageLoader = () => (
@@ -246,6 +248,18 @@ export const AppRoutes = () => {
             <Layout>
               <XPLeaderboardPage />
             </Layout>
+          }
+        />
+
+        {/* Challenge History - Protected */}
+        <Route
+          path="/challenges/history"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ChallengeHistoryPage />
+              </Layout>
+            </ProtectedRoute>
           }
         />
 
@@ -696,6 +710,16 @@ export const AppRoutes = () => {
             <AdminRoute>
               <AdminLayout>
                 <AchievementsAdmin />
+              </AdminLayout>
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/daily-challenges"
+          element={
+            <AdminRoute>
+              <AdminLayout>
+                <DailyChallengesAdmin />
               </AdminLayout>
             </AdminRoute>
           }

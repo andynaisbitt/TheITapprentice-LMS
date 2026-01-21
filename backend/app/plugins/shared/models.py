@@ -159,3 +159,112 @@ class LevelConfig(Base):
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+# ============================================================================
+# DAILY CHALLENGES SYSTEM
+# ============================================================================
+
+class ChallengeDifficulty(str, enum.Enum):
+    """Challenge difficulty levels"""
+    EASY = "easy"
+    MEDIUM = "medium"
+    HARD = "hard"
+
+
+class ChallengeType(str, enum.Enum):
+    """Types of daily challenges"""
+    QUIZ = "quiz"                    # Complete N quizzes
+    TUTORIAL = "tutorial"            # Complete N tutorials
+    COURSE_SECTION = "course_section"  # Complete N course sections
+    TYPING_GAME = "typing_game"      # Play N typing games
+    TYPING_WPM = "typing_wpm"        # Achieve N WPM
+    XP_EARN = "xp_earn"              # Earn N XP today
+    LOGIN_STREAK = "login_streak"    # Maintain streak
+
+
+class DailyChallengeTemplate(Base):
+    """Admin-created challenge definitions used to generate daily challenges"""
+    __tablename__ = "daily_challenge_templates"
+
+    id = Column(String(36), primary_key=True)
+    title = Column(String(255), nullable=False)
+    description = Column(Text)
+    challenge_type = Column(SQLEnum(ChallengeType), nullable=False, index=True)
+    difficulty = Column(SQLEnum(ChallengeDifficulty), nullable=False, index=True)
+    target_count = Column(Integer, nullable=False, default=1)
+    base_xp_reward = Column(Integer, nullable=False, default=50)
+    icon = Column(String(50), default="target")
+    is_active = Column(Boolean, default=True, index=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class DailyChallenge(Base):
+    """Actual daily challenges generated from templates"""
+    __tablename__ = "daily_challenges"
+
+    id = Column(String(36), primary_key=True)
+    template_id = Column(String(36), ForeignKey("daily_challenge_templates.id", ondelete="SET NULL"), nullable=True)
+    challenge_date = Column(DateTime, nullable=False, index=True)  # Date this challenge is for
+
+    # Copied from template (for historical accuracy if template changes)
+    title = Column(String(255), nullable=False)
+    description = Column(Text)
+    challenge_type = Column(SQLEnum(ChallengeType), nullable=False)
+    difficulty = Column(SQLEnum(ChallengeDifficulty), nullable=False)
+    target_count = Column(Integer, nullable=False)
+    xp_reward = Column(Integer, nullable=False)
+    icon = Column(String(50), default="target")
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationships
+    user_progress = relationship("UserChallengeProgress", back_populates="challenge")
+
+
+class UserChallengeProgress(Base):
+    """User progress on daily challenges"""
+    __tablename__ = "user_challenge_progress"
+
+    id = Column(String(36), primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    challenge_id = Column(String(36), ForeignKey("daily_challenges.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    current_progress = Column(Integer, default=0)
+    is_completed = Column(Boolean, default=False, index=True)
+    is_claimed = Column(Boolean, default=False)
+
+    completed_at = Column(DateTime, nullable=True)
+    claimed_at = Column(DateTime, nullable=True)
+
+    xp_earned = Column(Integer, default=0)
+    streak_bonus_percent = Column(Integer, default=0)  # Bonus % applied
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    challenge = relationship("DailyChallenge", back_populates="user_progress")
+
+
+class UserChallengeStreak(Base):
+    """Track user's daily challenge completion streak"""
+    __tablename__ = "user_challenge_streaks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
+
+    current_streak = Column(Integer, default=0)
+    longest_streak = Column(Integer, default=0)
+    last_completion_date = Column(DateTime, nullable=True)  # Last date all challenges completed
+
+    # Freeze tokens
+    freeze_tokens = Column(Integer, default=2)
+    freeze_tokens_used = Column(Integer, default=0)
+    last_freeze_used = Column(DateTime, nullable=True)
+    streak_protected_until = Column(DateTime, nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

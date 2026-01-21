@@ -242,6 +242,100 @@ export const RARITY_COLORS_DARK: Record<AchievementRarity, string> = {
   legendary: 'dark:bg-yellow-900/50 dark:text-yellow-400 dark:border-yellow-700',
 };
 
+// ============== Daily Challenges Types ==============
+
+export type ChallengeDifficulty = 'easy' | 'medium' | 'hard';
+export type ChallengeType = 'quiz' | 'tutorial' | 'course_section' | 'typing_game' | 'typing_wpm' | 'xp_earn' | 'login_streak';
+
+export interface DailyChallenge {
+  id: string;
+  title: string;
+  description?: string;
+  challenge_type: ChallengeType;
+  difficulty: ChallengeDifficulty;
+  target_count: number;
+  base_xp_reward: number;
+  potential_xp: number;
+  streak_bonus_percent: number;
+  icon: string;
+  current_progress: number;
+  progress_percent: number;
+  is_completed: boolean;
+  is_claimed: boolean;
+  completed_at?: string;
+  claimed_at?: string;
+}
+
+export interface ChallengeStreak {
+  current_streak: number;
+  longest_streak: number;
+  last_completion_date?: string;
+  freeze_tokens: number;
+  freeze_tokens_used: number;
+  streak_protected_until?: string;
+  streak_at_risk: boolean;
+  hours_remaining?: number;
+  current_bonus_percent: number;
+  next_bonus_at?: {
+    days: number;
+    bonus_percent: number;
+    days_remaining: number;
+  };
+}
+
+export interface DailyChallengesResponse {
+  challenges: DailyChallenge[];
+  streak_info: ChallengeStreak;
+  challenge_date: string;
+}
+
+export interface ClaimRewardResponse {
+  success: boolean;
+  challenge_id: string;
+  base_xp: number;
+  streak_bonus_percent: number;
+  bonus_xp: number;
+  total_xp: number;
+  new_total_xp: number;
+  level_up: boolean;
+  new_level: number;
+}
+
+export interface UseFreezeTokenResponse {
+  success: boolean;
+  freeze_tokens_remaining: number;
+  protected_until: string;
+  current_streak: number;
+}
+
+export interface ChallengeTemplate {
+  id: string;
+  title: string;
+  description?: string;
+  challenge_type: ChallengeType;
+  difficulty: ChallengeDifficulty;
+  target_count: number;
+  base_xp_reward: number;
+  icon: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ChallengeStats {
+  todays_challenges: number;
+  completions_today: number;
+  active_templates: number;
+  users_with_streaks: number;
+  longest_current_streak: number;
+}
+
+export const DIFFICULTY_COLORS: Record<ChallengeDifficulty, string> = {
+  easy: 'bg-green-100 text-green-700 border-green-300 dark:bg-green-900/30 dark:text-green-400 dark:border-green-700',
+  medium: 'bg-yellow-100 text-yellow-700 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-700',
+  hard: 'bg-red-100 text-red-700 border-red-300 dark:bg-red-900/30 dark:text-red-400 dark:border-red-700',
+};
+
 export const CATEGORY_ICONS: Record<AchievementCategory, string> = {
   tutorials: 'book-open',
   courses: 'graduation-cap',
@@ -250,3 +344,18 @@ export const CATEGORY_ICONS: Record<AchievementCategory, string> = {
   streak: 'flame',
   special: 'star',
 };
+
+// ============== Homepage Stats Types ==============
+
+export interface HomepageStats {
+  total_learners: number;
+  active_learners_today: number;
+  total_xp_earned: number;
+  tutorials_completed: number;
+  courses_completed: number;
+  quizzes_completed: number;
+  typing_games_played: number;
+  avg_level: number;
+  highest_level: number;
+  total_achievements_unlocked: number;
+}

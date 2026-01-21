@@ -96,6 +96,15 @@ class SiteSettings(Base):
     # LMS Navigation Settings
     show_lms_navigation = Column(Boolean, default=True, nullable=False)
 
+    # LMS Homepage Section Visibility
+    show_featured_courses = Column(Boolean, default=True, nullable=False)
+    show_typing_challenge = Column(Boolean, default=True, nullable=False)
+    show_quick_quiz = Column(Boolean, default=True, nullable=False)
+    show_tutorial_paths = Column(Boolean, default=True, nullable=False)
+    show_leaderboard_preview = Column(Boolean, default=True, nullable=False)
+    show_daily_challenge_banner = Column(Boolean, default=True, nullable=False)
+    show_homepage_stats = Column(Boolean, default=True, nullable=False)
+
     # Timestamps
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
 

@@ -12,6 +12,9 @@ import random
 import hashlib
 
 from . import models, schemas
+from app.plugins.shared.xp_service import xp_service
+from app.plugins.shared.models import ChallengeType
+from app.plugins.shared.challenge_service import challenge_service
 
 
 # ==================== WORD LIST CRUD ====================
@@ -297,6 +300,44 @@ def complete_game_session(
                 (word_list.avg_accuracy * (total_plays - 1) + accuracy)
                 / total_plays
             ) if total_plays > 0 else accuracy
+
+    # Award XP via the XP service
+    xp_result = xp_service.award_typing_game_xp(
+        db=db,
+        user_id=session.user_id,
+        wpm=adjusted_wpm,
+        accuracy=accuracy,
+        is_pvp_win=False
+    )
+
+    # Update xp_earned to match actual awarded XP
+    actual_xp = xp_result.get("total_xp_awarded", xp_earned)
+    session.total_xp_earned = actual_xp
+
+    # Track challenge progress for typing game completion
+    challenge_service.increment_progress(
+        db=db,
+        user_id=session.user_id,
+        challenge_type=ChallengeType.TYPING_GAME,
+        amount=1
+    )
+
+    # Track WPM for WPM-based challenges
+    challenge_service.increment_progress(
+        db=db,
+        user_id=session.user_id,
+        challenge_type=ChallengeType.TYPING_WPM,
+        value=adjusted_wpm
+    )
+
+    # Track XP earned for XP challenges
+    if actual_xp > 0:
+        challenge_service.increment_progress(
+            db=db,
+            user_id=session.user_id,
+            challenge_type=ChallengeType.XP_EARN,
+            amount=actual_xp
+        )
 
     db.commit()
     db.refresh(session)

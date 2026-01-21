@@ -21,7 +21,8 @@ from . import crud, schemas
 from .models import Tutorial, TutorialProgress
 from app.plugins.shared.xp_service import xp_service
 from app.plugins.shared.achievement_service import achievement_service
-from app.plugins.shared.models import ActivityType
+from app.plugins.shared.models import ActivityType, ChallengeType
+from app.plugins.shared.challenge_service import challenge_service
 
 logger = logging.getLogger(__name__)
 
@@ -265,6 +266,23 @@ async def complete_tutorial_step(
 
         logger.info(f"User {current_user.id} completed step {step_id}, awarded {step_xp_result.get('xp_awarded', 0)} XP")
 
+        # Track challenge progress for tutorial step
+        challenge_service.increment_progress(
+            db=db,
+            user_id=current_user.id,
+            challenge_type=ChallengeType.TUTORIAL,
+            amount=1
+        )
+
+        # Track XP earned for XP challenges
+        if step_xp_result.get("xp_awarded", 0) > 0:
+            challenge_service.increment_progress(
+                db=db,
+                user_id=current_user.id,
+                challenge_type=ChallengeType.XP_EARN,
+                amount=step_xp_result.get("xp_awarded", 0)
+            )
+
     # Check if tutorial is complete
     tutorial_completed = progress.status == "completed"
 
@@ -340,6 +358,15 @@ async def complete_tutorial_step(
 
         if unlocked_achievements:
             logger.info(f"User {current_user.id} unlocked {len(unlocked_achievements)} achievement(s)")
+
+        # Track XP earned for XP challenges
+        if xp_result.get("xp_awarded", 0) > 0:
+            challenge_service.increment_progress(
+                db=db,
+                user_id=current_user.id,
+                challenge_type=ChallengeType.XP_EARN,
+                amount=xp_result.get("xp_awarded", 0)
+            )
 
         logger.info(f"User {current_user.id} completed tutorial {tutorial_id}, awarded {xp_result.get('xp_awarded', 0)} XP")
 

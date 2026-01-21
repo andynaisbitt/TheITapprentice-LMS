@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
 
-from .models import AchievementCategory, AchievementRarity, ActivityType
+from .models import AchievementCategory, AchievementRarity, ActivityType, ChallengeType, ChallengeDifficulty
 
 
 # ============== XP Schemas ==============
@@ -266,3 +266,150 @@ class XPStatsResponse(BaseModel):
     max_level: int
     level_distribution: Dict[str, int]  # {"1-10": 50, "11-20": 30, ...}
     top_earners_today: List[XPLeaderboardEntry]
+
+
+# ============== Daily Challenges Schemas ==============
+
+class ChallengeTemplateBase(BaseModel):
+    """Base challenge template schema"""
+    title: str = Field(..., min_length=1, max_length=255)
+    description: Optional[str] = None
+    challenge_type: ChallengeType
+    difficulty: ChallengeDifficulty
+    target_count: int = Field(ge=1, default=1)
+    base_xp_reward: int = Field(ge=1, default=50)
+    icon: str = "target"
+    is_active: bool = True
+
+
+class ChallengeTemplateCreate(ChallengeTemplateBase):
+    """Create challenge template"""
+    pass
+
+
+class ChallengeTemplateUpdate(BaseModel):
+    """Update challenge template"""
+    title: Optional[str] = None
+    description: Optional[str] = None
+    challenge_type: Optional[ChallengeType] = None
+    difficulty: Optional[ChallengeDifficulty] = None
+    target_count: Optional[int] = None
+    base_xp_reward: Optional[int] = None
+    icon: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+class ChallengeTemplateResponse(ChallengeTemplateBase):
+    """Challenge template response"""
+    id: str
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class DailyChallengeResponse(BaseModel):
+    """Daily challenge with user progress"""
+    id: str
+    title: str
+    description: Optional[str] = None
+    challenge_type: str
+    difficulty: str
+    target_count: int
+    base_xp_reward: int
+    potential_xp: int  # With streak bonus
+    streak_bonus_percent: int
+    icon: str
+    current_progress: int
+    progress_percent: int
+    is_completed: bool
+    is_claimed: bool
+    completed_at: Optional[str] = None
+    claimed_at: Optional[str] = None
+
+
+class DailyChallengesResponse(BaseModel):
+    """Response with all daily challenges and streak info"""
+    challenges: List[DailyChallengeResponse]
+    streak_info: "ChallengeStreakResponse"
+    challenge_date: str
+
+
+class ChallengeStreakResponse(BaseModel):
+    """User's challenge streak info"""
+    current_streak: int
+    longest_streak: int
+    last_completion_date: Optional[str] = None
+    freeze_tokens: int
+    freeze_tokens_used: int
+    streak_protected_until: Optional[str] = None
+    streak_at_risk: bool
+    hours_remaining: Optional[float] = None
+    current_bonus_percent: int
+    next_bonus_at: Optional[Dict[str, Any]] = None
+
+
+class ClaimRewardRequest(BaseModel):
+    """Request to claim challenge reward"""
+    challenge_id: str
+
+
+class ClaimRewardResponse(BaseModel):
+    """Response after claiming reward"""
+    success: bool
+    challenge_id: str
+    base_xp: int
+    streak_bonus_percent: int
+    bonus_xp: int
+    total_xp: int
+    new_total_xp: int
+    level_up: bool
+    new_level: int
+
+
+class UseFreezeTokenResponse(BaseModel):
+    """Response after using freeze token"""
+    success: bool
+    freeze_tokens_remaining: int
+    protected_until: str
+    current_streak: int
+
+
+class ChallengeStatsResponse(BaseModel):
+    """Admin stats for challenge system"""
+    todays_challenges: int
+    completions_today: int
+    active_templates: int
+    users_with_streaks: int
+    longest_current_streak: int
+
+
+class ChallengeProgressUpdate(BaseModel):
+    """Internal: progress update result"""
+    challenge_id: str
+    title: str
+    current_progress: int
+    target_count: int
+    is_completed: bool
+    newly_completed: bool
+
+
+# ============== Homepage Stats Schemas ==============
+
+class HomepageStatsResponse(BaseModel):
+    """Public stats for homepage display"""
+    total_learners: int
+    active_learners_today: int
+    total_xp_earned: int
+    tutorials_completed: int
+    courses_completed: int
+    quizzes_completed: int
+    typing_games_played: int
+    avg_level: float
+    highest_level: int
+    total_achievements_unlocked: int
+
+
+# Update forward reference
+DailyChallengesResponse.model_rebuild()

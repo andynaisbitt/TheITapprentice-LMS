@@ -11,6 +11,8 @@ from app.auth.dependencies import get_current_user, get_current_admin_user
 from app.users.models import User
 from app.plugins.shared.xp_service import xp_service
 from app.plugins.shared.achievement_service import achievement_service
+from app.plugins.shared.models import ChallengeType
+from app.plugins.shared.challenge_service import challenge_service
 
 from . import crud
 from .models import QuizStatus
@@ -254,6 +256,23 @@ async def submit_quiz_attempt(
                 db, current_user.id, "quiz_complete",
                 {"quiz_id": quiz_id, "score": attempt.percentage, "passed": True}
             )
+
+            # Track challenge progress for quiz completion
+            challenge_service.increment_progress(
+                db=db,
+                user_id=current_user.id,
+                challenge_type=ChallengeType.QUIZ,
+                amount=1
+            )
+
+            # Track XP earned for XP challenges
+            if xp_awarded > 0:
+                challenge_service.increment_progress(
+                    db=db,
+                    user_id=current_user.id,
+                    challenge_type=ChallengeType.XP_EARN,
+                    amount=xp_awarded
+                )
 
     # Build detailed results
     question_results = []

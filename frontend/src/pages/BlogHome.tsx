@@ -1,7 +1,7 @@
 // src/pages/BlogHome.tsx
 /**
  * Enhanced Blog Homepage V2
- * Features: Hero, Featured Carousel, Recent Grid, Categories
+ * Features: Hero, Featured Carousel, Recent Grid, Categories, LMS Marketing Components
  */
 
 import { Helmet } from 'react-helmet-async';
@@ -9,11 +9,20 @@ import HeroSection from '../components/home/HeroSection';
 import FeaturedCarousel from '../components/home/FeaturedCarousel';
 import RecentPostsGrid from '../components/home/RecentPostsGrid';
 import CategoryShowcase from '../components/home/CategoryShowcase';
+import DailyChallengeBanner from '../components/home/DailyChallengeBanner';
+import FeaturedCoursesCarousel from '../components/home/FeaturedCoursesCarousel';
+import TypingChallengeCTA from '../components/home/TypingChallengeCTA';
+import QuickQuizWidget from '../components/home/QuickQuizWidget';
+import TutorialPathsShowcase from '../components/home/TutorialPathsShowcase';
+import LeaderboardPreview from '../components/home/LeaderboardPreview';
+import HomepageStatsWidget from '../components/home/HomepageStatsWidget';
 import { Sparkles } from 'lucide-react';
 import { useSiteSettings } from '../store/useSiteSettingsStore';
+import { useAuth } from '../state/contexts/AuthContext';
 
 export const BlogHome: React.FC = () => {
   const { settings } = useSiteSettings();
+  const { user } = useAuth();
 
   // Build full page title with tagline if available
   const pageTitle = settings.siteTagline
@@ -58,6 +67,9 @@ export const BlogHome: React.FC = () => {
         {/* Hero Section */}
         <HeroSection />
 
+        {/* Daily Challenge Banner - Show for logged-in users with setting enabled */}
+        {user && settings.showDailyChallengeBanner && <DailyChallengeBanner />}
+
         {/* Featured Posts Carousel */}
         {settings.showCarousel && (
           <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
@@ -76,6 +88,9 @@ export const BlogHome: React.FC = () => {
           </section>
         )}
 
+        {/* Featured Courses Carousel - LMS */}
+        {settings.showFeaturedCourses && <FeaturedCoursesCarousel />}
+
         {/* Categories Showcase */}
         {settings.showCategories && (
           <section className="bg-white dark:bg-gray-800 py-12 sm:py-16">
@@ -93,6 +108,12 @@ export const BlogHome: React.FC = () => {
           </section>
         )}
 
+        {/* Typing Challenge CTA - LMS */}
+        {settings.showTypingChallenge && <TypingChallengeCTA />}
+
+        {/* Tutorial Paths Showcase - LMS */}
+        {settings.showTutorialPaths && <TutorialPathsShowcase />}
+
         {/* Recent Posts Grid */}
         {settings.showRecentPosts && (
           <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
@@ -105,6 +126,19 @@ export const BlogHome: React.FC = () => {
               </p>
             </div>
             <RecentPostsGrid />
+          </section>
+        )}
+
+        {/* Quick Quiz Widget - LMS */}
+        {settings.showQuickQuiz && <QuickQuizWidget />}
+
+        {/* Leaderboard Preview - LMS */}
+        {settings.showLeaderboardPreview && <LeaderboardPreview />}
+
+        {/* Homepage Stats Widget - LMS */}
+        {settings.showHomepageStats && (
+          <section className="bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-8">
+            <HomepageStatsWidget />
           </section>
         )}
       </div>

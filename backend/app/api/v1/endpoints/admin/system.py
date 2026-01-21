@@ -293,3 +293,45 @@ async def get_system_stats(
         }
 
     return stats
+
+
+@router.get("/scheduler")
+async def get_scheduler_status(
+    current_user: User = Depends(require_admin)
+):
+    """
+    Get background scheduler status and job information.
+    Shows scheduled jobs including daily challenge generation.
+    Requires ADMIN role.
+    """
+    from app.core.scheduler import get_scheduler_status
+    return get_scheduler_status()
+
+
+@router.post("/scheduler/trigger-challenges")
+async def trigger_challenge_generation(
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Manually trigger daily challenge generation.
+    Useful for testing or if the scheduled job failed.
+    Requires ADMIN role.
+    """
+    from app.plugins.shared.challenge_service import challenge_service
+
+    challenges = challenge_service.generate_daily_challenges(db)
+
+    return {
+        "success": True,
+        "generated_count": len(challenges),
+        "challenges": [
+            {
+                "id": c.id,
+                "title": c.title,
+                "difficulty": c.difficulty.value,
+                "xp_reward": c.xp_reward,
+            }
+            for c in challenges
+        ]
+    }

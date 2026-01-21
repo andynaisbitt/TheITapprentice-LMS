@@ -97,6 +97,15 @@ export interface SiteSettings {
   smtpUseTls: boolean;
   smtpFromEmail: string;
   smtpFromName: string;
+
+  // LMS Homepage Section Visibility
+  showFeaturedCourses: boolean;
+  showTypingChallenge: boolean;
+  showQuickQuiz: boolean;
+  showTutorialPaths: boolean;
+  showLeaderboardPreview: boolean;
+  showDailyChallengeBanner: boolean;
+  showHomepageStats: boolean;
 }
 
 const defaultSettings: SiteSettings = {
@@ -168,6 +177,15 @@ const defaultSettings: SiteSettings = {
   smtpUseTls: true,
   smtpFromEmail: '',
   smtpFromName: '',
+
+  // LMS Homepage Section Visibility (all enabled by default)
+  showFeaturedCourses: true,
+  showTypingChallenge: true,
+  showQuickQuiz: true,
+  showTutorialPaths: true,
+  showLeaderboardPreview: true,
+  showDailyChallengeBanner: true,
+  showHomepageStats: true,
 };
 
 /**
