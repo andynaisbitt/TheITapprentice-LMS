@@ -281,7 +281,7 @@ async def get_system_stats(
         from app.plugins.courses.models import Course, CourseEnrollment
         stats["courses"] = {
             "total": db.query(Course).count(),
-            "published": db.query(Course).filter(Course.status == "published").count(),
+            "published": db.query(Course).filter(text("status = 'published'")).count(),
             "enrollments": db.query(CourseEnrollment).count()
         }
 

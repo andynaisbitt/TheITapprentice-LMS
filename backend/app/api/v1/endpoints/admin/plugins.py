@@ -5,6 +5,7 @@ Allows admins to view and toggle plugin status
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
@@ -137,7 +138,7 @@ def get_plugin_stats(db: Session, plugin_id: str) -> Optional[dict]:
         from app.plugins.courses.models import Course, CourseEnrollment
         stats["total_courses"] = db.query(Course).count()
         stats["published"] = db.query(Course).filter(
-            Course.status == "published"
+            text("status = 'published'")
         ).count()
         stats["total_enrollments"] = db.query(CourseEnrollment).count()
 

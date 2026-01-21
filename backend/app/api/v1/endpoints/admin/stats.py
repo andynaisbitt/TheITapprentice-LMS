@@ -5,7 +5,7 @@ Aggregated statistics for the admin dashboard
 """
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, text
 from pydantic import BaseModel
 from datetime import datetime, timedelta
 from typing import Optional, List
@@ -131,7 +131,7 @@ async def get_dashboard_stats(
         from app.plugins.courses.models import Course, CourseEnrollment
         total_courses = db.query(Course).count()
         courses_published = db.query(Course).filter(
-            Course.status == "published"
+            text("status = 'published'")
         ).count()
         total_enrollments = db.query(CourseEnrollment).count()
 
@@ -386,8 +386,8 @@ async def get_content_stats(
         from app.plugins.courses.models import Course
         stats["courses"] = {
             "total": db.query(Course).count(),
-            "published": db.query(Course).filter(Course.status == "published").count(),
-            "draft": db.query(Course).filter(Course.status == "draft").count()
+            "published": db.query(Course).filter(text("status = 'published'")).count(),
+            "draft": db.query(Course).filter(text("status = 'draft'")).count()
         }
 
     return stats
