@@ -118,7 +118,7 @@ export const adminCoursesApi = {
    * Get all courses including drafts (admin)
    */
   getAllCourses: async (filters?: CourseFilters): Promise<CourseListResponse> => {
-    const response = await apiClient.get<CourseListResponse>('/api/v1/admin/courses', {
+    const response = await apiClient.get<CourseListResponse>('/api/v1/courses/admin/courses', {
       params: filters,
     });
     return response.data;
@@ -128,7 +128,7 @@ export const adminCoursesApi = {
    * Get single course with full details (admin)
    */
   getCourse: async (courseId: string): Promise<Course> => {
-    const response = await apiClient.get<Course>(`/api/v1/admin/courses/${courseId}`);
+    const response = await apiClient.get<Course>(`/api/v1/courses/admin/courses/${courseId}`);
     return response.data;
   },
 
@@ -136,7 +136,7 @@ export const adminCoursesApi = {
    * Create new course (admin)
    */
   createCourse: async (data: CreateCourseRequest): Promise<Course> => {
-    const response = await apiClient.post<Course>('/api/v1/admin/courses', data);
+    const response = await apiClient.post<Course>('/api/v1/courses/admin/courses', data);
     return response.data;
   },
 
@@ -144,7 +144,7 @@ export const adminCoursesApi = {
    * Update course (admin)
    */
   updateCourse: async (courseId: string, data: UpdateCourseRequest): Promise<Course> => {
-    const response = await apiClient.put<Course>(`/api/v1/admin/courses/${courseId}`, data);
+    const response = await apiClient.put<Course>(`/api/v1/courses/admin/courses/${courseId}`, data);
     return response.data;
   },
 
@@ -152,7 +152,7 @@ export const adminCoursesApi = {
    * Delete course (admin)
    */
   deleteCourse: async (courseId: string): Promise<{ success: boolean; message: string }> => {
-    const response = await apiClient.delete(`/api/v1/admin/courses/${courseId}`);
+    const response = await apiClient.delete(`/api/v1/courses/admin/courses/${courseId}`);
     return response.data;
   },
 
@@ -163,7 +163,7 @@ export const adminCoursesApi = {
     courseId: string,
     published: boolean
   ): Promise<{ success: boolean; message: string }> => {
-    const response = await apiClient.post(`/api/v1/admin/courses/${courseId}/publish`, { published });
+    const response = await apiClient.post(`/api/v1/courses/admin/courses/${courseId}/publish`, { published });
     return response.data;
   },
 
@@ -175,7 +175,7 @@ export const adminCoursesApi = {
     course: Partial<Course>;
     modules: CourseModule[];
   }): Promise<Course> => {
-    const response = await apiClient.post<Course>('/api/v1/admin/courses/bulk-save', data);
+    const response = await apiClient.post<Course>('/api/v1/courses/admin/courses/bulk-save', data);
     return response.data;
   },
 
@@ -188,7 +188,7 @@ export const adminCoursesApi = {
    */
   addModule: async (courseId: string, data: CreateModuleRequest): Promise<CourseModule> => {
     const response = await apiClient.post<CourseModule>(
-      `/api/v1/admin/courses/${courseId}/modules`,
+      `/api/v1/courses/admin/courses/${courseId}/modules`,
       data
     );
     return response.data;
@@ -203,7 +203,7 @@ export const adminCoursesApi = {
     data: Partial<CreateModuleRequest>
   ): Promise<CourseModule> => {
     const response = await apiClient.put<CourseModule>(
-      `/api/v1/admin/courses/${courseId}/modules/${moduleId}`,
+      `/api/v1/courses/admin/courses/${courseId}/modules/${moduleId}`,
       data
     );
     return response.data;
@@ -217,7 +217,7 @@ export const adminCoursesApi = {
     moduleId: string
   ): Promise<{ success: boolean; message: string }> => {
     const response = await apiClient.delete(
-      `/api/v1/admin/courses/${courseId}/modules/${moduleId}`
+      `/api/v1/courses/admin/courses/${courseId}/modules/${moduleId}`
     );
     return response.data;
   },
@@ -235,7 +235,7 @@ export const adminCoursesApi = {
     data: CreateSectionRequest
   ): Promise<ModuleSection> => {
     const response = await apiClient.post<ModuleSection>(
-      `/api/v1/admin/courses/${courseId}/modules/${moduleId}/sections`,
+      `/api/v1/courses/admin/courses/${courseId}/modules/${moduleId}/sections`,
       data
     );
     return response.data;
@@ -251,7 +251,7 @@ export const adminCoursesApi = {
     data: UpdateSectionRequest
   ): Promise<ModuleSection> => {
     const response = await apiClient.put<ModuleSection>(
-      `/api/v1/admin/courses/${courseId}/modules/${moduleId}/sections/${sectionId}`,
+      `/api/v1/courses/admin/courses/${courseId}/modules/${moduleId}/sections/${sectionId}`,
       data
     );
     return response.data;
@@ -266,7 +266,7 @@ export const adminCoursesApi = {
     sectionId: string
   ): Promise<{ success: boolean; message: string }> => {
     const response = await apiClient.delete(
-      `/api/v1/admin/courses/${courseId}/modules/${moduleId}/sections/${sectionId}`
+      `/api/v1/courses/admin/courses/${courseId}/modules/${moduleId}/sections/${sectionId}`
     );
     return response.data;
   },
@@ -279,7 +279,7 @@ export const adminCoursesApi = {
    * Bulk create entire course structure (admin)
    */
   bulkCreateCourse: async (data: BulkCourseCreate): Promise<Course> => {
-    const response = await apiClient.post<Course>('/api/v1/admin/courses/bulk/create', data);
+    const response = await apiClient.post<Course>('/api/v1/courses/admin/courses/bulk/create', data);
     return response.data;
   },
 

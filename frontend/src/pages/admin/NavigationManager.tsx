@@ -7,14 +7,27 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminNavigationApi, MenuItemCreate, MenuItemUpdate } from '../../services/api/admin-navigation.api';
 import { MenuItem } from '../../services/api/navigation.api';
+import { usePlugins } from '../../state/contexts/PluginsContext';
+
+// Quick-add templates for plugin pages
+const PLUGIN_TEMPLATES = [
+  { id: 'tutorials', label: 'Tutorials', url: '/tutorials', icon: '📚', plugin: 'tutorials' },
+  { id: 'courses', label: 'Courses', url: '/courses', icon: '🎓', plugin: 'courses' },
+  { id: 'games', label: 'Practice', url: '/games/typing', icon: '⌨️', plugin: 'typing_game', altLabels: ['Games', 'Practice', 'Typing Practice'] },
+  { id: 'quizzes', label: 'Quizzes', url: '/quizzes', icon: '❓', plugin: 'quizzes' },
+];
 
 export const NavigationManager: React.FC = () => {
   const navigate = useNavigate();
+  const { isPluginEnabled } = usePlugins();
   const [items, setItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [quickAddLabel, setQuickAddLabel] = useState('');
+  const [selectedTemplate, setSelectedTemplate] = useState<typeof PLUGIN_TEMPLATES[0] | null>(null);
   const [formData, setFormData] = useState<MenuItemCreate>({
     label: '',
     url: '',
@@ -129,6 +142,45 @@ export const NavigationManager: React.FC = () => {
     });
   };
 
+  // Quick add a plugin page to navigation
+  const handleQuickAdd = async (template: typeof PLUGIN_TEMPLATES[0], customLabel?: string) => {
+    const label = customLabel || template.label;
+
+    // Check if this URL already exists
+    const existingItem = items.find(item => item.url === template.url);
+    if (existingItem) {
+      alert(`A menu item for "${template.url}" already exists.`);
+      return;
+    }
+
+    try {
+      await adminNavigationApi.create({
+        label,
+        url: template.url,
+        order: items.length,
+        visible: true,
+        show_in_header: true,
+        show_in_footer: false,
+        target_blank: false,
+      });
+      loadItems();
+      setShowQuickAdd(false);
+      setSelectedTemplate(null);
+      setQuickAddLabel('');
+    } catch (err: any) {
+      alert(err.response?.data?.detail || 'Failed to add menu item');
+    }
+  };
+
+  // Get available templates (plugins that are enabled but not yet in nav)
+  const getAvailableTemplates = () => {
+    return PLUGIN_TEMPLATES.filter(template => {
+      const isEnabled = isPluginEnabled(template.plugin);
+      const alreadyInNav = items.some(item => item.url === template.url);
+      return isEnabled && !alreadyInNav;
+    });
+  };
+
   if (loading) {
     return (
       <div className="p-8">
@@ -173,6 +225,69 @@ export const NavigationManager: React.FC = () => {
         {error && (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
             <p className="text-red-600 dark:text-red-400">{error}</p>
+          </div>
+        )}
+
+        {/* Quick Add Plugin Pages */}
+        {getAvailableTemplates().length > 0 && (
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                  Quick Add Plugin Pages
+                </h3>
+                <p className="text-xs text-blue-700 dark:text-blue-300">
+                  Add enabled plugins to your navigation with one click
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {getAvailableTemplates().map(template => (
+                <div key={template.id} className="relative">
+                  {selectedTemplate?.id === template.id ? (
+                    <div className="flex items-center gap-2 bg-white dark:bg-gray-800 rounded-lg p-2 shadow-sm">
+                      <input
+                        type="text"
+                        value={quickAddLabel}
+                        onChange={(e) => setQuickAddLabel(e.target.value)}
+                        placeholder={template.label}
+                        className="w-32 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      />
+                      <button
+                        onClick={() => handleQuickAdd(template, quickAddLabel || template.label)}
+                        className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                      >
+                        Add
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedTemplate(null);
+                          setQuickAddLabel('');
+                        }}
+                        className="px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setSelectedTemplate(template);
+                        setQuickAddLabel(template.label);
+                      }}
+                      className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition text-sm font-medium text-gray-700 dark:text-gray-200"
+                    >
+                      <span>{template.icon}</span>
+                      <span>{template.label}</span>
+                      <span className="text-blue-600 dark:text-blue-400">+</span>
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-blue-600 dark:text-blue-400">
+              Tip: Click a button to customize the label (e.g., "Games" → "Practice")
+            </p>
           </div>
         )}
 
