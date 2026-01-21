@@ -46,7 +46,7 @@ def upgrade() -> None:
     op.create_table('certificates',
         sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
         sa.Column('user_id', sa.Integer(), nullable=False),
-        sa.Column('course_id', sa.Integer(), nullable=False),
+        sa.Column('course_id', sa.String(length=100), nullable=False),
         sa.Column('enrollment_id', sa.Integer(), nullable=False),
         sa.Column('verification_code', sa.String(length=50), nullable=False),
         sa.Column('issued_at', sa.DateTime(), nullable=False),
