@@ -6,6 +6,10 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 from typing import List
 
+# Import User models first to resolve relationships
+from app.users.models import User, UserRole
+from app.auth.email_verification import EmailVerification
+
 from app.plugins.courses.models import Course, CourseModule, ModuleSection
 from app.plugins.courses.schemas import (
     CourseCreate,
