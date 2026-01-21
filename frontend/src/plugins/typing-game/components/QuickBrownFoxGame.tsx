@@ -43,11 +43,13 @@ const QUICK_BROWN_FOX = "The quick brown fox jumps over the lazy dog";
 
 interface QuickBrownFoxGameProps {
   onComplete?: (results: TypingGameResultsResponse) => void;
+  onExit?: () => void;
   wordListId?: string;
 }
 
 export const QuickBrownFoxGame: React.FC<QuickBrownFoxGameProps> = ({
   onComplete,
+  onExit,
   wordListId
 }) => {
   const { isAuthenticated } = useAuth();

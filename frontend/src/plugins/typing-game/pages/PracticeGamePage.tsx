@@ -304,7 +304,7 @@ export const PracticeGamePage: React.FC = () => {
                     )}
 
                     <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-4">
-                      <span>{wordList.word_count || 0} words</span>
+                      <span>{wordList.words?.length || 0} words</span>
                       <span>{wordList.times_played || 0} plays</span>
                     </div>
 
