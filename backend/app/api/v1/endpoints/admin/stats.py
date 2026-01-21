@@ -128,10 +128,10 @@ async def get_dashboard_stats(
 
     # Course stats
     if settings.PLUGINS_ENABLED.get("courses", False):
-        from app.plugins.courses.models import Course, CourseStatus, CourseEnrollment
+        from app.plugins.courses.models import Course, CourseEnrollment
         total_courses = db.query(Course).count()
         courses_published = db.query(Course).filter(
-            Course.status == CourseStatus.PUBLISHED
+            Course.status == "published"
         ).count()
         total_enrollments = db.query(CourseEnrollment).count()
 
@@ -383,11 +383,11 @@ async def get_content_stats(
         }
 
     if settings.PLUGINS_ENABLED.get("courses", False):
-        from app.plugins.courses.models import Course, CourseStatus
+        from app.plugins.courses.models import Course
         stats["courses"] = {
             "total": db.query(Course).count(),
-            "published": db.query(Course).filter(Course.status == CourseStatus.PUBLISHED).count(),
-            "draft": db.query(Course).filter(Course.status == CourseStatus.DRAFT).count()
+            "published": db.query(Course).filter(Course.status == "published").count(),
+            "draft": db.query(Course).filter(Course.status == "draft").count()
         }
 
     return stats

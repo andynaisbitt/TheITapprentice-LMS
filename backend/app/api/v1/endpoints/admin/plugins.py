@@ -134,12 +134,12 @@ def get_plugin_stats(db: Session, plugin_id: str) -> Optional[dict]:
         ).count()
 
     elif plugin_id == "courses":
-        from app.plugins.courses.models import Course, CourseStatus, Enrollment
+        from app.plugins.courses.models import Course, CourseEnrollment
         stats["total_courses"] = db.query(Course).count()
         stats["published"] = db.query(Course).filter(
-            Course.status == CourseStatus.PUBLISHED
+            Course.status == "published"
         ).count()
-        stats["total_enrollments"] = db.query(Enrollment).count()
+        stats["total_enrollments"] = db.query(CourseEnrollment).count()
 
     elif plugin_id == "typing_game":
         from app.plugins.typing_game.models import TypingWordList, TypingGameSession
