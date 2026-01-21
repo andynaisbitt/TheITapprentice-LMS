@@ -230,33 +230,33 @@ def create_sample_courses(db: Session, instructor_id: int = 1) -> List[Course]:
     }
 
     # Create Python course
-    from app.plugins.courses.crud import create_course, create_course_module, create_module_section
+    from app.plugins.courses.crud import create_course, create_module, create_section
 
     try:
         # Create course
         python_course = create_course(db, CourseCreate(**python_course_data))
 
         # Create Module 1 and its sections
-        mod_1 = create_course_module(
+        mod_1 = create_module(
             db,
             python_course.id,
             CourseModuleCreate(**module_1)
         )
         for section_data in module_1_sections:
-            create_module_section(
+            create_section(
                 db,
                 mod_1.id,
                 ModuleSectionCreate(**section_data)
             )
 
         # Create Module 2 and its sections
-        mod_2 = create_course_module(
+        mod_2 = create_module(
             db,
             python_course.id,
             CourseModuleCreate(**module_2)
         )
         for section_data in module_2_sections:
-            create_module_section(
+            create_section(
                 db,
                 mod_2.id,
                 ModuleSectionCreate(**section_data)
@@ -349,12 +349,12 @@ def create_sample_courses(db: Session, instructor_id: int = 1) -> List[Course]:
     try:
         react_course = create_course(db, CourseCreate(**react_course_data))
 
-        mod_react = create_course_module(
+        mod_react = create_module(
             db,
             react_course.id,
             CourseModuleCreate(**react_module_1)
         )
-        create_module_section(
+        create_section(
             db,
             mod_react.id,
             ModuleSectionCreate(**react_section_1)
