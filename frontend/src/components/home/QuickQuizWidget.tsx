@@ -186,7 +186,7 @@ const QuizCard: React.FC<QuizCardProps> = ({ quiz, index }) => {
               </span>
             </div>
 
-            {quiz.total_attempts > 0 && (
+            {quiz.total_attempts > 0 && quiz.pass_rate != null && (
               <div className="flex items-center gap-1 text-sm">
                 <Trophy className="w-4 h-4 text-green-500" />
                 <span className="text-gray-600 dark:text-gray-400">
