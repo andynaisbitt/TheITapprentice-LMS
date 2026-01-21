@@ -376,7 +376,7 @@ def run_seed():
     Run the seed data script.
     Usage: python -m app.plugins.courses.seed_data
     """
-    from app.database import SessionLocal
+    from app.core.database import SessionLocal
 
     db = SessionLocal()
     try:

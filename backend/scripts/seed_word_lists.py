@@ -12,7 +12,9 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
+# Import all models first to ensure relationships are set up
 from app.core.database import SessionLocal
+from app.users.models import User  # Import User first to resolve relationships
 from app.plugins.typing_game.models import TypingWordList
 
 
