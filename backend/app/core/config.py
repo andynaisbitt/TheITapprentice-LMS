@@ -1,7 +1,7 @@
 # Backend\app\core\config.py
 """Application configuration with security validation"""
 from pydantic_settings import BaseSettings
-from pydantic import field_validator, ValidationError
+from pydantic import field_validator, model_validator, ValidationError
 from typing import List
 import sys
 
@@ -42,12 +42,14 @@ class Settings(BaseSettings):
     SMTP_USE_TLS: bool = True
 
     # Plugin System (v1.7.1 - LMS Edition)
-    PLUGINS_ENABLED: dict = {
-        "tutorials": True,       # Enable tutorials plugin
-        "typing_game": True,     # Enable typing game plugin (v1.9 - ACTIVE)
-        "courses": True,         # Enable courses plugin (v1.8 - ACTIVE)
-        "quizzes": False,        # Enable quizzes plugin (coming soon)
-    }
+    # Individual plugin settings (can be set in .env)
+    PLUGIN_TUTORIALS_ENABLED: bool = True
+    PLUGIN_TYPING_GAME_ENABLED: bool = True
+    PLUGIN_COURSES_ENABLED: bool = True
+    PLUGIN_QUIZZES_ENABLED: bool = False  # Disabled by default
+
+    # Computed dict (built from individual settings)
+    PLUGINS_ENABLED: dict = {}
 
     # App
     DEBUG: bool = False  # Changed default to False for security
@@ -101,6 +103,17 @@ class Settings(BaseSettings):
         if "user:password@localhost" in v or v == "postgresql://user:password@localhost:5432/itapprentice_db":
             raise ValueError("DATABASE_URL must be configured with real credentials")
         return v
+
+    @model_validator(mode='after')
+    def build_plugins_enabled(self) -> 'Settings':
+        """Build PLUGINS_ENABLED dict from individual plugin settings"""
+        self.PLUGINS_ENABLED = {
+            "tutorials": self.PLUGIN_TUTORIALS_ENABLED,
+            "typing_game": self.PLUGIN_TYPING_GAME_ENABLED,
+            "courses": self.PLUGIN_COURSES_ENABLED,
+            "quizzes": self.PLUGIN_QUIZZES_ENABLED,
+        }
+        return self
 
     class Config:
         env_file = ".env"
