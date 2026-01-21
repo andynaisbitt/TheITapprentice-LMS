@@ -160,7 +160,7 @@ def delete_course(db: Session, course_id: str) -> bool:
         return False
 
     # Soft delete - just change status
-    db_course.status = CourseStatus.ARCHIVED
+    db_course.status = CourseStatus.archived
     db.commit()
     return True
 
@@ -171,7 +171,7 @@ def publish_course(db: Session, course_id: str) -> Optional[Course]:
     if not db_course:
         return None
 
-    db_course.status = CourseStatus.PUBLISHED
+    db_course.status = CourseStatus.published
     db_course.published_at = datetime.utcnow()
     db.commit()
     db.refresh(db_course)
@@ -421,7 +421,7 @@ def enroll_user(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Course not found"
         )
-    if course.status != CourseStatus.PUBLISHED:
+    if course.status != CourseStatus.published:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot enroll in unpublished course"
