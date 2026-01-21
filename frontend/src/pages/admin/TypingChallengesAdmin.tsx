@@ -19,7 +19,7 @@ import {
   Gamepad2,
   Zap,
 } from 'lucide-react';
-import { api } from '../../services/api';
+import { apiClient } from '../../services/api/client';
 
 interface Challenge {
   id: string;
@@ -69,11 +69,11 @@ export const TypingChallengesAdmin: React.FC = () => {
     setLoading(true);
     try {
       // Load typing game analytics
-      const analyticsRes = await api.get('/typing-game/admin/analytics');
+      const analyticsRes = await apiClient.get('/typing-game/admin/analytics');
       setAnalytics(analyticsRes.data);
 
       // Load challenge templates (filtered to typing-related)
-      const templatesRes = await api.get('/shared/admin/challenges/templates?include_inactive=true');
+      const templatesRes = await apiClient.get('/shared/admin/challenges/templates?include_inactive=true');
       const typingChallenges = (templatesRes.data || []).filter(
         (c: any) => c.challenge_type === 'typing_game' || c.challenge_type === 'typing_wpm'
       );
@@ -104,7 +104,7 @@ export const TypingChallengesAdmin: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this challenge template?')) return;
     try {
-      await api.delete(`/shared/admin/challenges/templates/${id}`);
+      await apiClient.delete(`/shared/admin/challenges/templates/${id}`);
       setChallenges(challenges.filter(c => c.id !== id));
     } catch (error) {
       console.error('Failed to delete:', error);
@@ -115,7 +115,7 @@ export const TypingChallengesAdmin: React.FC = () => {
   const handleSave = async () => {
     try {
       if (editingChallenge) {
-        const response = await api.put(
+        const response = await apiClient.put(
           `/shared/admin/challenges/templates/${editingChallenge.id}`,
           formData
         );
@@ -123,7 +123,7 @@ export const TypingChallengesAdmin: React.FC = () => {
           c.id === editingChallenge.id ? response.data : c
         ));
       } else {
-        const response = await api.post('/shared/admin/challenges/templates', formData);
+        const response = await apiClient.post('/shared/admin/challenges/templates', formData);
         setChallenges([...challenges, response.data]);
       }
       setShowForm(false);

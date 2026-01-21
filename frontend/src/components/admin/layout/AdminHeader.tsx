@@ -20,7 +20,7 @@ import {
   X,
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
-import { api } from '../../../services/api';
+import { apiClient } from '../../../services/api/client';
 
 interface AdminHeaderProps {
   onMenuClick: () => void;
@@ -102,7 +102,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
       setLoadingNotifications(true);
       try {
         // Try to fetch recent admin activity
-        const response = await api.get('/admin/notifications');
+        const response = await apiClient.get('/admin/notifications');
         setNotifications(response.data);
       } catch {
         // If no endpoint exists, show placeholder notifications

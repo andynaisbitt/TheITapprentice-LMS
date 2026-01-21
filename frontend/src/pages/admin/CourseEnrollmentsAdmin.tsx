@@ -14,7 +14,7 @@ import {
   MoreVertical,
   RefreshCw,
 } from 'lucide-react';
-import { api } from '../../services/api';
+import { apiClient } from '../../services/api/client';
 
 interface Enrollment {
   id: number;
@@ -57,7 +57,7 @@ export const CourseEnrollmentsAdmin: React.FC = () => {
   const loadEnrollments = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/courses/admin/enrollments');
+      const response = await apiClient.get('/courses/admin/enrollments');
       const data = response.data;
 
       // Map API response to component's expected format
