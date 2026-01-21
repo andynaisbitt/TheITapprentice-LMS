@@ -85,13 +85,17 @@ def get_courses_count(
 def create_course(db: Session, course: CourseCreate) -> Course:
     """Create a new course"""
     try:
+        # Convert schema enum to model enum using value
+        level_value = course.level.value if hasattr(course.level, 'value') else course.level
+        db_level = CourseLevel(level_value)
+
         db_course = Course(
             id=course.id,
             title=course.title,
             description=course.description,
             short_description=course.short_description,
             image=course.image,
-            level=course.level,
+            level=db_level,
             duration=course.duration,
             skills=course.skills or [],
             category=course.category,
