@@ -230,6 +230,21 @@ def create_sample_courses(db: Session, instructor_id: int = 1) -> List[Course]:
     try:
         from app.plugins.courses.crud import create_module, create_section
 
+        # Clean up existing courses first
+        course_ids_to_seed = ["it-support-fundamentals", "networking-essentials"]
+        for course_id in course_ids_to_seed:
+            existing = db.query(Course).filter(Course.id == course_id).first()
+            if existing:
+                # Delete sections first (via modules)
+                for module in existing.modules:
+                    db.query(ModuleSection).filter(ModuleSection.module_id == module.id).delete()
+                # Delete modules
+                db.query(CourseModule).filter(CourseModule.course_id == course_id).delete()
+                # Delete course
+                db.delete(existing)
+                db.commit()
+                print(f"Cleaned up existing course: {course_id}")
+
         it_support_course = Course(
             id=it_support_course_data["id"],
             title=it_support_course_data["title"],
