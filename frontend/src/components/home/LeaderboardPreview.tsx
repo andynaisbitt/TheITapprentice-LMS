@@ -30,9 +30,11 @@ const LeaderboardPreview: React.FC = () => {
     const fetchLeaderboard = async () => {
       try {
         const data = await progressApi.getXPLeaderboard(5, 0);
-        setLeaderboard(data);
+        // Defensive check: ensure data is an array
+        setLeaderboard(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error('Failed to load leaderboard preview:', error);
+        setLeaderboard([]); // Ensure empty array on error
       } finally {
         setLoading(false);
       }
@@ -54,7 +56,8 @@ const LeaderboardPreview: React.FC = () => {
     return null; // Hide if no entries
   }
 
-  const formatXP = (xp: number) => {
+  const formatXP = (xp: number | undefined | null) => {
+    if (xp == null) return '0';
     if (xp >= 1000000) return `${(xp / 1000000).toFixed(1)}M`;
     if (xp >= 1000) return `${(xp / 1000).toFixed(1)}K`;
     return xp.toString();

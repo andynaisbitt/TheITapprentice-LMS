@@ -20,6 +20,87 @@ router = APIRouter()
 # PUBLIC ENDPOINTS (No auth required for browsing)
 # ============================================================================
 
+@router.get("/", response_model=schemas.PaginatedCoursesResponse)
+async def list_courses(
+    level: Optional[str] = None,
+    category: Optional[str] = None,
+    is_free: Optional[bool] = None,
+    is_featured: Optional[bool] = None,
+    status: Optional[str] = None,
+    search: Optional[str] = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(12, ge=1, le=100),
+    db: Session = Depends(get_db)
+):
+    """
+    Get all published courses with optional filtering (main endpoint)
+
+    - **level**: Filter by difficulty (beginner, intermediate, advanced)
+    - **category**: Filter by category
+    - **is_free**: Filter free/premium courses
+    - **is_featured**: Filter featured courses
+    - **status**: Filter by status (default: published)
+    - **search**: Search in title and description
+    - **page**: Page number (default: 1)
+    - **page_size**: Items per page (default: 12, max: 100)
+    """
+    from sqlalchemy import text
+
+    # Default to published if no status specified
+    target_status = status or 'published'
+
+    query = db.query(models.Course).filter(
+        models.Course.status == text(f"'{target_status}'::coursestatus")
+    )
+
+    # Apply filters
+    if level:
+        try:
+            query = query.filter(models.Course.level == models.CourseLevel(level))
+        except ValueError:
+            pass  # Invalid level, ignore filter
+
+    if category:
+        query = query.filter(models.Course.category == category)
+
+    if is_free is not None:
+        query = query.filter(models.Course.is_premium == (not is_free))
+
+    if is_featured is not None:
+        query = query.filter(models.Course.is_featured == is_featured)
+
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            or_(
+                models.Course.title.ilike(search_term),
+                models.Course.description.ilike(search_term),
+                models.Course.short_description.ilike(search_term)
+            )
+        )
+
+    # Get total count
+    total = query.count()
+
+    # Calculate offset
+    skip = (page - 1) * page_size
+
+    # Get paginated courses
+    courses = query.order_by(models.Course.created_at.desc()).offset(skip).limit(page_size).all()
+
+    # Fix None values
+    for course in courses:
+        if course.related_skills is None:
+            course.related_skills = ["problem-solving"]
+
+    return {
+        "courses": courses,
+        "total": total,
+        "page": page,
+        "page_size": page_size
+    }
+
+
 @router.get("/public", response_model=schemas.PaginatedCoursesResponse)
 async def list_published_courses(
     level: Optional[str] = None,

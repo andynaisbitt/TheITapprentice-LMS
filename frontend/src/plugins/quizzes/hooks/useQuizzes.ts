@@ -67,9 +67,11 @@ export function useFeaturedQuizzes(limit: number = 6) {
     const fetchFeatured = async () => {
       try {
         const response = await apiClient.get(`${API_BASE}/featured?limit=${limit}`);
-        setQuizzes(response.data);
+        // Defensive check: ensure response.data is an array
+        setQuizzes(Array.isArray(response.data) ? response.data : []);
       } catch (err) {
         console.error('Failed to load featured quizzes:', err);
+        setQuizzes([]); // Ensure empty array on error
       } finally {
         setLoading(false);
       }
