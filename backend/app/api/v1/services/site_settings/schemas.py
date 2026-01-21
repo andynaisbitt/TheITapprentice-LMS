@@ -105,6 +105,50 @@ class SiteSettingsBase(BaseModel):
     show_daily_challenge_banner: bool = Field(default=True)
     show_homepage_stats: bool = Field(default=True)
 
+    # LMS Widget Customization - Featured Courses
+    featured_courses_title: str = Field(default="Featured Courses", max_length=200)
+    featured_courses_subtitle: Optional[str] = Field(default="Start your learning journey", max_length=500)
+    featured_courses_limit: int = Field(default=4, ge=2, le=8)
+
+    # LMS Widget Customization - Typing Challenge
+    typing_challenge_title: str = Field(default="Test Your Typing Speed", max_length=200)
+    typing_challenge_show_stats: bool = Field(default=True)
+    typing_challenge_show_pvp: bool = Field(default=True)
+
+    # LMS Widget Customization - Quick Quiz
+    quick_quiz_title: str = Field(default="Quick Quiz", max_length=200)
+    quick_quiz_subtitle: Optional[str] = Field(default="Test your knowledge", max_length=500)
+    quick_quiz_limit: int = Field(default=4, ge=2, le=6)
+
+    # LMS Widget Customization - Tutorial Paths
+    tutorial_paths_title: str = Field(default="Learning Paths", max_length=200)
+    tutorial_paths_subtitle: Optional[str] = Field(default="Structured tutorials to guide your learning", max_length=500)
+    tutorial_paths_categories_limit: int = Field(default=4, ge=2, le=6)
+
+    # LMS Widget Customization - Leaderboard
+    leaderboard_title: str = Field(default="Top Learners", max_length=200)
+    leaderboard_limit: int = Field(default=5, ge=3, le=10)
+    leaderboard_show_streak: bool = Field(default=True)
+
+    # LMS Widget Customization - Daily Challenges
+    daily_challenge_guest_message: Optional[str] = Field(default="Sign up to track your progress and earn rewards!", max_length=500)
+    daily_challenge_show_streak: bool = Field(default=True)
+
+    # LMS Widget Customization - Homepage Stats
+    homepage_stats_title: str = Field(default="Community Progress", max_length=200)
+    homepage_stats_show_active_today: bool = Field(default=True)
+
+    # Homepage Section Titles
+    carousel_title: str = Field(default="Featured Articles", max_length=200)
+    carousel_subtitle: Optional[str] = Field(default="Hand-picked posts showcasing our best content", max_length=500)
+    categories_title: str = Field(default="Explore by Category", max_length=200)
+    categories_subtitle: Optional[str] = Field(default="Dive into topics that interest you", max_length=500)
+    recent_posts_title: str = Field(default="Latest Posts", max_length=200)
+    recent_posts_subtitle: Optional[str] = Field(default="Fresh content from our writers", max_length=500)
+
+    # Homepage Section Order
+    homepage_section_order: Optional[list] = Field(default=None)
+
 
 class SiteSettingsUpdate(BaseModel):
     """Schema for updating site settings (all fields optional)"""
@@ -206,6 +250,50 @@ class SiteSettingsUpdate(BaseModel):
     show_leaderboard_preview: Optional[bool] = Field(None)
     show_daily_challenge_banner: Optional[bool] = Field(None)
     show_homepage_stats: Optional[bool] = Field(None)
+
+    # LMS Widget Customization - Featured Courses
+    featured_courses_title: Optional[str] = Field(None, max_length=200)
+    featured_courses_subtitle: Optional[str] = Field(None, max_length=500)
+    featured_courses_limit: Optional[int] = Field(None, ge=2, le=8)
+
+    # LMS Widget Customization - Typing Challenge
+    typing_challenge_title: Optional[str] = Field(None, max_length=200)
+    typing_challenge_show_stats: Optional[bool] = Field(None)
+    typing_challenge_show_pvp: Optional[bool] = Field(None)
+
+    # LMS Widget Customization - Quick Quiz
+    quick_quiz_title: Optional[str] = Field(None, max_length=200)
+    quick_quiz_subtitle: Optional[str] = Field(None, max_length=500)
+    quick_quiz_limit: Optional[int] = Field(None, ge=2, le=6)
+
+    # LMS Widget Customization - Tutorial Paths
+    tutorial_paths_title: Optional[str] = Field(None, max_length=200)
+    tutorial_paths_subtitle: Optional[str] = Field(None, max_length=500)
+    tutorial_paths_categories_limit: Optional[int] = Field(None, ge=2, le=6)
+
+    # LMS Widget Customization - Leaderboard
+    leaderboard_title: Optional[str] = Field(None, max_length=200)
+    leaderboard_limit: Optional[int] = Field(None, ge=3, le=10)
+    leaderboard_show_streak: Optional[bool] = Field(None)
+
+    # LMS Widget Customization - Daily Challenges
+    daily_challenge_guest_message: Optional[str] = Field(None, max_length=500)
+    daily_challenge_show_streak: Optional[bool] = Field(None)
+
+    # LMS Widget Customization - Homepage Stats
+    homepage_stats_title: Optional[str] = Field(None, max_length=200)
+    homepage_stats_show_active_today: Optional[bool] = Field(None)
+
+    # Homepage Section Titles
+    carousel_title: Optional[str] = Field(None, max_length=200)
+    carousel_subtitle: Optional[str] = Field(None, max_length=500)
+    categories_title: Optional[str] = Field(None, max_length=200)
+    categories_subtitle: Optional[str] = Field(None, max_length=500)
+    recent_posts_title: Optional[str] = Field(None, max_length=200)
+    recent_posts_subtitle: Optional[str] = Field(None, max_length=500)
+
+    # Homepage Section Order
+    homepage_section_order: Optional[list] = Field(None)
 
 
 class SiteSettingsResponse(SiteSettingsBase):

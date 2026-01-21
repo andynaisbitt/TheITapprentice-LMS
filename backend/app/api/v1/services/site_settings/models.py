@@ -105,6 +105,50 @@ class SiteSettings(Base):
     show_daily_challenge_banner = Column(Boolean, default=True, nullable=False)
     show_homepage_stats = Column(Boolean, default=True, nullable=False)
 
+    # LMS Widget Customization - Featured Courses
+    featured_courses_title = Column(String(200), default="Featured Courses", nullable=False)
+    featured_courses_subtitle = Column(String(500), default="Start your learning journey", nullable=True)
+    featured_courses_limit = Column(Integer, default=4, nullable=False)
+
+    # LMS Widget Customization - Typing Challenge
+    typing_challenge_title = Column(String(200), default="Test Your Typing Speed", nullable=False)
+    typing_challenge_show_stats = Column(Boolean, default=True, nullable=False)
+    typing_challenge_show_pvp = Column(Boolean, default=True, nullable=False)
+
+    # LMS Widget Customization - Quick Quiz
+    quick_quiz_title = Column(String(200), default="Quick Quiz", nullable=False)
+    quick_quiz_subtitle = Column(String(500), default="Test your knowledge", nullable=True)
+    quick_quiz_limit = Column(Integer, default=4, nullable=False)
+
+    # LMS Widget Customization - Tutorial Paths
+    tutorial_paths_title = Column(String(200), default="Learning Paths", nullable=False)
+    tutorial_paths_subtitle = Column(String(500), default="Structured tutorials to guide your learning", nullable=True)
+    tutorial_paths_categories_limit = Column(Integer, default=4, nullable=False)
+
+    # LMS Widget Customization - Leaderboard
+    leaderboard_title = Column(String(200), default="Top Learners", nullable=False)
+    leaderboard_limit = Column(Integer, default=5, nullable=False)
+    leaderboard_show_streak = Column(Boolean, default=True, nullable=False)
+
+    # LMS Widget Customization - Daily Challenges
+    daily_challenge_guest_message = Column(String(500), default="Sign up to track your progress and earn rewards!", nullable=True)
+    daily_challenge_show_streak = Column(Boolean, default=True, nullable=False)
+
+    # LMS Widget Customization - Homepage Stats
+    homepage_stats_title = Column(String(200), default="Community Progress", nullable=False)
+    homepage_stats_show_active_today = Column(Boolean, default=True, nullable=False)
+
+    # Homepage Section Titles (for carousel, categories, recent posts)
+    carousel_title = Column(String(200), default="Featured Articles", nullable=False)
+    carousel_subtitle = Column(String(500), default="Hand-picked posts showcasing our best content", nullable=True)
+    categories_title = Column(String(200), default="Explore by Category", nullable=False)
+    categories_subtitle = Column(String(500), default="Dive into topics that interest you", nullable=True)
+    recent_posts_title = Column(String(200), default="Latest Posts", nullable=False)
+    recent_posts_subtitle = Column(String(500), default="Fresh content from our writers", nullable=True)
+
+    # Homepage Section Order (JSON array of section IDs)
+    homepage_section_order = Column(JSON, nullable=True, default=None)
+
     # Timestamps
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
 

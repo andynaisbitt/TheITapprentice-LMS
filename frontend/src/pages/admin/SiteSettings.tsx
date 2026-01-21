@@ -67,7 +67,7 @@ interface SiteSettings {
   smtpFromEmail: string;
   smtpFromName: string;
 
-  // Homepage Layout
+  // Homepage Layout - Blog Sections
   showCarousel: boolean;
   carouselTitle: string;
   carouselSubtitle: string;
@@ -84,6 +84,51 @@ interface SiteSettings {
   recentPostsTitle: string;
   recentPostsSubtitle: string;
   recentPostsLimit: number;
+
+  // LMS Widget Visibility
+  showFeaturedCourses: boolean;
+  showTypingChallenge: boolean;
+  showQuickQuiz: boolean;
+  showTutorialPaths: boolean;
+  showLeaderboardPreview: boolean;
+  showDailyChallengeBanner: boolean;
+  showHomepageStats: boolean;
+
+  // LMS Widget Customization - Featured Courses
+  featuredCoursesTitle: string;
+  featuredCoursesSubtitle: string;
+  featuredCoursesLimit: number;
+
+  // LMS Widget Customization - Typing Challenge
+  typingChallengeTitle: string;
+  typingChallengeShowStats: boolean;
+  typingChallengeShowPvp: boolean;
+
+  // LMS Widget Customization - Quick Quiz
+  quickQuizTitle: string;
+  quickQuizSubtitle: string;
+  quickQuizLimit: number;
+
+  // LMS Widget Customization - Tutorial Paths
+  tutorialPathsTitle: string;
+  tutorialPathsSubtitle: string;
+  tutorialPathsCategoriesLimit: number;
+
+  // LMS Widget Customization - Leaderboard
+  leaderboardTitle: string;
+  leaderboardLimit: number;
+  leaderboardShowStreak: boolean;
+
+  // LMS Widget Customization - Daily Challenges
+  dailyChallengeGuestMessage: string;
+  dailyChallengeShowStreak: boolean;
+
+  // LMS Widget Customization - Homepage Stats
+  homepageStatsTitle: string;
+  homepageStatsShowActiveToday: boolean;
+
+  // Homepage Section Order
+  homepageSectionOrder: string[] | null;
 }
 
 const defaultSettings: SiteSettings = {
@@ -147,6 +192,51 @@ const defaultSettings: SiteSettings = {
   recentPostsTitle: 'Latest Posts',
   recentPostsSubtitle: 'Fresh content from our writers',
   recentPostsLimit: 6,
+
+  // LMS Widget Visibility
+  showFeaturedCourses: true,
+  showTypingChallenge: true,
+  showQuickQuiz: true,
+  showTutorialPaths: true,
+  showLeaderboardPreview: true,
+  showDailyChallengeBanner: true,
+  showHomepageStats: true,
+
+  // LMS Widget Customization - Featured Courses
+  featuredCoursesTitle: 'Featured Courses',
+  featuredCoursesSubtitle: 'Start your learning journey',
+  featuredCoursesLimit: 4,
+
+  // LMS Widget Customization - Typing Challenge
+  typingChallengeTitle: 'Test Your Typing Speed',
+  typingChallengeShowStats: true,
+  typingChallengeShowPvp: true,
+
+  // LMS Widget Customization - Quick Quiz
+  quickQuizTitle: 'Quick Quiz',
+  quickQuizSubtitle: 'Test your knowledge',
+  quickQuizLimit: 4,
+
+  // LMS Widget Customization - Tutorial Paths
+  tutorialPathsTitle: 'Learning Paths',
+  tutorialPathsSubtitle: 'Structured tutorials to guide your learning',
+  tutorialPathsCategoriesLimit: 4,
+
+  // LMS Widget Customization - Leaderboard
+  leaderboardTitle: 'Top Learners',
+  leaderboardLimit: 5,
+  leaderboardShowStreak: true,
+
+  // LMS Widget Customization - Daily Challenges
+  dailyChallengeGuestMessage: 'Sign up to track your progress and earn rewards!',
+  dailyChallengeShowStreak: true,
+
+  // LMS Widget Customization - Homepage Stats
+  homepageStatsTitle: 'Community Progress',
+  homepageStatsShowActiveToday: true,
+
+  // Homepage Section Order
+  homepageSectionOrder: null,
 };
 
 export const SiteSettings: React.FC = () => {
@@ -155,7 +245,7 @@ export const SiteSettings: React.FC = () => {
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'analytics' | 'seo' | 'homepage' | 'layout' | 'social' | 'contact' | 'branding' | 'email'>('homepage');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'seo' | 'homepage' | 'layout' | 'lms' | 'social' | 'contact' | 'branding' | 'email'>('homepage');
   const [uploadingLogo, setUploadingLogo] = useState<'light' | 'dark' | null>(null);
   const [uploadingFavicon, setUploadingFavicon] = useState<'light' | 'dark' | null>(null);
 
@@ -344,7 +434,8 @@ export const SiteSettings: React.FC = () => {
 
   const tabs = [
     { id: 'homepage', label: 'Homepage', icon: '🏠' },
-    { id: 'layout', label: 'Homepage Layout', icon: '📐' },
+    { id: 'layout', label: 'Blog Sections', icon: '📐' },
+    { id: 'lms', label: 'LMS Widgets', icon: '🎓' },
     { id: 'seo', label: 'SEO & Domain', icon: '🔍' },
     { id: 'branding', label: 'Branding & Logo', icon: '🎨' },
     { id: 'analytics', label: 'Analytics & Ads', icon: '📊' },
@@ -824,6 +915,498 @@ export const SiteSettings: React.FC = () => {
                           className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         />
                         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">3-12 posts (best: 3, 6, or 9)</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+
+            {/* LMS Widgets Tab */}
+            {activeTab === 'lms' && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="space-y-6"
+              >
+                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-6">
+                  <h3 className="font-medium text-green-900 dark:text-green-300 mb-2">
+                    🎓 LMS Widgets
+                  </h3>
+                  <p className="text-sm text-green-800 dark:text-green-400">
+                    Configure learning management widgets displayed on your homepage. Toggle visibility and customize titles for each section.
+                  </p>
+                </div>
+
+                {/* Featured Courses Widget */}
+                <div className="border border-gray-200 dark:border-slate-700 rounded-lg p-6 bg-white dark:bg-slate-800">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                      🎓 Featured Courses
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => handleChange('showFeaturedCourses', !settings.showFeaturedCourses)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        settings.showFeaturedCourses
+                          ? 'bg-blue-600 dark:bg-blue-700'
+                          : 'bg-gray-300 dark:bg-slate-600'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          settings.showFeaturedCourses ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {settings.showFeaturedCourses && (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Section Title
+                        </label>
+                        <input
+                          type="text"
+                          value={settings.featuredCoursesTitle}
+                          onChange={(e) => handleChange('featuredCoursesTitle', e.target.value)}
+                          placeholder="Featured Courses"
+                          className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Section Subtitle
+                        </label>
+                        <input
+                          type="text"
+                          value={settings.featuredCoursesSubtitle}
+                          onChange={(e) => handleChange('featuredCoursesSubtitle', e.target.value)}
+                          placeholder="Start your learning journey"
+                          className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Number of Courses
+                        </label>
+                        <input
+                          type="number"
+                          min="2"
+                          max="8"
+                          value={settings.featuredCoursesLimit}
+                          onChange={(e) => handleChange('featuredCoursesLimit', parseInt(e.target.value) || 4)}
+                          className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">2-8 courses</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Typing Challenge Widget */}
+                <div className="border border-gray-200 dark:border-slate-700 rounded-lg p-6 bg-white dark:bg-slate-800">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                      ⌨️ Typing Challenge
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => handleChange('showTypingChallenge', !settings.showTypingChallenge)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        settings.showTypingChallenge
+                          ? 'bg-blue-600 dark:bg-blue-700'
+                          : 'bg-gray-300 dark:bg-slate-600'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          settings.showTypingChallenge ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {settings.showTypingChallenge && (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Section Title
+                        </label>
+                        <input
+                          type="text"
+                          value={settings.typingChallengeTitle}
+                          onChange={(e) => handleChange('typingChallengeTitle', e.target.value)}
+                          placeholder="Test Your Typing Speed"
+                          className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="flex items-center justify-between bg-gray-50 dark:bg-slate-700/50 p-3 rounded-lg">
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Show Speed/Accuracy Stats</span>
+                          <button
+                            type="button"
+                            onClick={() => handleChange('typingChallengeShowStats', !settings.typingChallengeShowStats)}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                              settings.typingChallengeShowStats
+                                ? 'bg-blue-600 dark:bg-blue-700'
+                                : 'bg-gray-300 dark:bg-slate-600'
+                            }`}
+                          >
+                            <span
+                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                settings.typingChallengeShowStats ? 'translate-x-6' : 'translate-x-1'
+                              }`}
+                            />
+                          </button>
+                        </div>
+                        <div className="flex items-center justify-between bg-gray-50 dark:bg-slate-700/50 p-3 rounded-lg">
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Show PvP Button</span>
+                          <button
+                            type="button"
+                            onClick={() => handleChange('typingChallengeShowPvp', !settings.typingChallengeShowPvp)}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                              settings.typingChallengeShowPvp
+                                ? 'bg-blue-600 dark:bg-blue-700'
+                                : 'bg-gray-300 dark:bg-slate-600'
+                            }`}
+                          >
+                            <span
+                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                settings.typingChallengeShowPvp ? 'translate-x-6' : 'translate-x-1'
+                              }`}
+                            />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Quick Quiz Widget */}
+                <div className="border border-gray-200 dark:border-slate-700 rounded-lg p-6 bg-white dark:bg-slate-800">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                      🧠 Quick Quiz
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => handleChange('showQuickQuiz', !settings.showQuickQuiz)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        settings.showQuickQuiz
+                          ? 'bg-blue-600 dark:bg-blue-700'
+                          : 'bg-gray-300 dark:bg-slate-600'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          settings.showQuickQuiz ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {settings.showQuickQuiz && (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Section Title
+                        </label>
+                        <input
+                          type="text"
+                          value={settings.quickQuizTitle}
+                          onChange={(e) => handleChange('quickQuizTitle', e.target.value)}
+                          placeholder="Quick Quiz"
+                          className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Section Subtitle
+                        </label>
+                        <input
+                          type="text"
+                          value={settings.quickQuizSubtitle}
+                          onChange={(e) => handleChange('quickQuizSubtitle', e.target.value)}
+                          placeholder="Test your knowledge"
+                          className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Number of Quizzes
+                        </label>
+                        <input
+                          type="number"
+                          min="2"
+                          max="6"
+                          value={settings.quickQuizLimit}
+                          onChange={(e) => handleChange('quickQuizLimit', parseInt(e.target.value) || 4)}
+                          className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">2-6 quizzes</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Tutorial Paths Widget */}
+                <div className="border border-gray-200 dark:border-slate-700 rounded-lg p-6 bg-white dark:bg-slate-800">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                      📚 Tutorial Paths
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => handleChange('showTutorialPaths', !settings.showTutorialPaths)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        settings.showTutorialPaths
+                          ? 'bg-blue-600 dark:bg-blue-700'
+                          : 'bg-gray-300 dark:bg-slate-600'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          settings.showTutorialPaths ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {settings.showTutorialPaths && (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Section Title
+                        </label>
+                        <input
+                          type="text"
+                          value={settings.tutorialPathsTitle}
+                          onChange={(e) => handleChange('tutorialPathsTitle', e.target.value)}
+                          placeholder="Learning Paths"
+                          className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Section Subtitle
+                        </label>
+                        <input
+                          type="text"
+                          value={settings.tutorialPathsSubtitle}
+                          onChange={(e) => handleChange('tutorialPathsSubtitle', e.target.value)}
+                          placeholder="Structured tutorials to guide your learning"
+                          className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Number of Categories
+                        </label>
+                        <input
+                          type="number"
+                          min="2"
+                          max="6"
+                          value={settings.tutorialPathsCategoriesLimit}
+                          onChange={(e) => handleChange('tutorialPathsCategoriesLimit', parseInt(e.target.value) || 4)}
+                          className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">2-6 categories</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Leaderboard Preview Widget */}
+                <div className="border border-gray-200 dark:border-slate-700 rounded-lg p-6 bg-white dark:bg-slate-800">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                      🏆 Leaderboard Preview
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => handleChange('showLeaderboardPreview', !settings.showLeaderboardPreview)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        settings.showLeaderboardPreview
+                          ? 'bg-blue-600 dark:bg-blue-700'
+                          : 'bg-gray-300 dark:bg-slate-600'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          settings.showLeaderboardPreview ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {settings.showLeaderboardPreview && (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Section Title
+                        </label>
+                        <input
+                          type="text"
+                          value={settings.leaderboardTitle}
+                          onChange={(e) => handleChange('leaderboardTitle', e.target.value)}
+                          placeholder="Top Learners"
+                          className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Number of Users
+                          </label>
+                          <input
+                            type="number"
+                            min="3"
+                            max="10"
+                            value={settings.leaderboardLimit}
+                            onChange={(e) => handleChange('leaderboardLimit', parseInt(e.target.value) || 5)}
+                            className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">3-10 users</p>
+                        </div>
+                        <div className="flex items-center justify-between bg-gray-50 dark:bg-slate-700/50 p-3 rounded-lg">
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Show Streak</span>
+                          <button
+                            type="button"
+                            onClick={() => handleChange('leaderboardShowStreak', !settings.leaderboardShowStreak)}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                              settings.leaderboardShowStreak
+                                ? 'bg-blue-600 dark:bg-blue-700'
+                                : 'bg-gray-300 dark:bg-slate-600'
+                            }`}
+                          >
+                            <span
+                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                settings.leaderboardShowStreak ? 'translate-x-6' : 'translate-x-1'
+                              }`}
+                            />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Daily Challenge Banner Widget */}
+                <div className="border border-gray-200 dark:border-slate-700 rounded-lg p-6 bg-white dark:bg-slate-800">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                      🎯 Daily Challenge Banner
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => handleChange('showDailyChallengeBanner', !settings.showDailyChallengeBanner)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        settings.showDailyChallengeBanner
+                          ? 'bg-blue-600 dark:bg-blue-700'
+                          : 'bg-gray-300 dark:bg-slate-600'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          settings.showDailyChallengeBanner ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {settings.showDailyChallengeBanner && (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Guest CTA Message
+                        </label>
+                        <input
+                          type="text"
+                          value={settings.dailyChallengeGuestMessage}
+                          onChange={(e) => handleChange('dailyChallengeGuestMessage', e.target.value)}
+                          placeholder="Sign up to track your progress and earn rewards!"
+                          className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Shown to non-logged-in users</p>
+                      </div>
+                      <div className="flex items-center justify-between bg-gray-50 dark:bg-slate-700/50 p-3 rounded-lg">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Show Streak Bonus</span>
+                        <button
+                          type="button"
+                          onClick={() => handleChange('dailyChallengeShowStreak', !settings.dailyChallengeShowStreak)}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                            settings.dailyChallengeShowStreak
+                              ? 'bg-blue-600 dark:bg-blue-700'
+                              : 'bg-gray-300 dark:bg-slate-600'
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              settings.dailyChallengeShowStreak ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Homepage Stats Widget */}
+                <div className="border border-gray-200 dark:border-slate-700 rounded-lg p-6 bg-white dark:bg-slate-800">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                      📊 Community Stats
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => handleChange('showHomepageStats', !settings.showHomepageStats)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        settings.showHomepageStats
+                          ? 'bg-blue-600 dark:bg-blue-700'
+                          : 'bg-gray-300 dark:bg-slate-600'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          settings.showHomepageStats ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {settings.showHomepageStats && (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Section Title
+                        </label>
+                        <input
+                          type="text"
+                          value={settings.homepageStatsTitle}
+                          onChange={(e) => handleChange('homepageStatsTitle', e.target.value)}
+                          placeholder="Community Progress"
+                          className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div className="flex items-center justify-between bg-gray-50 dark:bg-slate-700/50 p-3 rounded-lg">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Show "X Active Today"</span>
+                        <button
+                          type="button"
+                          onClick={() => handleChange('homepageStatsShowActiveToday', !settings.homepageStatsShowActiveToday)}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                            settings.homepageStatsShowActiveToday
+                              ? 'bg-blue-600 dark:bg-blue-700'
+                              : 'bg-gray-300 dark:bg-slate-600'
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              settings.homepageStatsShowActiveToday ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
                       </div>
                     </div>
                   )}

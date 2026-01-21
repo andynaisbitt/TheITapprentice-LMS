@@ -106,6 +106,42 @@ export interface SiteSettings {
   showLeaderboardPreview: boolean;
   showDailyChallengeBanner: boolean;
   showHomepageStats: boolean;
+
+  // LMS Widget Customization - Featured Courses
+  featuredCoursesTitle: string;
+  featuredCoursesSubtitle: string;
+  featuredCoursesLimit: number;
+
+  // LMS Widget Customization - Typing Challenge
+  typingChallengeTitle: string;
+  typingChallengeShowStats: boolean;
+  typingChallengeShowPvp: boolean;
+
+  // LMS Widget Customization - Quick Quiz
+  quickQuizTitle: string;
+  quickQuizSubtitle: string;
+  quickQuizLimit: number;
+
+  // LMS Widget Customization - Tutorial Paths
+  tutorialPathsTitle: string;
+  tutorialPathsSubtitle: string;
+  tutorialPathsCategoriesLimit: number;
+
+  // LMS Widget Customization - Leaderboard
+  leaderboardTitle: string;
+  leaderboardLimit: number;
+  leaderboardShowStreak: boolean;
+
+  // LMS Widget Customization - Daily Challenges
+  dailyChallengeGuestMessage: string;
+  dailyChallengeShowStreak: boolean;
+
+  // LMS Widget Customization - Homepage Stats
+  homepageStatsTitle: string;
+  homepageStatsShowActiveToday: boolean;
+
+  // Homepage Section Order (array of section IDs)
+  homepageSectionOrder: string[] | null;
 }
 
 const defaultSettings: SiteSettings = {
@@ -186,6 +222,42 @@ const defaultSettings: SiteSettings = {
   showLeaderboardPreview: true,
   showDailyChallengeBanner: true,
   showHomepageStats: true,
+
+  // LMS Widget Customization - Featured Courses
+  featuredCoursesTitle: 'Featured Courses',
+  featuredCoursesSubtitle: 'Start your learning journey',
+  featuredCoursesLimit: 4,
+
+  // LMS Widget Customization - Typing Challenge
+  typingChallengeTitle: 'Test Your Typing Speed',
+  typingChallengeShowStats: true,
+  typingChallengeShowPvp: true,
+
+  // LMS Widget Customization - Quick Quiz
+  quickQuizTitle: 'Quick Quiz',
+  quickQuizSubtitle: 'Test your knowledge',
+  quickQuizLimit: 4,
+
+  // LMS Widget Customization - Tutorial Paths
+  tutorialPathsTitle: 'Learning Paths',
+  tutorialPathsSubtitle: 'Structured tutorials to guide your learning',
+  tutorialPathsCategoriesLimit: 4,
+
+  // LMS Widget Customization - Leaderboard
+  leaderboardTitle: 'Top Learners',
+  leaderboardLimit: 5,
+  leaderboardShowStreak: true,
+
+  // LMS Widget Customization - Daily Challenges
+  dailyChallengeGuestMessage: 'Sign up to track your progress and earn rewards!',
+  dailyChallengeShowStreak: true,
+
+  // LMS Widget Customization - Homepage Stats
+  homepageStatsTitle: 'Community Progress',
+  homepageStatsShowActiveToday: true,
+
+  // Homepage Section Order (null = default order)
+  homepageSectionOrder: null,
 };
 
 /**
