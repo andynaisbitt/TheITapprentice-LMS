@@ -2,6 +2,7 @@
 /**
  * PVP Page - Main orchestrator for PVP typing game
  * Handles game flow: Lobby -> Game -> Round Results -> Match Results
+ * Requires authentication to play PVP matches
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
@@ -13,6 +14,7 @@ import { PVPMatchLobby } from '../components/PVPMatchLobby';
 import { PVPGameInterface } from '../components/PVPGameInterface';
 import { PVPRoundResults, RoundResultData } from '../components/PVPRoundResults';
 import { PVPMatchResults, MatchResultData } from '../components/PVPMatchResults';
+import { RegistrationPrompt } from '../../../components/auth/RegistrationPrompt';
 import type { PVPMatch, PVPMatchDetail } from '../types';
 
 type GamePhase = 'lobby' | 'waiting' | 'playing' | 'round_results' | 'match_results';
@@ -46,12 +48,18 @@ export const PVPPage: React.FC = () => {
     opponentAccuracy: number;
   }>>([]);
 
-  // Redirect if not authenticated
+  // Show registration prompt state for unauthenticated users
+  const [showAuthPrompt, setShowAuthPrompt] = useState(!isAuthenticated);
+
+  // Update prompt visibility when auth changes
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/login');
-    }
-  }, [isAuthenticated, navigate]);
+    setShowAuthPrompt(!isAuthenticated);
+  }, [isAuthenticated]);
+
+  const handleAuthPromptClose = useCallback(() => {
+    // User closed the prompt - redirect to typing games hub
+    navigate('/games/typing');
+  }, [navigate]);
 
   // WebSocket handlers
   const handleMatchJoined = useCallback((data: MatchJoinedData) => {
@@ -353,6 +361,18 @@ export const PVPPage: React.FC = () => {
         return null;
     }
   };
+
+  // Show registration prompt for unauthenticated users
+  if (!isAuthenticated) {
+    return (
+      <RegistrationPrompt
+        isOpen={showAuthPrompt}
+        onClose={handleAuthPromptClose}
+        context="pvp"
+        required={true}
+      />
+    );
+  }
 
   return renderPhase();
 };

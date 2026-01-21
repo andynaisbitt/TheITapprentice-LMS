@@ -2,8 +2,10 @@
 /**
  * Admin Panel Sidebar Navigation
  * WordPress-style collapsible sidebar with sections
+ * Dynamically shows/hides items based on enabled plugins
  */
 
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   PanelLeftClose,
@@ -12,8 +14,9 @@ import {
   LogOut,
 } from 'lucide-react';
 import { SidebarSection } from './SidebarSection';
-import { adminNavigation } from '../../../config/adminNavigation';
+import { getFilteredNavigation } from '../../../config/adminNavigation';
 import { useAuth } from '../../../state/contexts/AuthContext';
+import { usePlugins } from '../../../state/contexts/PluginsContext';
 
 interface AdminSidebarProps {
   isCollapsed: boolean;
@@ -35,6 +38,12 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   onToggleSubmenu,
 }) => {
   const { user, logout } = useAuth();
+  const { isPluginEnabled, loading: pluginsLoading } = usePlugins();
+
+  // Get filtered navigation based on enabled plugins
+  const navigation = useMemo(() => {
+    return getFilteredNavigation(isPluginEnabled);
+  }, [isPluginEnabled]);
 
   return (
     <aside
@@ -73,7 +82,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4 px-2">
-        {adminNavigation.map((section) => (
+        {navigation.map((section) => (
           <SidebarSection
             key={section.id}
             id={section.id}

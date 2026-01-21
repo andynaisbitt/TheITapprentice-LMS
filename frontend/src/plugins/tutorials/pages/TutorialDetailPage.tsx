@@ -2,6 +2,7 @@
 /**
  * Tutorial Detail/Viewer Page
  * Shows full tutorial with steps and progress tracking
+ * Includes registration prompt for unauthenticated users
  */
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -9,16 +10,35 @@ import { useTutorial, useTutorialProgress } from '../hooks/useTutorials';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { useAuth } from '../../../state/contexts/AuthContext';
+import { RegistrationPrompt } from '../../../components/auth/RegistrationPrompt';
+import { useRegistrationPrompt } from '../../../hooks/useRegistrationPrompt';
 
 const TutorialDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const { tutorial, loading, error, refetch } = useTutorial(slug);
   const { startTutorial, completeStep, loading: actionLoading } = useTutorialProgress();
 
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [showHints, setShowHints] = useState(false);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+  const [guestMode, setGuestMode] = useState(false);
+
+  // Registration prompt for unauthenticated users
+  const {
+    isPromptOpen,
+    closePrompt,
+    handleSkip: handlePromptSkip,
+    checkAuthAndProceed,
+  } = useRegistrationPrompt({
+    context: 'tutorial',
+    onSkip: () => {
+      // User chose to continue without registration - enable guest mode
+      setGuestMode(true);
+    },
+  });
 
   // Initialize progress from tutorial data
   useEffect(() => {
@@ -40,12 +60,46 @@ const TutorialDetailPage: React.FC = () => {
   const handleStartTutorial = async () => {
     if (!tutorial) return;
 
+    // Check if user is authenticated - if not, show registration prompt
+    if (!checkAuthAndProceed()) {
+      return; // Prompt is now showing
+    }
+
     try {
       await startTutorial(tutorial.id);
       refetch();
     } catch (err) {
       console.error('Failed to start tutorial:', err);
     }
+  };
+
+  // Handle completing a step - shows registration prompt if in guest mode
+  const handleCompleteStepWithAuth = async () => {
+    if (!tutorial) return;
+
+    // If in guest mode, just track locally without saving to server
+    if (guestMode || !isAuthenticated) {
+      const currentStep = tutorial.steps[currentStepIndex];
+      if (currentStep) {
+        setCompletedSteps((prev) => new Set([...prev, currentStep.id]));
+
+        // Check if this was the last step
+        if (currentStepIndex === tutorial.steps.length - 1) {
+          // Show prompt to encourage registration for XP
+          if (!isAuthenticated) {
+            checkAuthAndProceed();
+          }
+        } else {
+          // Move to next step
+          setCurrentStepIndex(currentStepIndex + 1);
+          setShowHints(false);
+        }
+      }
+      return;
+    }
+
+    // Authenticated user - save progress to server
+    await handleCompleteStep();
   };
 
   const handleCompleteStep = async () => {
@@ -184,13 +238,15 @@ const TutorialDetailPage: React.FC = () => {
 
           {/* Main Content */}
           <main className="lg:col-span-3">
-            {!tutorial.user_progress && (
+            {!tutorial.user_progress && !guestMode && (
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
                 <h3 className="text-lg font-bold text-blue-900 dark:text-blue-100 mb-2">
                   Ready to start learning?
                 </h3>
                 <p className="text-blue-800 dark:text-blue-200 mb-4">
-                  Track your progress and earn {tutorial.xp_reward} XP upon completion!
+                  {isAuthenticated
+                    ? `Track your progress and earn ${tutorial.xp_reward} XP upon completion!`
+                    : `Sign up to track your progress and earn ${tutorial.xp_reward} XP!`}
                 </p>
                 <button
                   onClick={handleStartTutorial}
@@ -199,6 +255,19 @@ const TutorialDetailPage: React.FC = () => {
                 >
                   {actionLoading ? 'Starting...' : 'Start Tutorial'}
                 </button>
+              </div>
+            )}
+
+            {guestMode && !isAuthenticated && (
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
+                <div className="flex items-center gap-3">
+                  <svg className="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  <p className="text-yellow-800 dark:text-yellow-200 text-sm">
+                    You're learning as a guest. <button onClick={() => checkAuthAndProceed()} className="underline font-medium hover:no-underline">Sign up</button> to save your progress and earn XP!
+                  </p>
+                </div>
               </div>
             )}
 
@@ -271,9 +340,9 @@ const TutorialDetailPage: React.FC = () => {
                     </button>
 
                     <div className="flex items-center gap-4">
-                      {!isStepCompleted && tutorial.user_progress && (
+                      {!isStepCompleted && (tutorial.user_progress || guestMode) && (
                         <button
-                          onClick={handleCompleteStep}
+                          onClick={handleCompleteStepWithAuth}
                           disabled={actionLoading}
                           className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
                         >
@@ -297,6 +366,14 @@ const TutorialDetailPage: React.FC = () => {
           </main>
         </div>
       </div>
+
+      {/* Registration Prompt Modal */}
+      <RegistrationPrompt
+        isOpen={isPromptOpen}
+        onClose={closePrompt}
+        onSkip={handlePromptSkip}
+        context="tutorial"
+      />
     </div>
   );
 };

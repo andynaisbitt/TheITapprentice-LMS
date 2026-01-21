@@ -2,6 +2,7 @@
 /**
  * Admin Sidebar Navigation Configuration
  * Defines the structure of the admin panel sidebar menu
+ * Supports dynamic filtering based on enabled plugins
  */
 
 import {
@@ -39,6 +40,8 @@ export interface NavItem {
   icon?: LucideIcon;
   children?: NavItem[];
   badge?: string | number;
+  /** Plugin ID required for this item to be visible */
+  requiresPlugin?: string;
 }
 
 export interface NavSection {
@@ -47,9 +50,17 @@ export interface NavSection {
   icon: LucideIcon;
   items: NavItem[];
   badge?: string | number;
+  /** Plugin ID required for this section to be visible */
+  requiresPlugin?: string;
+  /** If true, section is shown only if ANY of its items are visible */
+  hideIfEmpty?: boolean;
 }
 
-export const adminNavigation: NavSection[] = [
+/**
+ * Full admin navigation structure
+ * Items with requiresPlugin will only show when that plugin is enabled
+ */
+export const adminNavigationConfig: NavSection[] = [
   {
     id: 'dashboard',
     label: 'Dashboard',
@@ -75,10 +86,12 @@ export const adminNavigation: NavSection[] = [
     id: 'lms',
     label: 'LMS',
     icon: GraduationCap,
+    hideIfEmpty: true,
     items: [
       {
         label: 'Tutorials',
         icon: BookOpen,
+        requiresPlugin: 'tutorials',
         children: [
           { label: 'All Tutorials', path: '/admin/tutorials' },
           { label: 'New Tutorial', path: '/admin/tutorials/new' },
@@ -90,6 +103,7 @@ export const adminNavigation: NavSection[] = [
       {
         label: 'Courses',
         icon: Library,
+        requiresPlugin: 'courses',
         children: [
           { label: 'All Courses', path: '/admin/courses' },
           { label: 'New Course', path: '/admin/courses/new' },
@@ -99,6 +113,7 @@ export const adminNavigation: NavSection[] = [
       {
         label: 'Quizzes',
         icon: ClipboardList,
+        requiresPlugin: 'quizzes',
         children: [
           { label: 'All Quizzes', path: '/admin/quizzes' },
           { label: 'New Quiz', path: '/admin/quizzes/new' },
@@ -107,6 +122,7 @@ export const adminNavigation: NavSection[] = [
       {
         label: 'Typing Games',
         icon: Keyboard,
+        requiresPlugin: 'typing_game',
         children: [
           { label: 'Word Lists', path: '/admin/games/word-lists' },
           { label: 'Challenges', path: '/admin/games/challenges' },
@@ -143,9 +159,72 @@ export const adminNavigation: NavSection[] = [
   },
 ];
 
+/**
+ * Filter navigation items based on enabled plugins
+ */
+export const filterNavItem = (
+  item: NavItem,
+  isPluginEnabled: (pluginId: string) => boolean
+): NavItem | null => {
+  // Check if item requires a plugin that's not enabled
+  if (item.requiresPlugin && !isPluginEnabled(item.requiresPlugin)) {
+    return null;
+  }
+
+  // If item has children, filter them too
+  if (item.children) {
+    const filteredChildren = item.children
+      .map((child) => filterNavItem(child, isPluginEnabled))
+      .filter((child): child is NavItem => child !== null);
+
+    // If all children were filtered out, hide the parent too
+    if (filteredChildren.length === 0) {
+      return null;
+    }
+
+    return { ...item, children: filteredChildren };
+  }
+
+  return item;
+};
+
+/**
+ * Get filtered navigation based on enabled plugins
+ */
+export const getFilteredNavigation = (
+  isPluginEnabled: (pluginId: string) => boolean
+): NavSection[] => {
+  return adminNavigationConfig
+    .map((section) => {
+      // Check if section requires a plugin
+      if (section.requiresPlugin && !isPluginEnabled(section.requiresPlugin)) {
+        return null;
+      }
+
+      // Filter items
+      const filteredItems = section.items
+        .map((item) => filterNavItem(item, isPluginEnabled))
+        .filter((item): item is NavItem => item !== null);
+
+      // If hideIfEmpty and no items, hide section
+      if (section.hideIfEmpty && filteredItems.length === 0) {
+        return null;
+      }
+
+      return { ...section, items: filteredItems };
+    })
+    .filter((section): section is NavSection => section !== null);
+};
+
+/**
+ * Legacy export for backward compatibility
+ * Returns full navigation (use getFilteredNavigation for plugin-aware nav)
+ */
+export const adminNavigation = adminNavigationConfig;
+
 // Helper to find active section based on current path
 export const findActiveSection = (pathname: string): string | null => {
-  for (const section of adminNavigation) {
+  for (const section of adminNavigationConfig) {
     for (const item of section.items) {
       if (item.path === pathname) {
         return section.id;

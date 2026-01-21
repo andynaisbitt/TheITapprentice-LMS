@@ -130,7 +130,7 @@ def get_plugin_stats(db: Session, plugin_id: str) -> Optional[dict]:
         stats["total_tutorials"] = db.query(Tutorial).count()
         stats["published"] = db.query(Tutorial).filter(Tutorial.is_published == True).count()
         stats["total_completions"] = db.query(TutorialProgress).filter(
-            TutorialProgress.is_completed == True
+            TutorialProgress.status == "completed"
         ).count()
 
     elif plugin_id == "courses":

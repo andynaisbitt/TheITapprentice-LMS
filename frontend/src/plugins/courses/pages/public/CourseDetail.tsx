@@ -2,6 +2,7 @@
 /**
  * Course Detail Page - Backend Connected
  * Shows detailed course information and enrollment options
+ * Includes registration prompt for unauthenticated users
  */
 
 import React, { useState, useEffect } from 'react';
@@ -25,15 +26,33 @@ import {
 } from 'lucide-react';
 import { coursesApi } from '../../services/coursesApi';
 import { Course, CourseModule } from '../../types';
+import { useAuth } from '../../../../state/contexts/AuthContext';
+import { RegistrationPrompt } from '../../../../components/auth/RegistrationPrompt';
+import { useRegistrationPrompt } from '../../../../hooks/useRegistrationPrompt';
 
 const CourseDetail: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [course, setCourse] = useState<Course | null>(null);
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [enrolling, setEnrolling] = useState(false);
+
+  // Registration prompt for unauthenticated users
+  const {
+    isPromptOpen,
+    closePrompt,
+    handleSkip,
+    checkAuthAndProceed,
+  } = useRegistrationPrompt({
+    context: 'course',
+    onSkip: () => {
+      // User chose to continue without registration - navigate to course preview/player
+      navigate(`/courses/${courseId}/learn`);
+    },
+  });
 
   // Fetch course details
   useEffect(() => {
@@ -67,10 +86,16 @@ const CourseDetail: React.FC = () => {
     fetchCourse();
   }, [courseId]);
 
-  // Handle enrollment
+  // Handle enrollment - shows registration prompt if not authenticated
   const handleEnroll = async () => {
     if (!courseId) return;
 
+    // Check if user is authenticated - if not, show registration prompt
+    if (!checkAuthAndProceed()) {
+      return; // Prompt is now showing
+    }
+
+    // User is authenticated, proceed with enrollment
     try {
       setEnrolling(true);
       await coursesApi.enrollInCourse({ course_id: courseId });
@@ -80,7 +105,8 @@ const CourseDetail: React.FC = () => {
     } catch (err: any) {
       console.error('Error enrolling:', err);
       if (err.response?.status === 401) {
-        navigate('/login?redirect=/courses/' + courseId);
+        // Session expired - show registration prompt
+        checkAuthAndProceed();
       } else if (err.response?.status === 400 && err.response?.data?.detail?.includes('Already enrolled')) {
         // Already enrolled - just navigate to the course
         setIsEnrolled(true);
@@ -92,6 +118,19 @@ const CourseDetail: React.FC = () => {
     } finally {
       setEnrolling(false);
     }
+  };
+
+  // Handle starting course without enrollment (preview/guest mode)
+  const handleStartPreview = () => {
+    if (!courseId) return;
+
+    // Check if user wants to register for tracking
+    if (!checkAuthAndProceed()) {
+      return; // Prompt is now showing, will navigate on skip
+    }
+
+    // Authenticated user - enroll and start
+    handleEnroll();
   };
 
   // Get level badge styling
@@ -409,6 +448,14 @@ const CourseDetail: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Registration Prompt Modal */}
+      <RegistrationPrompt
+        isOpen={isPromptOpen}
+        onClose={closePrompt}
+        onSkip={handleSkip}
+        context="course"
+      />
     </div>
   );
 };

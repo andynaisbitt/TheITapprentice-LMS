@@ -3,6 +3,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider } from './state/contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { PluginsProvider } from './state/contexts/PluginsContext';
 import { AppRoutes } from './routes/routes';
 import { GoogleAnalytics } from './components/analytics/GoogleAnalytics';
 import { GoogleAdSense } from './components/analytics/GoogleAdSense';
@@ -28,13 +29,15 @@ function App() {
         <BrowserRouter>
           <ThemeProvider>
             <AuthProvider>
-              <StoreInitializer />
-              <DynamicTitle />
-              <FaviconManager />
-              <GoogleAnalytics />
-              <GoogleAdSense />
-              <CookieConsent />
-              <AppRoutes />
+              <PluginsProvider>
+                <StoreInitializer />
+                <DynamicTitle />
+                <FaviconManager />
+                <GoogleAnalytics />
+                <GoogleAdSense />
+                <CookieConsent />
+                <AppRoutes />
+              </PluginsProvider>
             </AuthProvider>
           </ThemeProvider>
         </BrowserRouter>

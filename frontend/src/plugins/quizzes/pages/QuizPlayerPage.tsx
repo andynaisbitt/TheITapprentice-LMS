@@ -2,11 +2,14 @@
 /**
  * Quiz Player Page
  * Interactive quiz-taking interface with timer, progress, and results
+ * Includes registration prompt for unauthenticated users
  */
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuiz, useQuizLeaderboard, useMyAttempts, startQuizAttempt, submitQuizAttempt } from '../hooks/useQuizzes';
 import { useAuth } from '../../../state/contexts/AuthContext';
+import { RegistrationPrompt } from '../../../components/auth/RegistrationPrompt';
+import { useRegistrationPrompt } from '../../../hooks/useRegistrationPrompt';
 import type { QuizQuestion, QuizAttemptResult, QuestionResult, QuizDifficulty } from '../types';
 
 type QuizPhase = 'overview' | 'playing' | 'results';
@@ -22,6 +25,19 @@ const QuizPlayerPage: React.FC = () => {
   const { quizId } = useParams<{ quizId: string }>();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+
+  // Registration prompt for unauthenticated users
+  const {
+    isPromptOpen,
+    closePrompt,
+    handleSkip: handlePromptSkip,
+    checkAuthAndProceed,
+  } = useRegistrationPrompt({
+    context: 'quiz',
+    onSkip: () => {
+      // User chose to skip - they can view quiz but not take it
+    },
+  });
 
   const { quiz, loading, error } = useQuiz(quizId);
   const { leaderboard } = useQuizLeaderboard(quizId);
@@ -59,7 +75,12 @@ const QuizPlayerPage: React.FC = () => {
   }, [timeRemaining, phase]);
 
   const startQuiz = useCallback(async () => {
-    if (!quiz || !isAuthenticated) return;
+    if (!quiz) return;
+
+    // Check if user is authenticated - if not, show registration prompt
+    if (!checkAuthAndProceed()) {
+      return; // Prompt is now showing
+    }
 
     try {
       await startQuizAttempt(quiz.id);
@@ -72,7 +93,7 @@ const QuizPlayerPage: React.FC = () => {
     } catch (err: any) {
       alert(err.response?.data?.detail || 'Failed to start quiz');
     }
-  }, [quiz, isAuthenticated]);
+  }, [quiz, checkAuthAndProceed]);
 
   const handleAnswerChange = useCallback((questionId: number, value: any) => {
     setAnswers(prev => ({
@@ -212,26 +233,25 @@ const QuizPlayerPage: React.FC = () => {
               )}
 
               {/* Start Button */}
-              {isAuthenticated ? (
-                canAttempt ? (
-                  <button
-                    onClick={startQuiz}
-                    className="w-full md:w-auto px-8 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all"
-                  >
-                    {bestAttempt ? 'Retry Quiz' : 'Start Quiz'}
-                  </button>
-                ) : (
+              {canAttempt ? (
+                <button
+                  onClick={startQuiz}
+                  className="w-full md:w-auto px-8 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all"
+                >
+                  {bestAttempt ? 'Retry Quiz' : 'Start Quiz'}
+                </button>
+              ) : (
+                isAuthenticated && (
                   <div className="text-center py-4 text-gray-600 dark:text-gray-400">
                     Maximum attempts ({quiz.max_attempts}) reached
                   </div>
                 )
-              ) : (
-                <Link
-                  to="/login"
-                  className="inline-block px-8 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all"
-                >
-                  Login to Take Quiz
-                </Link>
+              )}
+
+              {!isAuthenticated && (
+                <p className="mt-3 text-sm text-gray-500 dark:text-gray-400 text-center">
+                  Sign up to save your quiz results and earn XP
+                </p>
               )}
             </div>
           </div>
@@ -267,6 +287,14 @@ const QuizPlayerPage: React.FC = () => {
               </div>
             </div>
           )}
+
+          {/* Registration Prompt Modal */}
+          <RegistrationPrompt
+            isOpen={isPromptOpen}
+            onClose={closePrompt}
+            onSkip={handlePromptSkip}
+            context="quiz"
+          />
         </div>
       </div>
     );

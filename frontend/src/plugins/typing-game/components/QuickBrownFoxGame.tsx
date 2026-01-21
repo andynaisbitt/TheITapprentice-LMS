@@ -2,6 +2,7 @@
 /**
  * Quick Brown Fox Typing Game - Main game component
  * 3-round progressive challenge: Warmup -> Speed -> Insane Mode
+ * Includes registration prompt for unauthenticated users
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -16,7 +17,8 @@ import {
   Zap,
   AlertCircle,
   CheckCircle2,
-  XCircle
+  XCircle,
+  UserPlus
 } from 'lucide-react';
 import { typingGameApi } from '../services/typingGameApi';
 import type {
@@ -25,6 +27,9 @@ import type {
   GameState,
   RoundConfig
 } from '../types';
+import { useAuth } from '../../../state/contexts/AuthContext';
+import { RegistrationPrompt } from '../../../components/auth/RegistrationPrompt';
+import { useRegistrationPrompt } from '../../../hooks/useRegistrationPrompt';
 
 // Round configuration
 const ROUNDS: RoundConfig[] = [
@@ -45,11 +50,27 @@ export const QuickBrownFoxGame: React.FC<QuickBrownFoxGameProps> = ({
   onComplete,
   wordListId
 }) => {
+  const { isAuthenticated } = useAuth();
+
+  // Registration prompt for game completion
+  const {
+    isPromptOpen,
+    closePrompt,
+    handleSkip: handlePromptSkip,
+    showPrompt,
+  } = useRegistrationPrompt({
+    context: 'game',
+    onSkip: () => {
+      // User chose to continue without registration
+    },
+  });
+
   // Game state
   const [gameState, setGameState] = useState<'idle' | 'ready' | 'playing' | 'round_complete' | 'game_complete' | 'failed'>('idle');
   const [currentRound, setCurrentRound] = useState(0);
   const [sessionData, setSessionData] = useState<TypingGameStartResponse | null>(null);
   const [results, setResults] = useState<TypingGameResultsResponse | null>(null);
+  const [showedCompletionPrompt, setShowedCompletionPrompt] = useState(false);
 
   // Typing state
   const [text, setText] = useState(QUICK_BROWN_FOX);
@@ -310,6 +331,26 @@ export const QuickBrownFoxGame: React.FC<QuickBrownFoxGameProps> = ({
             ))}
           </div>
 
+          {!isAuthenticated && (
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6 text-left">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-yellow-800 dark:text-yellow-200 text-sm">
+                    You're playing as a guest. Your scores won't be saved to leaderboards and you won't earn XP.
+                  </p>
+                  <button
+                    onClick={showPrompt}
+                    className="mt-2 text-sm font-medium text-yellow-700 dark:text-yellow-300 hover:underline flex items-center gap-1"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    Sign up to track progress
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <button
             onClick={startGame}
             className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-semibold text-lg hover:from-blue-600 hover:to-purple-700 transition-all flex items-center gap-2 mx-auto"
@@ -546,12 +587,34 @@ export const QuickBrownFoxGame: React.FC<QuickBrownFoxGameProps> = ({
             </div>
           </div>
 
-          {results && (
+          {results && isAuthenticated && (
             <div className="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-4 mb-6">
               <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
                 +{results.xp_earned} XP
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Earned</div>
+            </div>
+          )}
+
+          {!isAuthenticated && (
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <UserPlus className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                <div className="text-left">
+                  <p className="text-blue-800 dark:text-blue-200 text-sm font-medium">
+                    Great game! Sign up to save your score
+                  </p>
+                  <p className="text-blue-700 dark:text-blue-300 text-sm mt-1">
+                    Create a free account to track your progress, earn XP, and appear on leaderboards.
+                  </p>
+                  <button
+                    onClick={showPrompt}
+                    className="mt-3 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Create Free Account
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
@@ -577,11 +640,29 @@ export const QuickBrownFoxGame: React.FC<QuickBrownFoxGameProps> = ({
             Play Again
           </button>
         </motion.div>
+
+        {/* Registration Prompt Modal */}
+        <RegistrationPrompt
+          isOpen={isPromptOpen}
+          onClose={closePrompt}
+          onSkip={handlePromptSkip}
+          context="game"
+        />
       </div>
     );
   }
 
-  return null;
+  return (
+    <>
+      {/* Registration Prompt Modal - available in all states */}
+      <RegistrationPrompt
+        isOpen={isPromptOpen}
+        onClose={closePrompt}
+        onSkip={handlePromptSkip}
+        context="game"
+      />
+    </>
+  );
 };
 
 export default QuickBrownFoxGame;

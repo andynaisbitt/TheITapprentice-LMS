@@ -91,7 +91,7 @@ async def get_dashboard_stats(
     Get aggregated stats for admin dashboard
     Requires ADMIN role
     """
-    from app.api.v1.services.blog.models import BlogPost, Category, Tag
+    from app.api.v1.services.blog.models import BlogPost, BlogCategory, BlogTag
 
     now = datetime.utcnow()
     thirty_days_ago = now - timedelta(days=30)
@@ -100,8 +100,8 @@ async def get_dashboard_stats(
     # Blog stats
     total_posts = db.query(BlogPost).count()
     draft_posts = db.query(BlogPost).filter(BlogPost.status == "draft").count()
-    total_categories = db.query(Category).count()
-    total_tags = db.query(Tag).count()
+    total_categories = db.query(BlogCategory).count()
+    total_tags = db.query(BlogTag).count()
     total_views = db.query(func.sum(BlogPost.view_count)).scalar() or 0
 
     # User stats
@@ -304,7 +304,7 @@ async def get_lms_progress_stats(
             from app.plugins.tutorials.models import TutorialProgress
             student_data["tutorials_completed"] = db.query(TutorialProgress).filter(
                 TutorialProgress.user_id == user.id,
-                TutorialProgress.is_completed == True
+                TutorialProgress.status == "completed"
             ).count()
 
         # Get typing game stats
@@ -356,7 +356,7 @@ async def get_content_stats(
     Get content statistics (posts, pages, tutorials, courses)
     Requires ADMIN role
     """
-    from app.api.v1.services.blog.models import BlogPost, Category
+    from app.api.v1.services.blog.models import BlogPost, BlogCategory
     from app.api.v1.services.pages.models import Page
 
     stats = {
@@ -365,7 +365,7 @@ async def get_content_stats(
             "published": db.query(BlogPost).filter(BlogPost.status == "published").count(),
             "drafts": db.query(BlogPost).filter(BlogPost.status == "draft").count(),
             "total_views": db.query(func.sum(BlogPost.view_count)).scalar() or 0,
-            "categories": db.query(Category).count()
+            "categories": db.query(BlogCategory).count()
         },
         "pages": {
             "total": db.query(Page).count(),
