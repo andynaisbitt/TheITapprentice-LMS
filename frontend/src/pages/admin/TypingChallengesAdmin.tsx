@@ -1,7 +1,7 @@
 // src/pages/admin/TypingChallengesAdmin.tsx
 /**
  * Typing Challenges Management
- * Create and manage special typing challenges
+ * Create and manage typing challenge templates
  */
 
 import { useState, useEffect } from 'react';
@@ -12,139 +12,75 @@ import {
   Trash2,
   Search,
   Loader2,
-  Calendar,
   Trophy,
-  Clock,
   Users,
   Target,
+  RefreshCw,
+  Gamepad2,
+  Zap,
 } from 'lucide-react';
+import { api } from '../../services/api';
 
 interface Challenge {
   id: string;
-  name: string;
+  title: string;
   description: string;
-  type: 'daily' | 'weekly' | 'special' | 'tournament';
-  word_list_id: string;
-  word_list_name: string;
-  target_wpm: number;
-  target_accuracy: number;
-  time_limit_seconds: number;
-  xp_reward: number;
-  badge_reward?: string;
-  start_date: string;
-  end_date: string;
+  challenge_type: 'typing_game' | 'typing_wpm';
+  difficulty: 'easy' | 'medium' | 'hard';
+  target_count: number;
+  base_xp_reward: number;
+  icon: string;
   is_active: boolean;
-  participants: number;
-  completions: number;
+}
+
+interface TypingAnalytics {
+  total_games_played: number;
+  total_players: number;
+  average_wpm: number;
+  average_accuracy: number;
+  games_last_7_days: number;
+  active_players_today: number;
 }
 
 export const TypingChallengesAdmin: React.FC = () => {
   const [challenges, setChallenges] = useState<Challenge[]>([]);
+  const [analytics, setAnalytics] = useState<TypingAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [showForm, setShowForm] = useState(false);
   const [editingChallenge, setEditingChallenge] = useState<Challenge | null>(null);
   const [formData, setFormData] = useState({
-    name: '',
+    title: '',
     description: '',
-    type: 'daily' as Challenge['type'],
-    word_list_id: '',
-    target_wpm: 60,
-    target_accuracy: 95,
-    time_limit_seconds: 60,
-    xp_reward: 100,
-    badge_reward: '',
-    start_date: '',
-    end_date: '',
+    challenge_type: 'typing_game' as Challenge['challenge_type'],
+    difficulty: 'medium' as Challenge['difficulty'],
+    target_count: 3,
+    base_xp_reward: 100,
+    icon: 'keyboard',
     is_active: true,
   });
 
   useEffect(() => {
-    loadChallenges();
+    loadData();
   }, []);
 
-  const loadChallenges = async () => {
+  const loadData = async () => {
     setLoading(true);
     try {
-      // TODO: Replace with actual API call
+      // Load typing game analytics
+      const analyticsRes = await api.get('/typing-game/admin/analytics');
+      setAnalytics(analyticsRes.data);
 
-      // Mock data
-      setChallenges([
-        {
-          id: 'daily-speed',
-          name: 'Daily Speed Challenge',
-          description: 'Hit 70 WPM with 95% accuracy to earn bonus XP',
-          type: 'daily',
-          word_list_id: 'common-words',
-          word_list_name: 'Common English Words',
-          target_wpm: 70,
-          target_accuracy: 95,
-          time_limit_seconds: 60,
-          xp_reward: 150,
-          start_date: new Date().toISOString().split('T')[0],
-          end_date: new Date().toISOString().split('T')[0],
-          is_active: true,
-          participants: 234,
-          completions: 89,
-        },
-        {
-          id: 'weekend-warrior',
-          name: 'Weekend Warrior',
-          description: 'Complete 5 typing games this weekend',
-          type: 'weekly',
-          word_list_id: 'programming-terms',
-          word_list_name: 'Programming Keywords',
-          target_wpm: 60,
-          target_accuracy: 90,
-          time_limit_seconds: 120,
-          xp_reward: 500,
-          badge_reward: 'weekend_warrior',
-          start_date: '2026-01-18',
-          end_date: '2026-01-19',
-          is_active: true,
-          participants: 156,
-          completions: 42,
-        },
-        {
-          id: 'new-year-speedster',
-          name: 'New Year Speedster',
-          description: 'Special New Year challenge - achieve 100 WPM!',
-          type: 'special',
-          word_list_id: 'common-words',
-          word_list_name: 'Common English Words',
-          target_wpm: 100,
-          target_accuracy: 90,
-          time_limit_seconds: 60,
-          xp_reward: 1000,
-          badge_reward: 'new_year_speedster',
-          start_date: '2026-01-01',
-          end_date: '2026-01-31',
-          is_active: true,
-          participants: 567,
-          completions: 23,
-        },
-        {
-          id: 'code-sprint-2026',
-          name: 'Code Sprint Tournament',
-          description: 'Monthly coding-themed typing tournament',
-          type: 'tournament',
-          word_list_id: 'code-snippets',
-          word_list_name: 'Code Snippets',
-          target_wpm: 50,
-          target_accuracy: 98,
-          time_limit_seconds: 180,
-          xp_reward: 2000,
-          badge_reward: 'code_sprint_champion',
-          start_date: '2026-01-15',
-          end_date: '2026-01-22',
-          is_active: false,
-          participants: 89,
-          completions: 12,
-        },
-      ]);
+      // Load challenge templates (filtered to typing-related)
+      const templatesRes = await api.get('/shared/admin/challenges/templates?include_inactive=true');
+      const typingChallenges = (templatesRes.data || []).filter(
+        (c: any) => c.challenge_type === 'typing_game' || c.challenge_type === 'typing_wpm'
+      );
+      setChallenges(typingChallenges);
     } catch (error) {
-      console.error('Failed to load challenges:', error);
+      console.error('Failed to load data:', error);
+      setChallenges([]);
     } finally {
       setLoading(false);
     }
@@ -153,88 +89,81 @@ export const TypingChallengesAdmin: React.FC = () => {
   const handleEdit = (challenge: Challenge) => {
     setEditingChallenge(challenge);
     setFormData({
-      name: challenge.name,
-      description: challenge.description,
-      type: challenge.type,
-      word_list_id: challenge.word_list_id,
-      target_wpm: challenge.target_wpm,
-      target_accuracy: challenge.target_accuracy,
-      time_limit_seconds: challenge.time_limit_seconds,
-      xp_reward: challenge.xp_reward,
-      badge_reward: challenge.badge_reward || '',
-      start_date: challenge.start_date,
-      end_date: challenge.end_date,
+      title: challenge.title,
+      description: challenge.description || '',
+      challenge_type: challenge.challenge_type,
+      difficulty: challenge.difficulty,
+      target_count: challenge.target_count,
+      base_xp_reward: challenge.base_xp_reward,
+      icon: challenge.icon || 'keyboard',
       is_active: challenge.is_active,
     });
     setShowForm(true);
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this challenge?')) return;
-    setChallenges(challenges.filter(c => c.id !== id));
+    if (!confirm('Are you sure you want to delete this challenge template?')) return;
+    try {
+      await api.delete(`/shared/admin/challenges/templates/${id}`);
+      setChallenges(challenges.filter(c => c.id !== id));
+    } catch (error) {
+      console.error('Failed to delete:', error);
+      alert('Failed to delete challenge template');
+    }
   };
 
   const handleSave = async () => {
-    if (editingChallenge) {
-      setChallenges(challenges.map(c =>
-        c.id === editingChallenge.id
-          ? { ...c, ...formData, word_list_name: 'Updated List' }
-          : c
-      ));
-    } else {
-      const newChallenge: Challenge = {
-        id: formData.name.toLowerCase().replace(/\s+/g, '-'),
-        ...formData,
-        word_list_name: 'New List',
-        participants: 0,
-        completions: 0,
-      };
-      setChallenges([...challenges, newChallenge]);
+    try {
+      if (editingChallenge) {
+        const response = await api.put(
+          `/shared/admin/challenges/templates/${editingChallenge.id}`,
+          formData
+        );
+        setChallenges(challenges.map(c =>
+          c.id === editingChallenge.id ? response.data : c
+        ));
+      } else {
+        const response = await api.post('/shared/admin/challenges/templates', formData);
+        setChallenges([...challenges, response.data]);
+      }
+      setShowForm(false);
+      setEditingChallenge(null);
+    } catch (error) {
+      console.error('Failed to save:', error);
+      alert('Failed to save challenge template');
     }
-
-    setShowForm(false);
-    setEditingChallenge(null);
   };
 
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'daily':
-        return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
-      case 'weekly':
+  const getDifficultyColor = (difficulty: string) => {
+    switch (difficulty) {
+      case 'easy':
         return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
-      case 'special':
-        return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400';
-      case 'tournament':
-        return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400';
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400';
+      case 'hard':
+        return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
       default:
         return 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-400';
     }
   };
 
-  const getStatusBadge = (challenge: Challenge) => {
-    const now = new Date();
-    const start = new Date(challenge.start_date);
-    const end = new Date(challenge.end_date);
-    end.setHours(23, 59, 59);
-
-    if (!challenge.is_active) {
-      return <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500">Inactive</span>;
+  const getChallengeTypeLabel = (type: string) => {
+    switch (type) {
+      case 'typing_game':
+        return 'Play Games';
+      case 'typing_wpm':
+        return 'Achieve WPM';
+      default:
+        return type;
     }
-    if (now < start) {
-      return <span className="px-2 py-0.5 text-xs rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400">Upcoming</span>;
-    }
-    if (now > end) {
-      return <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500">Ended</span>;
-    }
-    return <span className="px-2 py-0.5 text-xs rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">Active</span>;
   };
 
   const filteredChallenges = challenges.filter(challenge => {
-    if (typeFilter !== 'all' && challenge.type !== typeFilter) return false;
+    if (typeFilter !== 'all' && challenge.challenge_type !== typeFilter) return false;
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      if (!challenge.name.toLowerCase().includes(term) &&
-          !challenge.description.toLowerCase().includes(term)) {
+      if (!challenge.title.toLowerCase().includes(term) &&
+          !(challenge.description || '').toLowerCase().includes(term)) {
         return false;
       }
     }
@@ -258,79 +187,94 @@ export const TypingChallengesAdmin: React.FC = () => {
             Typing Challenges
           </h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">
-            Create and manage special typing challenges
+            Create and manage typing challenge templates for daily challenges
           </p>
         </div>
-        <button
-          onClick={() => {
-            setEditingChallenge(null);
-            setFormData({
-              name: '',
-              description: '',
-              type: 'daily',
-              word_list_id: '',
-              target_wpm: 60,
-              target_accuracy: 95,
-              time_limit_seconds: 60,
-              xp_reward: 100,
-              badge_reward: '',
-              start_date: new Date().toISOString().split('T')[0],
-              end_date: new Date().toISOString().split('T')[0],
-              is_active: true,
-            });
-            setShowForm(true);
-          }}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          New Challenge
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={loadData}
+            className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            title="Refresh"
+          >
+            <RefreshCw className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => {
+              setEditingChallenge(null);
+              setFormData({
+                title: '',
+                description: '',
+                challenge_type: 'typing_game',
+                difficulty: 'medium',
+                target_count: 3,
+                base_xp_reward: 100,
+                icon: 'keyboard',
+                is_active: true,
+              });
+              setShowForm(true);
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            New Challenge
+          </button>
+        </div>
       </div>
 
-      {/* Stats */}
+      {/* Stats - Real Analytics */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-gray-800 rounded-xl p-4 flex items-center gap-4">
           <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-            <Swords className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            <Gamepad2 className="w-6 h-6 text-blue-600 dark:text-blue-400" />
           </div>
           <div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{challenges.length}</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Total Challenges</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              {analytics?.total_games_played?.toLocaleString() || 0}
+            </p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Games Played</p>
           </div>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl p-4 flex items-center gap-4">
           <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-            <Target className="w-6 h-6 text-green-600 dark:text-green-400" />
+            <Users className="w-6 h-6 text-green-600 dark:text-green-400" />
           </div>
           <div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {challenges.filter(c => c.is_active).length}
+              {analytics?.total_players?.toLocaleString() || 0}
             </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Active</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Total Players</p>
           </div>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl p-4 flex items-center gap-4">
           <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-            <Users className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+            <Zap className="w-6 h-6 text-purple-600 dark:text-purple-400" />
           </div>
           <div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {challenges.reduce((sum, c) => sum + c.participants, 0)}
+              {analytics?.average_wpm?.toFixed(0) || 0} WPM
             </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Participants</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Avg Speed</p>
           </div>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl p-4 flex items-center gap-4">
           <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
-            <Trophy className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+            <Target className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
           </div>
           <div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {challenges.reduce((sum, c) => sum + c.completions, 0)}
+              {analytics?.average_accuracy?.toFixed(1) || 0}%
             </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Completions</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Avg Accuracy</p>
           </div>
         </div>
+      </div>
+
+      {/* Challenge Templates Info */}
+      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+        <p className="text-sm text-blue-700 dark:text-blue-300">
+          <strong>Challenge Templates:</strong> These templates are used to generate daily typing challenges.
+          Active templates are randomly selected each day to create challenges for users.
+        </p>
       </div>
 
       {/* Filters */}
@@ -339,7 +283,7 @@ export const TypingChallengesAdmin: React.FC = () => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Search challenges..."
+            placeholder="Search challenge templates..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -351,39 +295,34 @@ export const TypingChallengesAdmin: React.FC = () => {
           className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
         >
           <option value="all">All Types</option>
-          <option value="daily">Daily</option>
-          <option value="weekly">Weekly</option>
-          <option value="special">Special</option>
-          <option value="tournament">Tournament</option>
+          <option value="typing_game">Play Games</option>
+          <option value="typing_wpm">Achieve WPM</option>
         </select>
       </div>
 
-      {/* Challenges List */}
+      {/* Challenge Templates List */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-700/50">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Challenge
+                  Challenge Template
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Type
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Difficulty
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Target
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Duration
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Reward
+                  XP Reward
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Status
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Stats
                 </th>
                 <th className="px-4 py-3 w-20"></th>
               </tr>
@@ -394,61 +333,60 @@ export const TypingChallengesAdmin: React.FC = () => {
                   <td className="px-4 py-4">
                     <div>
                       <p className="font-medium text-gray-900 dark:text-white">
-                        {challenge.name}
+                        {challenge.title}
                       </p>
                       <p className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-xs">
-                        {challenge.description}
+                        {challenge.description || 'No description'}
                       </p>
                     </div>
                   </td>
                   <td className="px-4 py-4">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(challenge.type)}`}>
-                      {challenge.type}
+                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                      {getChallengeTypeLabel(challenge.challenge_type)}
+                    </span>
+                  </td>
+                  <td className="px-4 py-4">
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full capitalize ${getDifficultyColor(challenge.difficulty)}`}>
+                      {challenge.difficulty}
                     </span>
                   </td>
                   <td className="px-4 py-4 text-sm text-gray-600 dark:text-gray-300">
-                    <div>{challenge.target_wpm} WPM</div>
-                    <div className="text-xs text-gray-400">{challenge.target_accuracy}% accuracy</div>
-                  </td>
-                  <td className="px-4 py-4 text-sm text-gray-600 dark:text-gray-300">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="w-4 h-4 text-gray-400" />
-                      {challenge.start_date}
-                    </div>
-                    <div className="flex items-center gap-1 text-xs text-gray-400">
-                      <Clock className="w-3 h-3" />
-                      {challenge.time_limit_seconds}s limit
-                    </div>
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="text-sm font-medium text-primary">
-                      +{challenge.xp_reward} XP
-                    </div>
-                    {challenge.badge_reward && (
-                      <div className="text-xs text-gray-400 flex items-center gap-1">
-                        <Trophy className="w-3 h-3" />
-                        Badge
-                      </div>
+                    {challenge.challenge_type === 'typing_wpm' ? (
+                      <span>{challenge.target_count} WPM</span>
+                    ) : (
+                      <span>{challenge.target_count} games</span>
                     )}
                   </td>
                   <td className="px-4 py-4">
-                    {getStatusBadge(challenge)}
+                    <div className="text-sm font-medium text-primary flex items-center gap-1">
+                      <Trophy className="w-4 h-4" />
+                      +{challenge.base_xp_reward} XP
+                    </div>
                   </td>
-                  <td className="px-4 py-4 text-sm text-gray-500 dark:text-gray-400">
-                    <div>{challenge.participants} joined</div>
-                    <div className="text-xs">{challenge.completions} completed</div>
+                  <td className="px-4 py-4">
+                    {challenge.is_active ? (
+                      <span className="px-2 py-0.5 text-xs rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+                        Active
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500">
+                        Inactive
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-4">
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => handleEdit(challenge)}
                         className="p-2 text-gray-400 hover:text-primary transition-colors"
+                        title="Edit"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(challenge.id)}
                         className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                        title="Delete"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -463,7 +401,12 @@ export const TypingChallengesAdmin: React.FC = () => {
         {filteredChallenges.length === 0 && (
           <div className="text-center py-12">
             <Swords className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-            <p className="text-gray-500 dark:text-gray-400">No challenges found</p>
+            <p className="text-gray-500 dark:text-gray-400">
+              {challenges.length === 0
+                ? 'No typing challenge templates yet. Create one to get started!'
+                : 'No challenges match your filters'
+              }
+            </p>
           </div>
         )}
       </div>
@@ -471,92 +414,87 @@ export const TypingChallengesAdmin: React.FC = () => {
       {/* Create/Edit Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
             <div className="p-6 border-b border-gray-200 dark:border-gray-700">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                {editingChallenge ? 'Edit Challenge' : 'Create New Challenge'}
+                {editingChallenge ? 'Edit Challenge Template' : 'Create New Challenge Template'}
               </h2>
             </div>
 
             <div className="p-6 overflow-y-auto flex-1 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Challenge Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="e.g., Speed Sprint Challenge"
-                  />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Description
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="Brief description of the challenge"
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Title *
+                </label>
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="e.g., Speed Demon"
+                />
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="Brief description of the challenge"
+                  rows={2}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Type
+                    Challenge Type
                   </label>
                   <select
-                    value={formData.type}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value as Challenge['type'] })}
+                    value={formData.challenge_type}
+                    onChange={(e) => setFormData({ ...formData, challenge_type: e.target.value as Challenge['challenge_type'] })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   >
-                    <option value="daily">Daily</option>
-                    <option value="weekly">Weekly</option>
-                    <option value="special">Special</option>
-                    <option value="tournament">Tournament</option>
+                    <option value="typing_game">Play X Games</option>
+                    <option value="typing_wpm">Achieve X WPM</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Target WPM
+                    Difficulty
                   </label>
-                  <input
-                    type="number"
-                    value={formData.target_wpm}
-                    onChange={(e) => setFormData({ ...formData, target_wpm: parseInt(e.target.value) || 0 })}
+                  <select
+                    value={formData.difficulty}
+                    onChange={(e) => setFormData({ ...formData, difficulty: e.target.value as Challenge['difficulty'] })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Target Accuracy %
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.target_accuracy}
-                    onChange={(e) => setFormData({ ...formData, target_accuracy: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  />
+                  >
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                  </select>
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Time Limit (seconds)
+                    Target {formData.challenge_type === 'typing_wpm' ? '(WPM)' : '(Games)'}
                   </label>
                   <input
                     type="number"
-                    value={formData.time_limit_seconds}
-                    onChange={(e) => setFormData({ ...formData, time_limit_seconds: parseInt(e.target.value) || 0 })}
+                    value={formData.target_count}
+                    onChange={(e) => setFormData({ ...formData, target_count: parseInt(e.target.value) || 0 })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    min={1}
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {formData.challenge_type === 'typing_wpm'
+                      ? 'WPM to achieve in a single game'
+                      : 'Number of games to complete'}
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -564,46 +502,11 @@ export const TypingChallengesAdmin: React.FC = () => {
                   </label>
                   <input
                     type="number"
-                    value={formData.xp_reward}
-                    onChange={(e) => setFormData({ ...formData, xp_reward: parseInt(e.target.value) || 0 })}
+                    value={formData.base_xp_reward}
+                    onChange={(e) => setFormData({ ...formData, base_xp_reward: parseInt(e.target.value) || 0 })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Badge (optional)
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.badge_reward}
-                    onChange={(e) => setFormData({ ...formData, badge_reward: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="badge_id"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Start Date
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.start_date}
-                    onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    End Date
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.end_date}
-                    onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    min={0}
+                    step={10}
                   />
                 </div>
               </div>
@@ -615,7 +518,9 @@ export const TypingChallengesAdmin: React.FC = () => {
                   onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
                   className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
                 />
-                <span className="text-sm text-gray-700 dark:text-gray-300">Active</span>
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  Active (will be included in daily challenge generation)
+                </span>
               </label>
             </div>
 
@@ -631,10 +536,10 @@ export const TypingChallengesAdmin: React.FC = () => {
               </button>
               <button
                 onClick={handleSave}
-                disabled={!formData.name}
+                disabled={!formData.title}
                 className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50"
               >
-                {editingChallenge ? 'Save Changes' : 'Create Challenge'}
+                {editingChallenge ? 'Save Changes' : 'Create Template'}
               </button>
             </div>
           </div>

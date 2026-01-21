@@ -9,16 +9,12 @@ import {
   GraduationCap,
   Users,
   Search,
-  Filter,
-  ChevronDown,
   Loader2,
-  Calendar,
   TrendingUp,
   MoreVertical,
-  Eye,
-  Trash2,
-  Mail,
+  RefreshCw,
 } from 'lucide-react';
+import { api } from '../../services/api';
 
 interface Enrollment {
   id: number;
@@ -61,65 +57,27 @@ export const CourseEnrollmentsAdmin: React.FC = () => {
   const loadEnrollments = async () => {
     setLoading(true);
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/v1/admin/courses/enrollments');
+      const response = await api.get('/courses/admin/enrollments');
+      const data = response.data;
 
-      // Mock data
-      setEnrollments([
-        {
-          id: 1,
-          user: { id: 1, username: 'john_doe', email: 'john@example.com' },
-          course: { id: 'web-dev-101', title: 'Web Development Fundamentals', level: 'beginner' },
-          enrolled_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString(),
-          progress_percent: 75,
-          last_activity: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-          status: 'active',
-        },
-        {
-          id: 2,
-          user: { id: 2, username: 'jane_smith', email: 'jane@example.com' },
-          course: { id: 'web-dev-101', title: 'Web Development Fundamentals', level: 'beginner' },
-          enrolled_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 45).toISOString(),
-          progress_percent: 100,
-          last_activity: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
-          status: 'completed',
-        },
-        {
-          id: 3,
-          user: { id: 3, username: 'bob_wilson', email: 'bob@example.com' },
-          course: { id: 'python-basics', title: 'Python for Beginners', level: 'beginner' },
-          enrolled_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 15).toISOString(),
-          progress_percent: 35,
-          last_activity: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(),
-          status: 'paused',
-        },
-        {
-          id: 4,
-          user: { id: 4, username: 'alice_chen', email: 'alice@example.com' },
-          course: { id: 'react-advanced', title: 'Advanced React Patterns', level: 'advanced' },
-          enrolled_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(),
-          progress_percent: 50,
-          last_activity: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-          status: 'active',
-        },
-        {
-          id: 5,
-          user: { id: 1, username: 'john_doe', email: 'john@example.com' },
-          course: { id: 'python-basics', title: 'Python for Beginners', level: 'beginner' },
-          enrolled_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 60).toISOString(),
-          progress_percent: 100,
-          last_activity: new Date(Date.now() - 1000 * 60 * 60 * 24 * 20).toISOString(),
-          status: 'completed',
-        },
-      ]);
+      // Map API response to component's expected format
+      const mappedEnrollments = (data.enrollments || []).map((e: any) => ({
+        id: e.id,
+        user: e.user || { id: 0, username: 'Unknown', email: '' },
+        course: e.course || { id: '', title: 'Unknown Course', level: 'beginner' },
+        enrolled_at: e.enrolled_at || new Date().toISOString(),
+        progress_percent: e.progress_percent || 0,
+        last_activity: e.last_activity,
+        status: e.status || 'active',
+      }));
 
-      setCourseStats([
-        { course_id: 'web-dev-101', course_title: 'Web Development Fundamentals', total_enrollments: 156, active_students: 89, completion_rate: 42 },
-        { course_id: 'python-basics', course_title: 'Python for Beginners', total_enrollments: 234, active_students: 112, completion_rate: 38 },
-        { course_id: 'react-advanced', course_title: 'Advanced React Patterns', total_enrollments: 67, active_students: 45, completion_rate: 28 },
-      ]);
+      setEnrollments(mappedEnrollments);
+      setCourseStats(data.course_stats || []);
     } catch (error) {
       console.error('Failed to load enrollments:', error);
+      // Set empty arrays on error
+      setEnrollments([]);
+      setCourseStats([]);
     } finally {
       setLoading(false);
     }

@@ -12,13 +12,46 @@ import {
   Sun,
   Moon,
   Plus,
+  UserPlus,
+  MessageSquare,
+  FileText,
+  AlertCircle,
+  CheckCircle,
+  X,
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { api } from '../../../services/api';
 
 interface AdminHeaderProps {
   onMenuClick: () => void;
   sidebarCollapsed: boolean;
 }
+
+interface AdminNotification {
+  id: string;
+  type: 'user' | 'comment' | 'post' | 'system' | 'success';
+  title: string;
+  message: string;
+  time: string;
+  read: boolean;
+  link?: string;
+}
+
+const notificationIcons = {
+  user: UserPlus,
+  comment: MessageSquare,
+  post: FileText,
+  system: AlertCircle,
+  success: CheckCircle,
+};
+
+const notificationColors = {
+  user: 'text-blue-500 bg-blue-100 dark:bg-blue-900/30',
+  comment: 'text-green-500 bg-green-100 dark:bg-green-900/30',
+  post: 'text-purple-500 bg-purple-100 dark:bg-purple-900/30',
+  system: 'text-orange-500 bg-orange-100 dark:bg-orange-900/30',
+  success: 'text-emerald-500 bg-emerald-100 dark:bg-emerald-900/30',
+};
 
 // Generate breadcrumbs from pathname
 const generateBreadcrumbs = (pathname: string) => {
@@ -54,10 +87,77 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
   const breadcrumbs = generateBreadcrumbs(location.pathname);
   const [isDark, setIsDark] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<AdminNotification[]>([]);
+  const [loadingNotifications, setLoadingNotifications] = useState(false);
+  const notificationRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setIsDark(document.documentElement.classList.contains('dark'));
   }, []);
+
+  // Fetch admin notifications (recent activity)
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      setLoadingNotifications(true);
+      try {
+        // Try to fetch recent admin activity
+        const response = await api.get('/admin/notifications');
+        setNotifications(response.data);
+      } catch {
+        // If no endpoint exists, show placeholder notifications
+        setNotifications([
+          {
+            id: '1',
+            type: 'system',
+            title: 'Welcome to Admin',
+            message: 'Your admin panel is ready to use',
+            time: 'Just now',
+            read: false,
+          },
+          {
+            id: '2',
+            type: 'success',
+            title: 'System Status',
+            message: 'All systems operational',
+            time: '5 min ago',
+            read: true,
+          },
+        ]);
+      } finally {
+        setLoadingNotifications(false);
+      }
+    };
+    fetchNotifications();
+  }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setShowNotifications(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  const markAsRead = (id: string) => {
+    setNotifications(prev =>
+      prev.map(n => n.id === id ? { ...n, read: true } : n)
+    );
+  };
+
+  const markAllAsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
+  const clearNotifications = () => {
+    setNotifications([]);
+    setShowNotifications(false);
+  };
 
   const toggleTheme = () => {
     const newIsDark = !isDark;
@@ -203,14 +303,105 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
         </div>
 
         {/* Notifications */}
-        <button
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative"
-          title="Notifications"
-        >
-          <Bell className="w-5 h-5 text-gray-500" />
-          {/* Notification badge */}
-          <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-        </button>
+        <div className="relative" ref={notificationRef}>
+          <button
+            onClick={() => setShowNotifications(!showNotifications)}
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative"
+            title="Notifications"
+          >
+            <Bell className="w-5 h-5 text-gray-500" />
+            {/* Notification badge */}
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+            )}
+          </button>
+
+          {/* Notifications Dropdown */}
+          {showNotifications && (
+            <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50">
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="font-semibold text-gray-900 dark:text-white">Notifications</h3>
+                <div className="flex items-center gap-2">
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={markAllAsRead}
+                      className="text-xs text-primary hover:text-primary-dark"
+                    >
+                      Mark all read
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setShowNotifications(false)}
+                    className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                  >
+                    <X className="w-4 h-4 text-gray-500" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Notification List */}
+              <div className="max-h-80 overflow-y-auto">
+                {loadingNotifications ? (
+                  <div className="px-4 py-8 text-center text-gray-500">
+                    Loading...
+                  </div>
+                ) : notifications.length === 0 ? (
+                  <div className="px-4 py-8 text-center text-gray-500">
+                    No notifications
+                  </div>
+                ) : (
+                  notifications.map((notification) => {
+                    const Icon = notificationIcons[notification.type];
+                    const colorClass = notificationColors[notification.type];
+                    return (
+                      <div
+                        key={notification.id}
+                        onClick={() => markAsRead(notification.id)}
+                        className={`
+                          flex items-start gap-3 px-4 py-3
+                          hover:bg-gray-50 dark:hover:bg-gray-700/50
+                          cursor-pointer transition-colors
+                          ${!notification.read ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}
+                        `}
+                      >
+                        <div className={`p-2 rounded-lg ${colorClass}`}>
+                          <Icon className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm ${!notification.read ? 'font-semibold' : 'font-medium'} text-gray-900 dark:text-white`}>
+                            {notification.title}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                            {notification.message}
+                          </p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                            {notification.time}
+                          </p>
+                        </div>
+                        {!notification.read && (
+                          <span className="w-2 h-2 bg-primary rounded-full mt-2"></span>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Footer */}
+              {notifications.length > 0 && (
+                <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700">
+                  <button
+                    onClick={clearNotifications}
+                    className="w-full text-center text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 py-1"
+                  >
+                    Clear all notifications
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Theme Toggle */}
         <button

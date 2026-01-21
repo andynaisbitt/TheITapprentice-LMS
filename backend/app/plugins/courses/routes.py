@@ -578,6 +578,85 @@ async def admin_delete_section(
 # ADMIN ANALYTICS
 # ============================================================================
 
+@router.get("/admin/enrollments")
+async def admin_get_all_enrollments(
+    skip: int = 0,
+    limit: int = 100,
+    status: str = None,
+    course_id: str = None,
+    current_admin: User = Depends(get_current_admin_user),
+    db: Session = Depends(get_db)
+):
+    """Get all enrollments across all courses with filtering"""
+    query = db.query(models.CourseEnrollment)
+
+    if status:
+        query = query.filter(models.CourseEnrollment.status == status)
+    if course_id:
+        query = query.filter(models.CourseEnrollment.course_id == course_id)
+
+    total = query.count()
+    enrollments = query.order_by(models.CourseEnrollment.enrolled_at.desc()).offset(skip).limit(limit).all()
+
+    # Get course and user info for each enrollment
+    result = []
+    for enrollment in enrollments:
+        course = db.query(models.Course).filter(models.Course.id == enrollment.course_id).first()
+        user = db.query(User).filter(User.id == enrollment.user_id).first()
+
+        result.append({
+            "id": enrollment.id,
+            "user": {
+                "id": user.id if user else None,
+                "username": user.username if user else "Unknown",
+                "email": user.email if user else "",
+            } if user else None,
+            "course": {
+                "id": course.id if course else None,
+                "title": course.title if course else "Unknown Course",
+                "level": course.level if course else "beginner",
+            } if course else None,
+            "enrolled_at": enrollment.enrolled_at.isoformat() if enrollment.enrolled_at else None,
+            "progress_percent": enrollment.progress_percent or 0,
+            "last_activity": enrollment.last_activity_at.isoformat() if enrollment.last_activity_at else None,
+            "status": enrollment.status.value if enrollment.status else "active",
+        })
+
+    # Get course stats
+    course_stats = []
+    courses = db.query(models.Course).all()
+    for course in courses:
+        course_enrollments = db.query(models.CourseEnrollment).filter(
+            models.CourseEnrollment.course_id == course.id
+        ).all()
+
+        completed = len([e for e in course_enrollments if e.status == models.EnrollmentStatus.COMPLETED])
+        total_enrolled = len(course_enrollments)
+
+        course_stats.append({
+            "course_id": course.id,
+            "course_title": course.title,
+            "total_enrollments": total_enrolled,
+            "active_students": len([e for e in course_enrollments if e.status == models.EnrollmentStatus.ACTIVE]),
+            "completion_rate": int((completed / total_enrolled * 100) if total_enrolled > 0 else 0),
+        })
+
+    return {
+        "total": total,
+        "enrollments": result,
+        "course_stats": course_stats,
+        "summary": {
+            "total_enrollments": total,
+            "active": db.query(models.CourseEnrollment).filter(
+                models.CourseEnrollment.status == models.EnrollmentStatus.ACTIVE
+            ).count(),
+            "completed": db.query(models.CourseEnrollment).filter(
+                models.CourseEnrollment.status == models.EnrollmentStatus.COMPLETED
+            ).count(),
+        }
+    }
+
+
 @router.get("/admin/courses/{course_id}/enrollments")
 async def admin_get_course_enrollments(
     course_id: str,
