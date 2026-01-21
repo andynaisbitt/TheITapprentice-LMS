@@ -32,21 +32,23 @@ class CourseStatus(str, enum.Enum):
 
 
 class SectionType(str, enum.Enum):
-    """Types of learning sections - matches frontend"""
-    THEORY = "theory"
-    PRACTICE = "practice"
-    QUIZ = "quiz"
-    CHALLENGE = "challenge"
-    VIDEO = "video"
-    EXERCISE = "exercise"
+    """Types of learning sections - matches frontend and PostgreSQL"""
+    # Use lowercase names to match PostgreSQL enum values
+    theory = "theory"
+    practice = "practice"
+    quiz = "quiz"
+    challenge = "challenge"
+    video = "video"
+    exercise = "exercise"
 
 
 class SectionStatus(str, enum.Enum):
-    """Section availability status - matches frontend"""
-    LOCKED = "locked"
-    AVAILABLE = "available"
-    IN_PROGRESS = "in-progress"
-    COMPLETED = "completed"
+    """Section availability status - matches frontend and PostgreSQL"""
+    # Use lowercase names to match PostgreSQL enum values
+    locked = "locked"
+    available = "available"
+    in_progress = "in-progress"
+    completed = "completed"
 
 
 class ContentBlockType(str, enum.Enum):
@@ -176,7 +178,7 @@ class CourseModule(Base):
     difficulty_level = Column(Integer, default=1)  # 1-5
 
     # Status (for individual module availability)
-    status = Column(SQLEnum(SectionStatus), default=SectionStatus.AVAILABLE, nullable=False)
+    status = Column(SQLEnum(SectionStatus), default=SectionStatus.available, nullable=False)
 
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -207,7 +209,7 @@ class ModuleSection(Base):
     time_estimate = Column(String(20), nullable=True)  # "5 min", "10 min"
 
     # Section type
-    type = Column(SQLEnum(SectionType), default=SectionType.THEORY, nullable=False)
+    type = Column(SQLEnum(SectionType), default=SectionType.theory, nullable=False)
 
     # CONTENT BLOCKS - Array of content block objects
     # Each block has: { type, content, order }
