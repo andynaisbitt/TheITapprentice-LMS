@@ -187,7 +187,15 @@ interface CourseCardProps {
 }
 
 const CourseCard: React.FC<CourseCardProps> = ({ course, index }) => {
-  const levelClass = LEVEL_COLORS[course.level] || LEVEL_COLORS.beginner;
+  // Defensive: default to 'beginner' if level is undefined
+  const level = course.level || 'beginner';
+  const levelClass = LEVEL_COLORS[level] || LEVEL_COLORS.beginner;
+
+  // Defensive: format level display safely
+  const levelDisplay = level.charAt(0).toUpperCase() + level.slice(1);
+
+  // Defensive: default enrollment count to 0
+  const enrollmentCount = course.enrollment_count ?? 0;
 
   return (
     <motion.div
@@ -205,7 +213,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index }) => {
           {course.image ? (
             <img
               src={course.image}
-              alt={course.title}
+              alt={course.title || 'Course'}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             />
           ) : (
@@ -235,13 +243,13 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index }) => {
             <span
               className={`px-2 py-0.5 text-xs font-medium rounded-full ${levelClass}`}
             >
-              {course.level.charAt(0).toUpperCase() + course.level.slice(1)}
+              {levelDisplay}
             </span>
           </div>
 
           {/* Title */}
           <h3 className="font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-            {course.title}
+            {course.title || 'Untitled Course'}
           </h3>
 
           {/* Short description */}
@@ -253,15 +261,17 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index }) => {
 
           {/* Stats */}
           <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-            <span className="flex items-center gap-1">
-              <Clock className="w-4 h-4" />
-              {course.estimated_hours}h
-            </span>
+            {course.estimated_hours != null && (
+              <span className="flex items-center gap-1">
+                <Clock className="w-4 h-4" />
+                {course.estimated_hours}h
+              </span>
+            )}
             <span className="flex items-center gap-1">
               <Users className="w-4 h-4" />
-              {course.enrollment_count.toLocaleString()}
+              {enrollmentCount.toLocaleString()}
             </span>
-            {course.modules && (
+            {course.modules && course.modules.length > 0 && (
               <span className="flex items-center gap-1">
                 <BookOpen className="w-4 h-4" />
                 {course.modules.length} modules
@@ -270,7 +280,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index }) => {
           </div>
 
           {/* XP reward */}
-          {course.xp_reward && (
+          {course.xp_reward != null && course.xp_reward > 0 && (
             <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
               <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
                 +{course.xp_reward} XP on completion
