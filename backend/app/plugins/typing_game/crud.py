@@ -792,11 +792,12 @@ def get_leaderboard(
     """Get leaderboard entries"""
     from app.users.models import User
 
-    # Query user stats with user info
+    # Query user stats with user info (use actual columns, not properties)
     query = db.query(
         models.UserTypingStats,
         User.username,
-        User.display_name
+        User.first_name,
+        User.last_name
     ).join(User).filter(
         models.UserTypingStats.total_games_completed > 0
     )
@@ -811,7 +812,12 @@ def get_leaderboard(
     results = query.limit(limit).all()
 
     leaderboard = []
-    for idx, (stats, username, display_name) in enumerate(results):
+    for idx, (stats, username, first_name, last_name) in enumerate(results):
+        # Compute display_name from first_name/last_name or fallback to username
+        if first_name and last_name:
+            display_name = f"{first_name} {last_name}"
+        else:
+            display_name = username
         leaderboard.append({
             "rank": idx + 1,
             "user_id": stats.user_id,
@@ -830,10 +836,12 @@ def get_pvp_leaderboard(db: Session, limit: int = 100) -> List[Dict[str, Any]]:
     """Get PVP leaderboard"""
     from app.users.models import User
 
+    # Query with actual columns, not Python properties
     query = db.query(
         models.UserPVPStats,
         User.username,
-        User.display_name
+        User.first_name,
+        User.last_name
     ).join(User).filter(
         models.UserPVPStats.total_matches > 0
     ).order_by(desc(models.UserPVPStats.current_rating))
@@ -841,7 +849,12 @@ def get_pvp_leaderboard(db: Session, limit: int = 100) -> List[Dict[str, Any]]:
     results = query.limit(limit).all()
 
     leaderboard = []
-    for idx, (stats, username, display_name) in enumerate(results):
+    for idx, (stats, username, first_name, last_name) in enumerate(results):
+        # Compute display_name from first_name/last_name or fallback to username
+        if first_name and last_name:
+            display_name = f"{first_name} {last_name}"
+        else:
+            display_name = username
         leaderboard.append({
             "rank": idx + 1,
             "user_id": stats.user_id,

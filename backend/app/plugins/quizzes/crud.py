@@ -429,10 +429,12 @@ def get_quiz_leaderboard(
         QuizAttempt.is_complete == True
     ).group_by(QuizAttempt.user_id).subquery()
 
+    # Query actual columns, not Python properties
     results = db.query(
         User.id,
         User.username,
-        User.display_name,
+        User.first_name,
+        User.last_name,
         subquery.c.best_score,
         subquery.c.best_time,
         subquery.c.attempts
@@ -443,18 +445,23 @@ def get_quiz_leaderboard(
         subquery.c.best_time
     ).limit(limit).all()
 
-    return [
-        {
+    leaderboard = []
+    for idx, r in enumerate(results):
+        # Compute display_name from first_name/last_name or fallback to username
+        if r[2] and r[3]:  # first_name and last_name
+            display_name = f"{r[2]} {r[3]}"
+        else:
+            display_name = r[1]  # username
+        leaderboard.append({
             "rank": idx + 1,
             "user_id": r[0],
             "username": r[1],
-            "display_name": r[2],
-            "best_score": r[3],
-            "best_time": r[4],
-            "attempts": r[5]
-        }
-        for idx, r in enumerate(results)
-    ]
+            "display_name": display_name,
+            "best_score": r[4],
+            "best_time": r[5],
+            "attempts": r[6]
+        })
+    return leaderboard
 
 
 # ============== User Stats ==============
