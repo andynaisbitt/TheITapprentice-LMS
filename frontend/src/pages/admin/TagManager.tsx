@@ -33,7 +33,7 @@ export const TagManager: React.FC = () => {
       setIsLoading(true);
       setError('');
       const data = await blogApi.getTags();
-      setTags(data);
+      setTags(Array.isArray(data) ? data : []);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to load tags');
     } finally {

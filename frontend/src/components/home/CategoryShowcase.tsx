@@ -107,7 +107,8 @@ export const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({ limit }) => 
       const effectiveLimit = limit ?? settings.categoriesLimit ?? 8;
 
       // Filter out categories with 0 posts, sort by post count, limit
-      const validCategories = data
+      const safeData = Array.isArray(data) ? data : [];
+      const validCategories = safeData
         .filter((cat) => (cat.post_count || 0) > 0)
         .sort((a, b) => (b.post_count || 0) - (a.post_count || 0))
         .slice(0, effectiveLimit);

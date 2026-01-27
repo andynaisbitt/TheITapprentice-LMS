@@ -102,8 +102,12 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
       setLoadingNotifications(true);
       try {
         // Try to fetch recent admin activity
-        const response = await apiClient.get('/admin/notifications');
-        setNotifications(response.data);
+        const response = await apiClient.get('/api/v1/admin/notifications');
+        if (Array.isArray(response.data)) {
+          setNotifications(response.data);
+        } else {
+          throw new Error('Invalid response format');
+        }
       } catch {
         // If no endpoint exists, show placeholder notifications
         setNotifications([
