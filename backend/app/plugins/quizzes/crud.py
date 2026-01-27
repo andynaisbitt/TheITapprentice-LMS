@@ -5,7 +5,7 @@ Quiz System CRUD Operations
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, text
 from typing import Optional, List, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 import random
 
 from .models import Quiz, QuizQuestion, QuizAttempt, QuizStatus
@@ -337,7 +337,7 @@ def submit_attempt(
     attempt.percentage = (score / attempt.max_score * 100) if attempt.max_score > 0 else 0
     attempt.passed = attempt.percentage >= quiz.passing_score
     attempt.is_complete = True
-    attempt.completed_at = datetime.utcnow()
+    attempt.completed_at = datetime.now(timezone.utc)
 
     # Calculate time taken
     if attempt.started_at:
