@@ -52,6 +52,7 @@ export interface QuizSummary {
   total_attempts: number;
   avg_score: number;
   pass_rate: number;
+  related_skills: string[];
   created_at: string;
 }
 
@@ -153,6 +154,7 @@ export interface QuizCreateInput {
   module_id?: string;
   status?: QuizStatus;
   is_featured?: boolean;
+  related_skills?: string[];
   questions?: QuestionCreateInput[];
 }
 

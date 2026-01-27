@@ -1,13 +1,14 @@
 // src/components/home/FeaturedCarousel.tsx
 /**
- * Featured Posts Carousel - Animated showcase of top posts
+ * Featured Posts Carousel - Premium mobile-first design
+ * Animated showcase of top posts with smooth transitions
  */
 
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { blogApi } from '../../services/api';
-import { ChevronLeft, ChevronRight, Calendar, Clock, ArrowRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Clock, ArrowRight, Sparkles } from 'lucide-react';
 import { resolveImageUrl } from '../../utils/imageUrl';
 import { CarouselSkeleton } from './skeletons/CarouselSkeleton';
 import { useSiteSettings } from '../../store/useSiteSettingsStore';
@@ -27,6 +28,8 @@ interface FeaturedCarouselProps {
   limit?: number;
 }
 
+const SWIPE_THRESHOLD = 50;
+
 export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({ limit }) => {
   const { settings } = useSiteSettings();
   const [posts, setPosts] = useState<FeaturedPost[]>([]);
@@ -34,7 +37,6 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({ limit }) => 
   const [loading, setLoading] = useState(true);
   const [direction, setDirection] = useState(0);
   const [reducedMotion, setReducedMotion] = useState(false);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
 
   useEffect(() => {
     loadFeaturedPosts();
@@ -50,13 +52,6 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({ limit }) => 
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
-  // Update isMobile on window resize
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 1024);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
   const loadFeaturedPosts = async () => {
     try {
       const effectiveLimit = limit || settings.carouselLimit || 5;
@@ -69,22 +64,34 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({ limit }) => 
     }
   };
 
-  const nextSlide = () => {
+  const nextSlide = useCallback(() => {
     setDirection(1);
     setCurrentIndex((prev) => (prev + 1) % posts.length);
-  };
+  }, [posts.length]);
 
-  const prevSlide = () => {
+  const prevSlide = useCallback(() => {
     setDirection(-1);
     setCurrentIndex((prev) => (prev - 1 + posts.length) % posts.length);
-  };
+  }, [posts.length]);
 
-  // Auto-play carousel with configurable interval
+  // Auto-play carousel
   useEffect(() => {
     if (posts.length === 0 || !settings.carouselAutoplay) return;
     const interval = setInterval(nextSlide, settings.carouselInterval || 7000);
     return () => clearInterval(interval);
-  }, [posts.length, settings.carouselAutoplay, settings.carouselInterval]);
+  }, [posts.length, settings.carouselAutoplay, settings.carouselInterval, nextSlide]);
+
+  // Handle swipe gestures for mobile
+  const handleDragEnd = (_: any, info: PanInfo) => {
+    const { offset, velocity } = info;
+    if (Math.abs(offset.x) > SWIPE_THRESHOLD || Math.abs(velocity.x) > 500) {
+      if (offset.x > 0) {
+        prevSlide();
+      } else {
+        nextSlide();
+      }
+    }
+  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -102,187 +109,326 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({ limit }) => 
     return null;
   }
 
-  // Crossfade animation variants for smooth transitions
-  // Mobile: opacity-only (no scale to prevent GPU glitches)
-  // Desktop: subtle scale for elegance
-  const crossfadeVariants = {
-    enter: {
+  const slideVariants = {
+    enter: (direction: number) => ({
+      x: direction > 0 ? '100%' : '-100%',
       opacity: 0,
-      scale: isMobile ? 1 : 1.02, // Reduced scale, mobile gets none
-      zIndex: 0,
-    },
+    }),
     center: {
+      x: 0,
       opacity: 1,
-      scale: 1,
-      zIndex: 1,
+      transition: {
+        duration: reducedMotion ? 0 : 0.4,
+        ease: [0.32, 0.72, 0, 1],
+      },
     },
-    exit: {
+    exit: (direction: number) => ({
+      x: direction < 0 ? '100%' : '-100%',
       opacity: 0,
-      scale: isMobile ? 1 : 0.98, // Reduced scale, mobile gets none
-      zIndex: 0,
-    },
+      transition: {
+        duration: reducedMotion ? 0 : 0.3,
+        ease: [0.32, 0.72, 0, 1],
+      },
+    }),
   };
 
   const currentPost = posts[currentIndex];
 
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-gray-800 dark:to-gray-900 shadow-2xl">
-      <div className="relative lg:h-[600px]">
-        <AnimatePresence initial={false} mode="wait">
-          <motion.div
-            key={currentIndex}
-            variants={crossfadeVariants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{
-              duration: reducedMotion ? 0 : (isMobile ? 0.4 : 0.6), // Faster on mobile
-              ease: [0.32, 0.72, 0, 1], // Smoother easing for mobile
-            }}
-            className="lg:absolute lg:inset-0"
-          >
-            <div className="grid grid-cols-1 lg:grid-cols-2 lg:h-full">
-              {/* Image Side */}
-              <div className="relative overflow-hidden min-h-[300px] lg:min-h-0">
+    <div className="relative">
+      {/* Mobile Card Design */}
+      <div className="block lg:hidden">
+        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700">
+          <AnimatePresence mode="wait" custom={direction}>
+            <motion.div
+              key={currentIndex}
+              custom={direction}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.1}
+              onDragEnd={handleDragEnd}
+              className="cursor-grab active:cursor-grabbing"
+            >
+              {/* Mobile Image */}
+              <div className="relative aspect-[16/10] overflow-hidden">
                 {currentPost.featured_image ? (
                   <img
                     src={resolveImageUrl(currentPost.featured_image)}
                     alt={currentPost.title}
-                    className="absolute inset-0 w-full h-full object-cover"
+                    className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500"></div>
+                  <div className="w-full h-full bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 flex items-center justify-center">
+                    <Sparkles className="w-16 h-16 text-white/50" />
+                  </div>
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent lg:bg-gradient-to-r"></div>
-              </div>
 
-              {/* Content Side */}
-              <div className="relative flex flex-col justify-center p-6 sm:p-8 md:p-12 lg:p-16 z-10">
-                {/* Category Badge */}
-                {currentPost.categories && currentPost.categories[0] && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="mb-4"
-                  >
+                {/* Gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+
+                {/* Category badge on image */}
+                {currentPost.categories?.[0] && (
+                  <div className="absolute top-4 left-4">
                     <span
-                      className="inline-block px-4 py-1.5 rounded-full text-sm font-semibold"
+                      className="px-3 py-1.5 rounded-full text-xs font-semibold backdrop-blur-sm"
                       style={{
                         backgroundColor: currentPost.categories[0].color
-                          ? `${currentPost.categories[0].color}20`
-                          : '#e0e7ff',
-                        color: currentPost.categories[0].color || '#4f46e5',
+                          ? `${currentPost.categories[0].color}cc`
+                          : 'rgba(79, 70, 229, 0.9)',
+                        color: '#fff',
                       }}
                     >
                       {currentPost.categories[0].name}
                     </span>
-                  </motion.div>
+                  </div>
                 )}
 
+                {/* Slide counter */}
+                <div className="absolute top-4 right-4 px-3 py-1.5 rounded-full bg-black/50 backdrop-blur-sm text-white text-xs font-medium">
+                  {currentIndex + 1} / {posts.length}
+                </div>
+              </div>
+
+              {/* Mobile Content */}
+              <div className="p-5">
                 {/* Title */}
-                <motion.h2
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                  className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4 leading-tight"
-                >
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2 line-clamp-2 leading-tight">
                   {currentPost.title}
-                </motion.h2>
+                </h3>
 
                 {/* Excerpt */}
-                <motion.p
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                  className="text-gray-600 dark:text-gray-300 text-base sm:text-lg mb-4 sm:mb-6 line-clamp-2 sm:line-clamp-3"
-                >
+                <p className="text-slate-600 dark:text-slate-400 text-sm mb-4 line-clamp-2">
                   {currentPost.excerpt}
-                </motion.p>
+                </p>
 
-                {/* Meta Info */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 }}
-                  className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-8"
-                >
-                  <div className="flex items-center gap-1.5">
-                    <Calendar size={16} />
-                    <span>{currentPost.published_at ? formatDate(currentPost.published_at) : 'Draft'}</span>
+                {/* Meta + CTA Row */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-500">
+                    <div className="flex items-center gap-1">
+                      <Calendar size={14} />
+                      <span>{currentPost.published_at ? formatDate(currentPost.published_at) : 'Draft'}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Clock size={14} />
+                      <span>5 min</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <Clock size={16} />
-                    <span>5 min read</span>
-                  </div>
-                </motion.div>
 
-                {/* CTA Button */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6 }}
-                  className="relative z-10"
-                >
                   <Link
                     to={`/blog/${currentPost.slug}`}
-                    className="group inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-all shadow-lg hover:shadow-xl touch-manipulation"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors"
                   >
-                    <span>Read Article</span>
-                    <ArrowRight
-                      size={20}
-                      className="group-hover:translate-x-1 transition-transform"
-                    />
+                    Read
+                    <ArrowRight size={16} />
                   </Link>
-                </motion.div>
+                </div>
               </div>
-            </div>
-          </motion.div>
-        </AnimatePresence>
+            </motion.div>
+          </AnimatePresence>
 
-        {/* Navigation Arrows - Mobile Optimized with fixed positioning */}
+          {/* Mobile Navigation Dots */}
+          <div className="absolute bottom-20 left-0 right-0 flex justify-center gap-1.5 z-10">
+            {posts.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => {
+                  setDirection(index > currentIndex ? 1 : -1);
+                  setCurrentIndex(index);
+                }}
+                className="p-1.5 touch-manipulation"
+                aria-label={`Go to slide ${index + 1}`}
+              >
+                <div
+                  className={`h-1.5 rounded-full transition-all ${
+                    index === currentIndex
+                      ? 'w-6 bg-blue-600'
+                      : 'w-1.5 bg-slate-300 dark:bg-slate-600'
+                  }`}
+                />
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Mobile Arrow Buttons (below card) */}
         {posts.length > 1 && (
-          <div className="absolute inset-0 pointer-events-none z-20">
-            <div className="relative h-full flex items-center justify-between px-2 sm:px-4">
-              <button
-                onClick={prevSlide}
-                className="pointer-events-auto p-3 sm:p-3.5 bg-white/95 dark:bg-gray-800/95 rounded-full shadow-xl hover:bg-white dark:hover:bg-gray-800 transition-colors backdrop-blur-sm touch-manipulation active:scale-90"
-                aria-label="Previous slide"
-              >
-                <ChevronLeft size={20} className="sm:w-6 sm:h-6 text-gray-700 dark:text-gray-300" />
-              </button>
-              <button
-                onClick={nextSlide}
-                className="pointer-events-auto p-3 sm:p-3.5 bg-white/95 dark:bg-gray-800/95 rounded-full shadow-xl hover:bg-white dark:hover:bg-gray-800 transition-colors backdrop-blur-sm touch-manipulation active:scale-90"
-                aria-label="Next slide"
-              >
-                <ChevronRight size={20} className="sm:w-6 sm:h-6 text-gray-700 dark:text-gray-300" />
-              </button>
-            </div>
+          <div className="flex justify-center gap-3 mt-4">
+            <button
+              onClick={prevSlide}
+              className="p-3 bg-white dark:bg-slate-800 rounded-full shadow-md border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+              aria-label="Previous article"
+            >
+              <ChevronLeft size={20} className="text-slate-700 dark:text-slate-300" />
+            </button>
+            <button
+              onClick={nextSlide}
+              className="p-3 bg-white dark:bg-slate-800 rounded-full shadow-md border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+              aria-label="Next article"
+            >
+              <ChevronRight size={20} className="text-slate-700 dark:text-slate-300" />
+            </button>
           </div>
         )}
+      </div>
 
-        {/* Dots Indicator - Mobile Optimized with larger touch targets */}
-        <div className="absolute bottom-4 sm:bottom-6 left-0 right-0 flex justify-center gap-1 sm:gap-2 z-10">
-          {posts.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => {
-                setDirection(index > currentIndex ? 1 : -1);
-                setCurrentIndex(index);
-              }}
-              className={`touch-manipulation p-2 transition-all active:scale-95`}
-              aria-label={`Go to slide ${index + 1}`}
-            >
-              <div
-                className={`h-2 rounded-full transition-all ${
-                  index === currentIndex
-                    ? 'w-8 bg-blue-600 dark:bg-blue-500'
-                    : 'w-2 bg-gray-400 dark:bg-gray-500'
-                }`}
-              />
-            </button>
-          ))}
+      {/* Desktop Layout */}
+      <div className="hidden lg:block">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 shadow-2xl border border-slate-200 dark:border-slate-700">
+          <div className="relative h-[550px]">
+            <AnimatePresence initial={false} mode="wait" custom={direction}>
+              <motion.div
+                key={currentIndex}
+                custom={direction}
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                className="absolute inset-0"
+              >
+                <div className="grid grid-cols-2 h-full">
+                  {/* Image Side */}
+                  <div className="relative overflow-hidden">
+                    {currentPost.featured_image ? (
+                      <img
+                        src={resolveImageUrl(currentPost.featured_image)}
+                        alt={currentPost.title}
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 flex items-center justify-center">
+                        <Sparkles className="w-24 h-24 text-white/30" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent to-black/20" />
+                  </div>
+
+                  {/* Content Side */}
+                  <div className="relative flex flex-col justify-center p-12 xl:p-16">
+                    {/* Category Badge */}
+                    {currentPost.categories?.[0] && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 }}
+                        className="mb-4"
+                      >
+                        <span
+                          className="inline-block px-4 py-1.5 rounded-full text-sm font-semibold"
+                          style={{
+                            backgroundColor: currentPost.categories[0].color
+                              ? `${currentPost.categories[0].color}20`
+                              : '#e0e7ff',
+                            color: currentPost.categories[0].color || '#4f46e5',
+                          }}
+                        >
+                          {currentPost.categories[0].name}
+                        </span>
+                      </motion.div>
+                    )}
+
+                    {/* Title */}
+                    <motion.h2
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                      className="text-3xl xl:text-4xl 2xl:text-5xl font-bold text-slate-900 dark:text-white mb-4 leading-tight"
+                    >
+                      {currentPost.title}
+                    </motion.h2>
+
+                    {/* Excerpt */}
+                    <motion.p
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                      className="text-slate-600 dark:text-slate-300 text-lg mb-6 line-clamp-3"
+                    >
+                      {currentPost.excerpt}
+                    </motion.p>
+
+                    {/* Meta Info */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4 }}
+                      className="flex items-center gap-6 text-sm text-slate-500 dark:text-slate-400 mb-8"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Calendar size={18} />
+                        <span>{currentPost.published_at ? formatDate(currentPost.published_at) : 'Draft'}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock size={18} />
+                        <span>5 min read</span>
+                      </div>
+                    </motion.div>
+
+                    {/* CTA Button */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5 }}
+                    >
+                      <Link
+                        to={`/blog/${currentPost.slug}`}
+                        className="group inline-flex items-center gap-2 px-8 py-4 bg-blue-600 text-white rounded-xl font-semibold text-lg hover:bg-blue-700 transition-all shadow-lg hover:shadow-xl"
+                      >
+                        Read Article
+                        <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                      </Link>
+                    </motion.div>
+                  </div>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+
+            {/* Desktop Navigation Arrows */}
+            {posts.length > 1 && (
+              <>
+                <button
+                  onClick={prevSlide}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-white/90 dark:bg-slate-800/90 rounded-full shadow-lg hover:bg-white dark:hover:bg-slate-800 transition-colors backdrop-blur-sm z-10"
+                  aria-label="Previous slide"
+                >
+                  <ChevronLeft size={24} className="text-slate-700 dark:text-slate-300" />
+                </button>
+                <button
+                  onClick={nextSlide}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-white/90 dark:bg-slate-800/90 rounded-full shadow-lg hover:bg-white dark:hover:bg-slate-800 transition-colors backdrop-blur-sm z-10"
+                  aria-label="Next slide"
+                >
+                  <ChevronRight size={24} className="text-slate-700 dark:text-slate-300" />
+                </button>
+              </>
+            )}
+
+            {/* Desktop Dots */}
+            <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-2 z-10">
+              {posts.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => {
+                    setDirection(index > currentIndex ? 1 : -1);
+                    setCurrentIndex(index);
+                  }}
+                  className="p-1.5"
+                  aria-label={`Go to slide ${index + 1}`}
+                >
+                  <div
+                    className={`h-2 rounded-full transition-all ${
+                      index === currentIndex
+                        ? 'w-8 bg-blue-600'
+                        : 'w-2 bg-slate-400 dark:bg-slate-600 hover:bg-slate-500'
+                    }`}
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>

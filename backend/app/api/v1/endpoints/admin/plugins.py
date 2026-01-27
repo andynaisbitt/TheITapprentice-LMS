@@ -86,6 +86,14 @@ PLUGIN_REGISTRY = {
         "admin_route": "/admin/quizzes",
         "public_routes": ["/quizzes"],
     },
+    "skills": {
+        "name": "IT Skills",
+        "description": "OSRS-style skill progression with 12 IT skills, XP tracking, and leaderboards",
+        "version": "2.8.0",
+        "has_admin_ui": True,
+        "admin_route": "/admin/skills",
+        "public_routes": ["/skills", "/skills/leaderboard"],
+    },
 }
 
 
@@ -157,6 +165,15 @@ def get_plugin_stats(db: Session, plugin_id: str) -> Optional[dict]:
             stats["total_attempts"] = db.query(QuizAttempt).filter(
                 QuizAttempt.is_complete == True
             ).count()
+        except Exception:
+            # Plugin may not be imported if disabled
+            pass
+
+    elif plugin_id == "skills":
+        try:
+            from app.plugins.skills.models import Skill, UserSkill
+            stats["total_skills"] = db.query(Skill).filter(Skill.is_active == True).count()
+            stats["users_with_skills"] = db.query(UserSkill.user_id).distinct().count()
         except Exception:
             # Plugin may not be imported if disabled
             pass

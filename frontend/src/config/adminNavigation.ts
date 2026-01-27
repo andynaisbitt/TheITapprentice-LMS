@@ -14,6 +14,7 @@ import {
   FilePlus,
   FolderTree,
   Tags,
+  Image,
   GraduationCap,
   BookOpen,
   Library,
@@ -31,6 +32,7 @@ import {
   Mail,
   Puzzle,
   HeartPulse,
+  Swords,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -77,6 +79,7 @@ export const adminNavigationConfig: NavSection[] = [
     items: [
       { label: 'All Posts', path: '/admin/posts', icon: Files },
       { label: 'New Post', path: '/admin/blog', icon: FilePlus },
+      { label: 'Media Library', path: '/admin/media', icon: Image },
       { label: 'Categories', path: '/admin/categories', icon: FolderTree },
       { label: 'Tags', path: '/admin/tags', icon: Tags },
       { label: 'Pages', path: '/admin/pages', icon: FileText },
@@ -127,6 +130,15 @@ export const adminNavigationConfig: NavSection[] = [
           { label: 'Word Lists', path: '/admin/games/word-lists' },
           { label: 'Challenges', path: '/admin/games/challenges' },
           { label: 'Leaderboard', path: '/admin/games/leaderboard' },
+        ],
+      },
+      {
+        label: 'Skills',
+        icon: Swords,
+        requiresPlugin: 'skills',
+        children: [
+          { label: 'All Skills', path: '/admin/skills' },
+          { label: 'Leaderboard', path: '/admin/skills/leaderboard' },
         ],
       },
       { label: 'Student Progress', path: '/admin/lms/progress', icon: TrendingUp },

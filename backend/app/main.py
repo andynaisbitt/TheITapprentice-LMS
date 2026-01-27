@@ -56,6 +56,10 @@ if settings.PLUGINS_ENABLED.get("typing_game", False):
 if settings.PLUGINS_ENABLED.get("quizzes", False):
     from app.plugins.quizzes.routes import router as quizzes_router
 
+if settings.PLUGINS_ENABLED.get("skills", False):
+    from app.plugins.skills.routes import router as skills_router
+    from app.plugins.skills.admin_routes import router as skills_admin_router
+
 # Shared plugin routes (XP, Achievements, Progress - always enabled)
 from app.plugins.shared.routes import router as progress_router
 
@@ -151,6 +155,10 @@ if settings.PLUGINS_ENABLED.get("typing_game", False):
 
 if settings.PLUGINS_ENABLED.get("quizzes", False):
     app.include_router(quizzes_router, prefix="/api/v1", tags=["Quizzes - LMS"])
+
+if settings.PLUGINS_ENABLED.get("skills", False):
+    app.include_router(skills_router, prefix="/api/v1/skills", tags=["Skills - LMS"])
+    app.include_router(skills_admin_router, prefix="/api/v1/admin/skills", tags=["Skills - Admin"])
 
 # Shared plugin routes (XP, Achievements, Progress)
 app.include_router(progress_router, prefix="/api/v1", tags=["Progress & Achievements"])

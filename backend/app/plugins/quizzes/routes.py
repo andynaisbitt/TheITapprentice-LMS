@@ -7,12 +7,17 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.config import settings
 from app.auth.dependencies import get_current_user, get_current_admin_user
 from app.users.models import User
 from app.plugins.shared.xp_service import xp_service
 from app.plugins.shared.achievement_service import achievement_service
 from app.plugins.shared.models import ChallengeType
 from app.plugins.shared.challenge_service import challenge_service
+from app.plugins.skills.service import award_skill_xp, CATEGORY_TO_SKILLS_MAP
+import logging
+
+logger = logging.getLogger(__name__)
 
 from . import crud
 from .models import QuizStatus
@@ -273,6 +278,44 @@ async def submit_quiz_attempt(
                     challenge_type=ChallengeType.XP_EARN,
                     amount=xp_awarded
                 )
+
+            # =========== SKILL XP INTEGRATION ===========
+            # Award skill XP based on quiz category (if skills plugin enabled)
+            if settings.PLUGINS_ENABLED.get("skills", False):
+                try:
+                    # Get skill slugs from quiz category
+                    category_slug = quiz.category.lower() if quiz.category else "problem-solving"
+                    skill_slugs = CATEGORY_TO_SKILLS_MAP.get(category_slug, ["problem-solving"])
+
+                    # Calculate skill XP based on quiz score
+                    skill_xp_base = xp_awarded if xp_awarded > 0 else 30
+                    # Bonus for high scores
+                    if attempt.percentage >= 100:
+                        skill_xp_base = int(skill_xp_base * 1.5)
+                    elif attempt.percentage >= 90:
+                        skill_xp_base = int(skill_xp_base * 1.2)
+
+                    xp_per_skill = skill_xp_base // len(skill_slugs)
+
+                    for skill_slug in skill_slugs:
+                        skill_result = await award_skill_xp(
+                            db=db,
+                            user_id=current_user.id,
+                            skill_slug=skill_slug,
+                            xp_amount=xp_per_skill,
+                            source_type="quiz",
+                            source_id=str(quiz_id),
+                            source_metadata={
+                                "quiz_title": quiz.title,
+                                "score": attempt.percentage,
+                                "difficulty": quiz.difficulty,
+                                "category": category_slug
+                            }
+                        )
+                        if skill_result.level_up:
+                            logger.info(f"User {current_user.id} leveled up {skill_slug}: {skill_result.old_level} -> {skill_result.new_level}")
+                except Exception as e:
+                    logger.error(f"Failed to award skill XP for quiz {quiz_id}: {e}")
 
     # Build detailed results
     question_results = []

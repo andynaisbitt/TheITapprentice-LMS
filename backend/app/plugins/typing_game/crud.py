@@ -357,6 +357,264 @@ def complete_game_session(
     }
 
 
+def complete_game_session_v2(
+    db: Session,
+    session_id: str,
+    user_input: str,
+    time_elapsed: int,
+    checksum: str,
+    max_combo: int = 0,
+    anti_cheat_data: Optional[Dict[str, Any]] = None
+) -> Optional[Tuple[models.TypingGameSession, Dict[str, Any]]]:
+    """
+    Enhanced game session completion with anti-cheat validation.
+
+    Args:
+        db: Database session
+        session_id: Game session ID
+        user_input: User's typed text
+        time_elapsed: Time taken in seconds
+        checksum: Validation checksum
+        max_combo: Maximum combo achieved
+        anti_cheat_data: Anti-cheat telemetry data
+    """
+    from .anti_cheat import validate_typing_session, AntiCheatResult
+
+    session = get_game_session(db, session_id)
+    if not session or session.is_completed:
+        return None
+
+    # Verify checksum
+    expected_checksum = hashlib.sha256(
+        f"{session_id}:{session.text_content}".encode()
+    ).hexdigest()
+
+    if checksum != expected_checksum:
+        session.status = "abandoned"
+        db.commit()
+        return None
+
+    # Calculate metrics (same as v1)
+    original_text = session.text_content
+    original_words = original_text.split()
+    user_words = user_input.split()
+
+    correct_chars = 0
+    total_chars = len(original_text)
+    min_len = min(len(original_text), len(user_input))
+
+    for i in range(min_len):
+        if i < len(user_input) and i < len(original_text):
+            if user_input[i] == original_text[i]:
+                correct_chars += 1
+
+    accuracy = (correct_chars / total_chars * 100) if total_chars > 0 else 0
+    chars_typed = len(user_input)
+    minutes = time_elapsed / 60.0 if time_elapsed > 0 else 1/60
+    raw_wpm = int((chars_typed / 5) / minutes)
+    error_count = total_chars - correct_chars
+    adjusted_wpm = max(0, int(((chars_typed / 5) - error_count) / minutes))
+
+    # Anti-cheat validation
+    anti_cheat_result: Optional[AntiCheatResult] = None
+    xp_multiplier = 1.0
+
+    if anti_cheat_data:
+        anti_cheat_result = validate_typing_session(
+            keystroke_timings=anti_cheat_data.get("keystroke_timings", []),
+            keystroke_count=anti_cheat_data.get("keystroke_count", 0),
+            paste_attempts=anti_cheat_data.get("paste_attempts", 0),
+            focus_lost_count=anti_cheat_data.get("focus_lost_count", 0),
+            total_focus_lost_time=anti_cheat_data.get("total_focus_lost_time", 0),
+            wpm=adjusted_wpm,
+            accuracy=accuracy,
+            time_elapsed=time_elapsed,
+            first_segment_avg=anti_cheat_data.get("first_segment_avg"),
+            last_segment_avg=anti_cheat_data.get("last_segment_avg"),
+        )
+
+        # Store anti-cheat results
+        session.anti_cheat_confidence = anti_cheat_result.confidence_score
+        session.anti_cheat_flags = anti_cheat_result.flags
+        session.anti_cheat_flagged_for_review = anti_cheat_result.should_flag_for_review
+        xp_multiplier = anti_cheat_result.adjusted_xp_multiplier
+
+        # Reject invalid sessions
+        if not anti_cheat_result.is_valid:
+            session.status = "rejected"
+            session.is_completed = True
+            session.completed_at = datetime.utcnow()
+            db.commit()
+            return session, {
+                "metrics": {
+                    "wpm": adjusted_wpm,
+                    "raw_wpm": raw_wpm,
+                    "accuracy": round(accuracy, 2),
+                    "error_count": error_count,
+                    "total_characters": total_chars,
+                    "time_elapsed": time_elapsed
+                },
+                "xp_earned": 0,
+                "is_personal_best_wpm": False,
+                "is_personal_best_accuracy": False,
+                "max_combo": max_combo,
+                "anti_cheat": {
+                    "confidence_score": anti_cheat_result.confidence_score,
+                    "flags": anti_cheat_result.flags,
+                    "is_valid": False
+                }
+            }
+
+    # Update session
+    session.user_input = user_input
+    session.time_taken = time_elapsed
+    session.wpm = adjusted_wpm
+    session.raw_wpm = raw_wpm
+    session.accuracy = round(accuracy, 2)
+    session.mistakes = error_count
+    session.characters_typed = chars_typed
+    session.max_combo = max_combo
+    session.is_completed = True
+    session.status = "completed"
+    session.completed_at = datetime.utcnow()
+
+    # Calculate XP with anti-cheat multiplier
+    base_xp = 10
+    wpm_bonus = adjusted_wpm // 10
+    accuracy_bonus = int(accuracy // 10)
+    combo_bonus = max_combo // 25  # Extra XP for combos
+    raw_xp = base_xp + wpm_bonus + accuracy_bonus + combo_bonus
+    xp_earned = int(raw_xp * xp_multiplier)
+    session.total_xp_earned = xp_earned
+
+    # Update user stats and check personal bests
+    stats = get_or_create_user_stats(db, session.user_id)
+    is_pb_wpm = False
+    is_pb_accuracy = False
+
+    # Only count personal bests for legitimate sessions
+    if xp_multiplier >= 1.0:
+        if adjusted_wpm > stats.best_wpm:
+            stats.best_wpm = adjusted_wpm
+            stats.best_wpm_achieved_at = datetime.utcnow()
+            stats.best_wpm_word_list = session.word_list_id
+            is_pb_wpm = True
+            session.is_personal_best_wpm = True
+
+        if accuracy > stats.best_accuracy:
+            stats.best_accuracy = accuracy
+            stats.best_accuracy_achieved_at = datetime.utcnow()
+            is_pb_accuracy = True
+            session.is_personal_best_accuracy = True
+
+    # Update totals
+    stats.total_games_played += 1
+    stats.total_games_completed += 1
+    stats.total_words_typed += len(user_words)
+    stats.total_characters_typed += chars_typed
+    stats.total_time_seconds += time_elapsed
+    stats.last_game_at = datetime.utcnow()
+
+    if not stats.first_game_at:
+        stats.first_game_at = datetime.utcnow()
+
+    # Update averages
+    stats.avg_wpm = (
+        (stats.avg_wpm * (stats.total_games_completed - 1) + adjusted_wpm)
+        / stats.total_games_completed
+    )
+    stats.avg_accuracy = (
+        (stats.avg_accuracy * (stats.total_games_completed - 1) + accuracy)
+        / stats.total_games_completed
+    )
+
+    # Check milestones
+    if adjusted_wpm >= 50 and not stats.reached_50_wpm_at:
+        stats.reached_50_wpm_at = datetime.utcnow()
+    if adjusted_wpm >= 100 and not stats.reached_100_wpm_at:
+        stats.reached_100_wpm_at = datetime.utcnow()
+    if adjusted_wpm >= 150 and not stats.reached_150_wpm_at:
+        stats.reached_150_wpm_at = datetime.utcnow()
+
+    # Update word list stats
+    if session.word_list_id:
+        word_list = get_word_list(db, session.word_list_id)
+        if word_list:
+            total_plays = word_list.times_played
+            word_list.avg_wpm = (
+                (word_list.avg_wpm * (total_plays - 1) + adjusted_wpm)
+                / total_plays
+            ) if total_plays > 0 else adjusted_wpm
+            word_list.avg_accuracy = (
+                (word_list.avg_accuracy * (total_plays - 1) + accuracy)
+                / total_plays
+            ) if total_plays > 0 else accuracy
+
+    # Award XP via the XP service (only if multiplier is positive)
+    if xp_multiplier > 0:
+        xp_result = xp_service.award_typing_game_xp(
+            db=db,
+            user_id=session.user_id,
+            wpm=adjusted_wpm,
+            accuracy=accuracy,
+            is_pvp_win=False
+        )
+        actual_xp = int(xp_result.get("total_xp_awarded", xp_earned) * xp_multiplier)
+        session.total_xp_earned = actual_xp
+    else:
+        actual_xp = 0
+
+    # Track challenge progress
+    challenge_service.increment_progress(
+        db=db,
+        user_id=session.user_id,
+        challenge_type=ChallengeType.TYPING_GAME,
+        amount=1
+    )
+
+    challenge_service.increment_progress(
+        db=db,
+        user_id=session.user_id,
+        challenge_type=ChallengeType.TYPING_WPM,
+        value=adjusted_wpm
+    )
+
+    if actual_xp > 0:
+        challenge_service.increment_progress(
+            db=db,
+            user_id=session.user_id,
+            challenge_type=ChallengeType.XP_EARN,
+            amount=actual_xp
+        )
+
+    db.commit()
+    db.refresh(session)
+
+    result = {
+        "metrics": {
+            "wpm": adjusted_wpm,
+            "raw_wpm": raw_wpm,
+            "accuracy": round(accuracy, 2),
+            "error_count": error_count,
+            "total_characters": total_chars,
+            "time_elapsed": time_elapsed
+        },
+        "xp_earned": actual_xp,
+        "is_personal_best_wpm": is_pb_wpm,
+        "is_personal_best_accuracy": is_pb_accuracy,
+        "max_combo": max_combo,
+    }
+
+    if anti_cheat_result:
+        result["anti_cheat"] = {
+            "confidence_score": anti_cheat_result.confidence_score,
+            "flags": anti_cheat_result.flags,
+            "is_valid": anti_cheat_result.is_valid
+        }
+
+    return session, result
+
+
 def get_user_game_history(
     db: Session,
     user_id: int,
@@ -1098,3 +1356,1005 @@ def update_sentence_pool_stats(
     pool.avg_accuracy = ((pool.avg_accuracy * (times_used - 1)) + accuracy) / times_used
 
     db.commit()
+
+
+# ==================== ANALYTICS CRUD ====================
+
+# Common digraphs/patterns to track
+COMMON_PATTERNS = [
+    'th', 'he', 'in', 'er', 'an', 'on', 're', 'ed', 'nd', 'at',
+    'en', 'es', 'or', 'te', 'of', 'it', 'is', 'al', 'ar', 'st',
+    'to', 'nt', 'ng', 'se', 'ha', 'as', 'ou', 'io', 'le', 'ti',
+    'ing', 'tion', 'the', 'and', 'ent', 'ion', 'for', 'was', 'are'
+]
+
+
+def get_or_create_letter_stats(
+    db: Session,
+    user_id: int,
+    character: str
+) -> models.UserLetterStats:
+    """Get or create letter stats for a user and character"""
+    stats = db.query(models.UserLetterStats).filter(
+        models.UserLetterStats.user_id == user_id,
+        models.UserLetterStats.character == character
+    ).first()
+
+    if not stats:
+        stats = models.UserLetterStats(
+            user_id=user_id,
+            character=character,
+            total_attempts=0,
+            total_correct=0,
+            total_incorrect=0,
+            accuracy_rate=0.0,
+            avg_time_to_type=0.0,
+            context_stats={},
+            common_mistakes=[]
+        )
+        db.add(stats)
+        db.commit()
+        db.refresh(stats)
+
+    return stats
+
+
+def update_letter_stats(
+    db: Session,
+    user_id: int,
+    character: str,
+    is_correct: bool,
+    time_ms: Optional[float] = None,
+    actual_typed: Optional[str] = None
+) -> models.UserLetterStats:
+    """Update letter stats after typing a character"""
+    stats = get_or_create_letter_stats(db, user_id, character)
+
+    stats.total_attempts += 1
+    if is_correct:
+        stats.total_correct += 1
+    else:
+        stats.total_incorrect += 1
+        # Track common mistakes
+        if actual_typed:
+            mistakes = stats.common_mistakes or []
+            mistake_entry = next(
+                (m for m in mistakes if m.get('typed') == actual_typed),
+                None
+            )
+            if mistake_entry:
+                mistake_entry['count'] = mistake_entry.get('count', 0) + 1
+            else:
+                mistakes.append({'typed': actual_typed, 'count': 1})
+            # Keep only top 5 mistakes
+            mistakes.sort(key=lambda x: x.get('count', 0), reverse=True)
+            stats.common_mistakes = mistakes[:5]
+
+    # Update accuracy rate
+    stats.accuracy_rate = (stats.total_correct / stats.total_attempts * 100) if stats.total_attempts > 0 else 0
+
+    # Update timing stats
+    if time_ms is not None and time_ms > 0:
+        if stats.min_time_to_type is None or time_ms < stats.min_time_to_type:
+            stats.min_time_to_type = time_ms
+        if stats.max_time_to_type is None or time_ms > stats.max_time_to_type:
+            stats.max_time_to_type = time_ms
+
+        # Update average time (running average)
+        old_avg = stats.avg_time_to_type or time_ms
+        stats.avg_time_to_type = (
+            (old_avg * (stats.total_attempts - 1) + time_ms) / stats.total_attempts
+        )
+
+    stats.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(stats)
+    return stats
+
+
+def get_user_letter_stats(
+    db: Session,
+    user_id: int,
+    limit: int = 100
+) -> List[models.UserLetterStats]:
+    """Get all letter stats for a user"""
+    return db.query(models.UserLetterStats).filter(
+        models.UserLetterStats.user_id == user_id
+    ).order_by(
+        models.UserLetterStats.accuracy_rate.asc()  # Worst first
+    ).limit(limit).all()
+
+
+def get_user_weak_letters(
+    db: Session,
+    user_id: int,
+    min_attempts: int = 10,
+    limit: int = 10
+) -> List[models.UserLetterStats]:
+    """Get user's weakest letters (lowest accuracy with enough attempts)"""
+    return db.query(models.UserLetterStats).filter(
+        models.UserLetterStats.user_id == user_id,
+        models.UserLetterStats.total_attempts >= min_attempts
+    ).order_by(
+        models.UserLetterStats.accuracy_rate.asc()
+    ).limit(limit).all()
+
+
+def get_or_create_pattern_stats(
+    db: Session,
+    user_id: int,
+    pattern: str
+) -> models.UserPatternStats:
+    """Get or create pattern stats for a user"""
+    stats = db.query(models.UserPatternStats).filter(
+        models.UserPatternStats.user_id == user_id,
+        models.UserPatternStats.pattern == pattern
+    ).first()
+
+    if not stats:
+        stats = models.UserPatternStats(
+            user_id=user_id,
+            pattern=pattern,
+            total_attempts=0,
+            total_correct=0,
+            accuracy_rate=0.0,
+            avg_time_ms=0.0
+        )
+        db.add(stats)
+        db.commit()
+        db.refresh(stats)
+
+    return stats
+
+
+def update_pattern_stats(
+    db: Session,
+    user_id: int,
+    pattern: str,
+    is_correct: bool,
+    time_ms: Optional[float] = None
+) -> models.UserPatternStats:
+    """Update pattern stats after typing a pattern"""
+    stats = get_or_create_pattern_stats(db, user_id, pattern)
+
+    stats.total_attempts += 1
+    if is_correct:
+        stats.total_correct += 1
+
+    # Update accuracy rate
+    stats.accuracy_rate = (stats.total_correct / stats.total_attempts * 100) if stats.total_attempts > 0 else 0
+
+    # Update timing stats
+    if time_ms is not None and time_ms > 0:
+        old_avg = stats.avg_time_ms or time_ms
+        stats.avg_time_ms = (
+            (old_avg * (stats.total_attempts - 1) + time_ms) / stats.total_attempts
+        )
+
+    stats.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(stats)
+    return stats
+
+
+def get_user_pattern_stats(
+    db: Session,
+    user_id: int,
+    limit: int = 50
+) -> List[models.UserPatternStats]:
+    """Get all pattern stats for a user"""
+    return db.query(models.UserPatternStats).filter(
+        models.UserPatternStats.user_id == user_id
+    ).order_by(
+        models.UserPatternStats.accuracy_rate.asc()
+    ).limit(limit).all()
+
+
+def get_user_weak_patterns(
+    db: Session,
+    user_id: int,
+    min_attempts: int = 5,
+    limit: int = 10
+) -> List[models.UserPatternStats]:
+    """Get user's weakest patterns"""
+    return db.query(models.UserPatternStats).filter(
+        models.UserPatternStats.user_id == user_id,
+        models.UserPatternStats.total_attempts >= min_attempts
+    ).order_by(
+        models.UserPatternStats.accuracy_rate.asc()
+    ).limit(limit).all()
+
+
+def create_session_analytics(
+    db: Session,
+    session_id: str,
+    wpm_timeline: List[Dict[str, Any]],
+    error_positions: List[int],
+    keystroke_intervals: List[float],
+    slowest_words: List[Dict[str, Any]],
+    fastest_words: List[Dict[str, Any]],
+    confidence_score: float = 1.0,
+    anti_cheat_flags: List[str] = None
+) -> models.TypingSessionAnalytics:
+    """Create detailed session analytics"""
+    import statistics
+
+    # Calculate error heatmap (position -> count)
+    error_heatmap = {}
+    for pos in error_positions:
+        # Group into buckets of 10 characters
+        bucket = (pos // 10) * 10
+        error_heatmap[str(bucket)] = error_heatmap.get(str(bucket), 0) + 1
+
+    # Calculate keystroke timing stats
+    avg_inter_key_time = statistics.mean(keystroke_intervals) if keystroke_intervals else 0
+    std_dev_inter_key_time = statistics.stdev(keystroke_intervals) if len(keystroke_intervals) > 1 else 0
+
+    analytics = models.TypingSessionAnalytics(
+        session_id=session_id,
+        wpm_timeline=wpm_timeline,
+        error_positions=error_positions,
+        error_heatmap=error_heatmap,
+        keystroke_intervals=keystroke_intervals[:500],  # Limit stored intervals
+        avg_inter_key_time=avg_inter_key_time,
+        std_dev_inter_key_time=std_dev_inter_key_time,
+        slowest_words=slowest_words[:10],
+        fastest_words=fastest_words[:10],
+        confidence_score=confidence_score,
+        anti_cheat_flags=anti_cheat_flags or []
+    )
+
+    db.add(analytics)
+    db.commit()
+    db.refresh(analytics)
+    return analytics
+
+
+def get_session_analytics(
+    db: Session,
+    session_id: str
+) -> Optional[models.TypingSessionAnalytics]:
+    """Get analytics for a specific session"""
+    return db.query(models.TypingSessionAnalytics).filter(
+        models.TypingSessionAnalytics.session_id == session_id
+    ).first()
+
+
+def process_typing_analytics(
+    db: Session,
+    user_id: int,
+    session_id: str,
+    original_text: str,
+    user_input: str,
+    keystroke_data: List[Dict[str, Any]]
+) -> Dict[str, Any]:
+    """
+    Process typing session and update all analytics.
+
+    Args:
+        db: Database session
+        user_id: User ID
+        session_id: Game session ID
+        original_text: The text the user was supposed to type
+        user_input: What the user actually typed
+        keystroke_data: List of keystroke events with timing info
+            Each entry: {'char': 'a', 'time_ms': 150, 'timestamp': 1234567890}
+
+    Returns:
+        Analytics summary dict
+    """
+    # Track letter stats
+    letter_results = {}
+    for i, expected_char in enumerate(original_text):
+        actual_char = user_input[i] if i < len(user_input) else None
+        is_correct = actual_char == expected_char
+
+        # Get timing for this character if available
+        time_ms = None
+        if i < len(keystroke_data):
+            time_ms = keystroke_data[i].get('time_ms')
+
+        update_letter_stats(
+            db=db,
+            user_id=user_id,
+            character=expected_char.lower(),
+            is_correct=is_correct,
+            time_ms=time_ms,
+            actual_typed=actual_char if not is_correct else None
+        )
+
+        letter_results[expected_char.lower()] = letter_results.get(expected_char.lower(), {'correct': 0, 'total': 0})
+        letter_results[expected_char.lower()]['total'] += 1
+        if is_correct:
+            letter_results[expected_char.lower()]['correct'] += 1
+
+    # Track pattern stats
+    pattern_results = {}
+    for pattern in COMMON_PATTERNS:
+        # Find all occurrences of pattern in original text
+        start = 0
+        while True:
+            idx = original_text.lower().find(pattern, start)
+            if idx == -1:
+                break
+
+            # Check if user typed this pattern correctly
+            end_idx = idx + len(pattern)
+            if end_idx <= len(user_input):
+                is_correct = user_input[idx:end_idx].lower() == pattern
+
+                # Calculate time for pattern (sum of individual keystrokes)
+                pattern_time = None
+                if end_idx <= len(keystroke_data):
+                    times = [kd.get('time_ms', 0) for kd in keystroke_data[idx:end_idx] if kd.get('time_ms')]
+                    if times:
+                        pattern_time = sum(times)
+
+                update_pattern_stats(
+                    db=db,
+                    user_id=user_id,
+                    pattern=pattern,
+                    is_correct=is_correct,
+                    time_ms=pattern_time
+                )
+
+                pattern_results[pattern] = pattern_results.get(pattern, {'correct': 0, 'total': 0})
+                pattern_results[pattern]['total'] += 1
+                if is_correct:
+                    pattern_results[pattern]['correct'] += 1
+
+            start = idx + 1
+
+    # Calculate WPM timeline (every 5 seconds)
+    wpm_timeline = []
+    if keystroke_data:
+        timestamps = [kd.get('timestamp', 0) for kd in keystroke_data]
+        if timestamps:
+            start_time = timestamps[0]
+            current_chars = 0
+            interval = 5000  # 5 seconds in ms
+
+            for i, kd in enumerate(keystroke_data):
+                current_chars += 1
+                elapsed_ms = kd.get('timestamp', 0) - start_time
+
+                if elapsed_ms > 0 and elapsed_ms % interval < 200:  # Within 200ms of interval
+                    elapsed_min = elapsed_ms / 60000
+                    wpm = int((current_chars / 5) / elapsed_min) if elapsed_min > 0 else 0
+                    wpm_timeline.append({
+                        'time_sec': int(elapsed_ms / 1000),
+                        'wpm': wpm,
+                        'chars': current_chars
+                    })
+
+    # Find error positions
+    error_positions = []
+    for i, expected_char in enumerate(original_text):
+        if i >= len(user_input) or user_input[i] != expected_char:
+            error_positions.append(i)
+
+    # Calculate word speeds
+    words = original_text.split()
+    word_timings = []
+    char_idx = 0
+
+    for word in words:
+        word_start_idx = char_idx
+        word_end_idx = char_idx + len(word)
+
+        if word_end_idx <= len(keystroke_data):
+            word_times = [kd.get('time_ms', 0) for kd in keystroke_data[word_start_idx:word_end_idx]]
+            if word_times:
+                total_time = sum(word_times)
+                word_timings.append({
+                    'word': word,
+                    'time_ms': total_time,
+                    'avg_per_char': total_time / len(word)
+                })
+
+        char_idx = word_end_idx + 1  # +1 for space
+
+    # Sort to find slowest/fastest
+    word_timings.sort(key=lambda x: x.get('time_ms', 0), reverse=True)
+    slowest_words = word_timings[:10]
+    fastest_words = list(reversed(word_timings[-10:])) if len(word_timings) >= 10 else []
+
+    # Get keystroke intervals
+    keystroke_intervals = [kd.get('time_ms', 0) for kd in keystroke_data if kd.get('time_ms')]
+
+    # Create session analytics
+    analytics = create_session_analytics(
+        db=db,
+        session_id=session_id,
+        wpm_timeline=wpm_timeline,
+        error_positions=error_positions,
+        keystroke_intervals=keystroke_intervals,
+        slowest_words=slowest_words,
+        fastest_words=fastest_words
+    )
+
+    return {
+        'letter_results': letter_results,
+        'pattern_results': pattern_results,
+        'error_count': len(error_positions),
+        'wpm_samples': len(wpm_timeline),
+        'analytics_id': analytics.id
+    }
+
+
+def get_user_analytics_summary(
+    db: Session,
+    user_id: int
+) -> Dict[str, Any]:
+    """Get comprehensive analytics summary for a user"""
+    # Get typing stats
+    typing_stats = get_or_create_user_stats(db, user_id)
+
+    # Get weak letters
+    weak_letters = get_user_weak_letters(db, user_id, min_attempts=10, limit=5)
+
+    # Get weak patterns
+    weak_patterns = get_user_weak_patterns(db, user_id, min_attempts=5, limit=5)
+
+    # Get all letter stats for heatmap
+    all_letters = get_user_letter_stats(db, user_id, limit=50)
+
+    # Calculate overall letter accuracy
+    total_letter_attempts = sum(ls.total_attempts for ls in all_letters)
+    total_letter_correct = sum(ls.total_correct for ls in all_letters)
+    overall_letter_accuracy = (total_letter_correct / total_letter_attempts * 100) if total_letter_attempts > 0 else 0
+
+    return {
+        'typing_stats': {
+            'best_wpm': typing_stats.best_wpm,
+            'avg_wpm': round(typing_stats.avg_wpm, 1),
+            'best_accuracy': round(typing_stats.best_accuracy, 1),
+            'avg_accuracy': round(typing_stats.avg_accuracy, 1),
+            'total_games': typing_stats.total_games_completed,
+            'total_time_minutes': typing_stats.total_time_seconds // 60,
+            'total_words_typed': typing_stats.total_words_typed
+        },
+        'letter_analysis': {
+            'overall_accuracy': round(overall_letter_accuracy, 1),
+            'total_letters_tracked': len(all_letters),
+            'weak_letters': [
+                {
+                    'character': ls.character,
+                    'accuracy': round(ls.accuracy_rate, 1),
+                    'attempts': ls.total_attempts,
+                    'avg_time_ms': round(ls.avg_time_to_type, 1) if ls.avg_time_to_type else None,
+                    'common_mistakes': ls.common_mistakes[:3] if ls.common_mistakes else []
+                }
+                for ls in weak_letters
+            ],
+            'letter_heatmap': [
+                {
+                    'character': ls.character,
+                    'accuracy': round(ls.accuracy_rate, 1),
+                    'attempts': ls.total_attempts
+                }
+                for ls in all_letters
+            ]
+        },
+        'pattern_analysis': {
+            'weak_patterns': [
+                {
+                    'pattern': ps.pattern,
+                    'accuracy': round(ps.accuracy_rate, 1),
+                    'attempts': ps.total_attempts,
+                    'avg_time_ms': round(ps.avg_time_ms, 1) if ps.avg_time_ms else None
+                }
+                for ps in weak_patterns
+            ]
+        },
+        'recommendations': generate_practice_recommendations(weak_letters, weak_patterns)
+    }
+
+
+def generate_practice_recommendations(
+    weak_letters: List[models.UserLetterStats],
+    weak_patterns: List[models.UserPatternStats]
+) -> List[Dict[str, Any]]:
+    """Generate personalized practice recommendations"""
+    recommendations = []
+
+    # Letter-based recommendations
+    for ls in weak_letters[:3]:
+        if ls.accuracy_rate < 80:
+            recommendations.append({
+                'type': 'letter',
+                'target': ls.character,
+                'accuracy': round(ls.accuracy_rate, 1),
+                'suggestion': f"Practice words containing '{ls.character}' - your accuracy is {ls.accuracy_rate:.0f}%",
+                'priority': 'high' if ls.accuracy_rate < 60 else 'medium'
+            })
+
+    # Pattern-based recommendations
+    for ps in weak_patterns[:2]:
+        if ps.accuracy_rate < 80:
+            recommendations.append({
+                'type': 'pattern',
+                'target': ps.pattern,
+                'accuracy': round(ps.accuracy_rate, 1),
+                'suggestion': f"Focus on the '{ps.pattern}' combination - accuracy is {ps.accuracy_rate:.0f}%",
+                'priority': 'high' if ps.accuracy_rate < 60 else 'medium'
+            })
+
+    # Sort by priority
+    priority_order = {'high': 0, 'medium': 1, 'low': 2}
+    recommendations.sort(key=lambda x: priority_order.get(x.get('priority', 'low'), 2))
+
+    return recommendations[:5]
+
+
+# ==================== STREAK CRUD ====================
+
+def get_or_create_user_streak(
+    db: Session,
+    user_id: int
+) -> models.UserTypingStreak:
+    """Get or create user typing streak record"""
+    streak = db.query(models.UserTypingStreak).filter(
+        models.UserTypingStreak.user_id == user_id
+    ).first()
+
+    if not streak:
+        streak = models.UserTypingStreak(
+            user_id=user_id,
+            current_streak=0,
+            longest_streak=0,
+            last_play_date=None,
+            freeze_available=True,
+            last_freeze_used=None,
+            first_game_today=True,
+            games_today=0
+        )
+        db.add(streak)
+        db.commit()
+        db.refresh(streak)
+
+    return streak
+
+
+def update_user_streak(
+    db: Session,
+    user_id: int
+) -> Dict[str, Any]:
+    """
+    Update user's streak after completing a game.
+    Returns streak info including any bonuses earned.
+    """
+    streak = get_or_create_user_streak(db, user_id)
+    today = datetime.utcnow().date()
+
+    result = {
+        'streak_before': streak.current_streak,
+        'streak_after': streak.current_streak,
+        'is_first_game_today': False,
+        'streak_bonus_xp': 0,
+        'streak_extended': False,
+        'streak_restored': False,
+        'freeze_used': False
+    }
+
+    # Check if this is the first game today
+    if streak.last_play_date is None or streak.last_play_date < today:
+        result['is_first_game_today'] = True
+        streak.first_game_today = False  # No longer first game
+        streak.games_today = 1
+
+        # Check streak continuity
+        if streak.last_play_date is None:
+            # First ever game
+            streak.current_streak = 1
+            result['streak_after'] = 1
+            result['streak_extended'] = True
+        elif streak.last_play_date == today - timedelta(days=1):
+            # Played yesterday - extend streak
+            streak.current_streak += 1
+            result['streak_after'] = streak.current_streak
+            result['streak_extended'] = True
+        elif streak.last_play_date == today - timedelta(days=2) and streak.freeze_available:
+            # Missed one day but have freeze available
+            streak.freeze_available = False
+            streak.last_freeze_used = today
+            streak.current_streak += 1  # Continue streak
+            result['streak_after'] = streak.current_streak
+            result['streak_extended'] = True
+            result['freeze_used'] = True
+            result['streak_restored'] = True
+        else:
+            # Streak broken
+            streak.current_streak = 1
+            result['streak_after'] = 1
+
+        # Update longest streak
+        if streak.current_streak > streak.longest_streak:
+            streak.longest_streak = streak.current_streak
+
+        # Calculate streak bonus XP (10 XP per day in streak, max 100)
+        result['streak_bonus_xp'] = min(streak.current_streak * 10, 100)
+
+        streak.last_play_date = today
+    else:
+        # Already played today, just increment games_today
+        streak.games_today += 1
+        result['streak_after'] = streak.current_streak
+
+    # Reset freeze availability weekly (on Sunday)
+    if today.weekday() == 6 and (
+        streak.last_freeze_used is None or
+        streak.last_freeze_used < today - timedelta(days=7)
+    ):
+        streak.freeze_available = True
+
+    streak.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(streak)
+
+    return result
+
+
+def use_streak_freeze(
+    db: Session,
+    user_id: int
+) -> Dict[str, Any]:
+    """Manually use a streak freeze"""
+    streak = get_or_create_user_streak(db, user_id)
+
+    if not streak.freeze_available:
+        return {
+            'success': False,
+            'message': 'No streak freeze available. Resets weekly on Sunday.'
+        }
+
+    streak.freeze_available = False
+    streak.last_freeze_used = datetime.utcnow().date()
+    db.commit()
+
+    return {
+        'success': True,
+        'message': 'Streak freeze activated!'
+    }
+
+
+def get_user_streak_info(
+    db: Session,
+    user_id: int
+) -> Dict[str, Any]:
+    """Get user's current streak information"""
+    streak = get_or_create_user_streak(db, user_id)
+    today = datetime.utcnow().date()
+
+    # Check if streak is at risk
+    streak_at_risk = False
+    if streak.last_play_date and streak.last_play_date < today:
+        if streak.last_play_date < today - timedelta(days=1):
+            streak_at_risk = True
+
+    # Check if freeze would auto-apply
+    freeze_will_auto_apply = (
+        streak_at_risk and
+        streak.freeze_available and
+        streak.last_play_date == today - timedelta(days=2)
+    )
+
+    return {
+        'current_streak': streak.current_streak,
+        'longest_streak': streak.longest_streak,
+        'last_play_date': streak.last_play_date.isoformat() if streak.last_play_date else None,
+        'games_today': streak.games_today,
+        'freeze_available': streak.freeze_available,
+        'streak_at_risk': streak_at_risk,
+        'freeze_will_auto_apply': freeze_will_auto_apply,
+        'played_today': streak.last_play_date == today if streak.last_play_date else False
+    }
+
+
+# ==================== DAILY CHALLENGE CRUD ====================
+
+# Challenge types and their configurations
+CHALLENGE_TYPES = {
+    'games_completed': {
+        'name': 'Play Games',
+        'description_template': 'Complete {target} typing games',
+        'targets': {'easy': 3, 'medium': 5, 'hard': 10},
+        'xp_rewards': {'easy': 50, 'medium': 100, 'hard': 200}
+    },
+    'wpm_achieved': {
+        'name': 'Speed Demon',
+        'description_template': 'Achieve {target} WPM or higher in a single game',
+        'targets': {'easy': 30, 'medium': 50, 'hard': 80},
+        'xp_rewards': {'easy': 75, 'medium': 150, 'hard': 300}
+    },
+    'accuracy_achieved': {
+        'name': 'Perfectionist',
+        'description_template': 'Achieve {target}% accuracy or higher',
+        'targets': {'easy': 90, 'medium': 95, 'hard': 99},
+        'xp_rewards': {'easy': 60, 'medium': 120, 'hard': 250}
+    },
+    'words_typed': {
+        'name': 'Wordsmith',
+        'description_template': 'Type {target} words total',
+        'targets': {'easy': 100, 'medium': 300, 'hard': 500},
+        'xp_rewards': {'easy': 50, 'medium': 100, 'hard': 200}
+    },
+    'combo_achieved': {
+        'name': 'Combo Master',
+        'description_template': 'Achieve a {target}x combo',
+        'targets': {'easy': 25, 'medium': 50, 'hard': 100},
+        'xp_rewards': {'easy': 75, 'medium': 150, 'hard': 300}
+    }
+}
+
+
+def get_or_create_daily_challenges(
+    db: Session,
+    challenge_date: Optional[datetime] = None
+) -> List[models.TypingDailyChallenge]:
+    """Get or create daily challenges for a specific date"""
+    if challenge_date is None:
+        challenge_date = datetime.utcnow().date()
+    elif hasattr(challenge_date, 'date'):
+        challenge_date = challenge_date.date()
+
+    # Check if challenges exist for this date
+    existing = db.query(models.TypingDailyChallenge).filter(
+        models.TypingDailyChallenge.challenge_date == challenge_date,
+        models.TypingDailyChallenge.is_active == True
+    ).all()
+
+    if existing:
+        return existing
+
+    # Create new challenges for the day
+    challenges = []
+    difficulties = ['easy', 'medium', 'hard']
+
+    # Select 3 random challenge types for the day
+    available_types = list(CHALLENGE_TYPES.keys())
+    random.shuffle(available_types)
+    selected_types = available_types[:3]
+
+    for i, (challenge_type, difficulty) in enumerate(zip(selected_types, difficulties)):
+        config = CHALLENGE_TYPES[challenge_type]
+        target = config['targets'][difficulty]
+        xp_reward = config['xp_rewards'][difficulty]
+
+        challenge = models.TypingDailyChallenge(
+            id=str(uuid.uuid4()),
+            challenge_date=challenge_date,
+            challenge_type=challenge_type,
+            target_value=target,
+            difficulty=difficulty,
+            xp_reward=xp_reward,
+            bonus_text=config['description_template'].format(target=target),
+            is_active=True
+        )
+        db.add(challenge)
+        challenges.append(challenge)
+
+    db.commit()
+    for c in challenges:
+        db.refresh(c)
+
+    return challenges
+
+
+def get_daily_challenges_with_progress(
+    db: Session,
+    user_id: int,
+    challenge_date: Optional[datetime] = None
+) -> List[Dict[str, Any]]:
+    """Get daily challenges with user's progress"""
+    challenges = get_or_create_daily_challenges(db, challenge_date)
+
+    result = []
+    for challenge in challenges:
+        # Get or create user progress
+        progress = db.query(models.UserTypingChallengeProgress).filter(
+            models.UserTypingChallengeProgress.user_id == user_id,
+            models.UserTypingChallengeProgress.challenge_id == challenge.id
+        ).first()
+
+        if not progress:
+            progress = models.UserTypingChallengeProgress(
+                id=str(uuid.uuid4()),
+                user_id=user_id,
+                challenge_id=challenge.id,
+                current_value=0,
+                is_completed=False,
+                is_claimed=False
+            )
+            db.add(progress)
+            db.commit()
+            db.refresh(progress)
+
+        config = CHALLENGE_TYPES.get(challenge.challenge_type, {})
+
+        result.append({
+            'challenge_id': challenge.id,
+            'challenge_type': challenge.challenge_type,
+            'name': config.get('name', challenge.challenge_type),
+            'description': challenge.bonus_text,
+            'difficulty': challenge.difficulty,
+            'target_value': challenge.target_value,
+            'current_value': progress.current_value,
+            'progress_percent': min(100, (progress.current_value / challenge.target_value * 100)) if challenge.target_value > 0 else 0,
+            'is_completed': progress.is_completed,
+            'is_claimed': progress.is_claimed,
+            'xp_reward': challenge.xp_reward,
+            'completed_at': progress.completed_at.isoformat() if progress.completed_at else None
+        })
+
+    return result
+
+
+def update_challenge_progress(
+    db: Session,
+    user_id: int,
+    challenge_type: str,
+    value: int,
+    is_increment: bool = True
+) -> List[Dict[str, Any]]:
+    """
+    Update progress for relevant daily challenges.
+
+    Args:
+        user_id: User ID
+        challenge_type: Type of achievement ('games_completed', 'wpm_achieved', etc.)
+        value: The value to update with
+        is_increment: If True, add to current value. If False, set if higher (for max-type challenges)
+
+    Returns:
+        List of challenges that were completed by this update
+    """
+    today = datetime.utcnow().date()
+    challenges = get_or_create_daily_challenges(db, today)
+
+    completed_challenges = []
+
+    for challenge in challenges:
+        if challenge.challenge_type != challenge_type:
+            continue
+
+        # Get user progress
+        progress = db.query(models.UserTypingChallengeProgress).filter(
+            models.UserTypingChallengeProgress.user_id == user_id,
+            models.UserTypingChallengeProgress.challenge_id == challenge.id
+        ).first()
+
+        if not progress:
+            progress = models.UserTypingChallengeProgress(
+                id=str(uuid.uuid4()),
+                user_id=user_id,
+                challenge_id=challenge.id,
+                current_value=0,
+                is_completed=False,
+                is_claimed=False
+            )
+            db.add(progress)
+
+        # Skip if already completed
+        if progress.is_completed:
+            continue
+
+        # Update progress
+        if is_increment:
+            progress.current_value += value
+        else:
+            # For max-type challenges (like WPM achieved), only update if higher
+            if value > progress.current_value:
+                progress.current_value = value
+
+        # Check if challenge is now completed
+        if progress.current_value >= challenge.target_value:
+            progress.is_completed = True
+            progress.completed_at = datetime.utcnow()
+            completed_challenges.append({
+                'challenge_id': challenge.id,
+                'challenge_type': challenge.challenge_type,
+                'xp_reward': challenge.xp_reward,
+                'difficulty': challenge.difficulty
+            })
+
+        db.commit()
+        db.refresh(progress)
+
+    return completed_challenges
+
+
+def claim_challenge_reward(
+    db: Session,
+    user_id: int,
+    challenge_id: str
+) -> Dict[str, Any]:
+    """Claim reward for a completed challenge"""
+    progress = db.query(models.UserTypingChallengeProgress).filter(
+        models.UserTypingChallengeProgress.user_id == user_id,
+        models.UserTypingChallengeProgress.challenge_id == challenge_id
+    ).first()
+
+    if not progress:
+        return {'success': False, 'message': 'Challenge progress not found'}
+
+    if not progress.is_completed:
+        return {'success': False, 'message': 'Challenge not yet completed'}
+
+    if progress.is_claimed:
+        return {'success': False, 'message': 'Reward already claimed'}
+
+    # Get challenge to get XP reward
+    challenge = db.query(models.TypingDailyChallenge).filter(
+        models.TypingDailyChallenge.id == challenge_id
+    ).first()
+
+    if not challenge:
+        return {'success': False, 'message': 'Challenge not found'}
+
+    # Mark as claimed
+    progress.is_claimed = True
+    progress.claimed_at = datetime.utcnow()
+
+    # Award XP
+    xp_service.award_challenge_xp(
+        db=db,
+        user_id=user_id,
+        xp_amount=challenge.xp_reward,
+        challenge_type=challenge.challenge_type
+    )
+
+    db.commit()
+
+    return {
+        'success': True,
+        'xp_awarded': challenge.xp_reward,
+        'challenge_type': challenge.challenge_type,
+        'difficulty': challenge.difficulty
+    }
+
+
+def process_game_completion_for_challenges(
+    db: Session,
+    user_id: int,
+    wpm: int,
+    accuracy: float,
+    words_typed: int,
+    max_combo: int = 0
+) -> List[Dict[str, Any]]:
+    """
+    Process a completed game and update all relevant daily challenges.
+    Call this after a game is completed.
+
+    Returns:
+        List of challenges that were completed
+    """
+    completed = []
+
+    # Games completed (always increment by 1)
+    completed.extend(update_challenge_progress(
+        db, user_id, 'games_completed', 1, is_increment=True
+    ))
+
+    # WPM achieved (set if higher)
+    completed.extend(update_challenge_progress(
+        db, user_id, 'wpm_achieved', wpm, is_increment=False
+    ))
+
+    # Accuracy achieved (set if higher)
+    completed.extend(update_challenge_progress(
+        db, user_id, 'accuracy_achieved', int(accuracy), is_increment=False
+    ))
+
+    # Words typed (increment)
+    completed.extend(update_challenge_progress(
+        db, user_id, 'words_typed', words_typed, is_increment=True
+    ))
+
+    # Combo achieved (set if higher)
+    if max_combo > 0:
+        completed.extend(update_challenge_progress(
+            db, user_id, 'combo_achieved', max_combo, is_increment=False
+        ))
+
+    return completed

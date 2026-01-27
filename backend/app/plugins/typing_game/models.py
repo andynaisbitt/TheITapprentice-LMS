@@ -123,6 +123,14 @@ class TypingGameSession(Base):
     is_personal_best_wpm = Column(Boolean, default=False)
     is_personal_best_accuracy = Column(Boolean, default=False)
 
+    # Combo tracking
+    max_combo = Column(Integer, default=0)
+
+    # Anti-cheat data
+    anti_cheat_confidence = Column(Float, default=1.0)  # 0.0-1.0 confidence score
+    anti_cheat_flags = Column(JSON, default=list)  # List of detected flags
+    anti_cheat_flagged_for_review = Column(Boolean, default=False)
+
     # Status
     status = Column(String(20), default="in_progress")
     is_completed = Column(Boolean, default=False)
@@ -420,3 +428,167 @@ class TypingLeaderboard(Base):
 
     # Relationships
     user = relationship("User")
+
+
+# ==================== ANALYTICS MODELS ====================
+
+class UserLetterStats(Base):
+    """
+    Per-character accuracy tracking for personalized feedback
+    """
+    __tablename__ = "user_letter_stats"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    character = Column(String(5), nullable=False, index=True)  # Single char or digraph
+
+    # Lifetime stats
+    total_attempts = Column(Integer, default=0)
+    total_correct = Column(Integer, default=0)
+    total_incorrect = Column(Integer, default=0)
+    accuracy_rate = Column(Float, default=0.0)
+
+    # Timing stats (milliseconds)
+    avg_time_to_type = Column(Float, default=0.0)
+    min_time_to_type = Column(Float, nullable=True)
+    max_time_to_type = Column(Float, nullable=True)
+
+    # Context tracking (JSON)
+    context_stats = Column(JSON, default=dict)
+
+    # Common mistakes (JSON)
+    common_mistakes = Column(JSON, default=list)
+
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def __repr__(self):
+        return f"<UserLetterStats user={self.user_id} char='{self.character}' acc={self.accuracy_rate:.1f}%>"
+
+
+class UserPatternStats(Base):
+    """
+    Common pattern/digraph tracking (th, ing, tion, etc.)
+    """
+    __tablename__ = "user_pattern_stats"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    pattern = Column(String(10), nullable=False, index=True)
+
+    total_attempts = Column(Integer, default=0)
+    total_correct = Column(Integer, default=0)
+    accuracy_rate = Column(Float, default=0.0)
+    avg_time_ms = Column(Float, default=0.0)
+
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def __repr__(self):
+        return f"<UserPatternStats user={self.user_id} pattern='{self.pattern}' acc={self.accuracy_rate:.1f}%>"
+
+
+class TypingSessionAnalytics(Base):
+    """
+    Detailed analytics per game session
+    """
+    __tablename__ = "typing_session_analytics"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    session_id = Column(String(36), ForeignKey("typing_game_sessions.id", ondelete="CASCADE"), nullable=False, unique=True)
+
+    # WPM progression (JSON array)
+    wpm_timeline = Column(JSON, default=list)
+
+    # Error analysis
+    error_positions = Column(JSON, default=list)
+    error_heatmap = Column(JSON, default=dict)
+
+    # Timing analysis
+    keystroke_intervals = Column(JSON, default=list)
+    avg_inter_key_time = Column(Float, default=0.0)
+    std_dev_inter_key_time = Column(Float, default=0.0)
+
+    # Performance patterns
+    slowest_words = Column(JSON, default=list)
+    fastest_words = Column(JSON, default=list)
+
+    # Anti-cheat
+    confidence_score = Column(Float, default=1.0)
+    anti_cheat_flags = Column(JSON, default=list)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f"<TypingSessionAnalytics session={self.session_id}>"
+
+
+# ==================== STREAK & CHALLENGE MODELS ====================
+
+class UserTypingStreak(Base):
+    """
+    Daily typing streak tracking
+    """
+    __tablename__ = "user_typing_streaks"
+
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+
+    current_streak = Column(Integer, default=0)
+    longest_streak = Column(Integer, default=0)
+    last_play_date = Column(DateTime, nullable=True)
+
+    # Streak freeze (can use 1 per week)
+    freeze_available = Column(Boolean, default=True)
+    last_freeze_used = Column(DateTime, nullable=True)
+
+    # Daily tracking
+    first_game_today = Column(Boolean, default=True)
+    games_today = Column(Integer, default=0)
+
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def __repr__(self):
+        return f"<UserTypingStreak user={self.user_id} streak={self.current_streak}>"
+
+
+class TypingDailyChallenge(Base):
+    """
+    Daily challenges for typing game
+    """
+    __tablename__ = "typing_daily_challenges"
+
+    id = Column(String(36), primary_key=True)
+    challenge_date = Column(DateTime, nullable=False, index=True)
+
+    challenge_type = Column(String(50), nullable=False)
+    target_value = Column(Integer, nullable=False)
+
+    difficulty = Column(String(20), nullable=False)
+    xp_reward = Column(Integer, nullable=False)
+    bonus_text = Column(String(200), nullable=True)
+
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f"<TypingDailyChallenge {self.id} type={self.challenge_type}>"
+
+
+class UserTypingChallengeProgress(Base):
+    """
+    User progress on typing daily challenges
+    """
+    __tablename__ = "user_typing_challenge_progress"
+
+    id = Column(String(36), primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    challenge_id = Column(String(36), ForeignKey("typing_daily_challenges.id", ondelete="CASCADE"), nullable=False)
+
+    current_value = Column(Integer, default=0)
+    is_completed = Column(Boolean, default=False)
+    is_claimed = Column(Boolean, default=False)
+
+    completed_at = Column(DateTime, nullable=True)
+    claimed_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f"<UserTypingChallengeProgress user={self.user_id} challenge={self.challenge_id}>"

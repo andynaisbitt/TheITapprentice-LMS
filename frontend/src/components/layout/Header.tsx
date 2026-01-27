@@ -2,14 +2,18 @@
 /**
  * Main Navigation Header
  * Includes logo, menu with dropdown support, search, and user actions
+ * Mobile navigation uses the new MobileDrawer component
  */
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../state/contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { navigationApi, MenuItem } from '../../services/api/navigation.api';
 import { useSiteSettings } from '../../store/useSiteSettingsStore';
+import { MobileDrawer } from './MobileNav';
+import { DesktopDropdown } from './DesktopDropdown';
 
 export const Header: React.FC = () => {
   const navigate = useNavigate();
@@ -21,6 +25,21 @@ export const Header: React.FC = () => {
   const [headerItems, setHeaderItems] = useState<MenuItem[]>([]);
   const [openDropdown, setOpenDropdown] = useState<number | null>(null);
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close user dropdown when clicking outside
+  useEffect(() => {
+    if (!isUserMenuOpen) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isUserMenuOpen]);
 
   useEffect(() => {
     const fetchNavigation = async () => {
@@ -91,33 +110,15 @@ export const Header: React.FC = () => {
             </svg>
           </button>
 
-          {/* Dropdown Menu */}
-          {openDropdown === item.id && (
-            <div className="absolute left-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 py-2 z-50">
-              {item.children!.map((child) => (
-                child.target_blank ? (
-                  <a
-                    key={child.id}
-                    href={child.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition"
-                  >
-                    {child.label}
-                  </a>
-                ) : (
-                  <Link
-                    key={child.id}
-                    to={child.url}
-                    className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition"
-                    onClick={() => setOpenDropdown(null)}
-                  >
-                    {child.label}
-                  </Link>
-                )
-              ))}
-            </div>
-          )}
+          {/* Rich Animated Dropdown Menu */}
+          <AnimatePresence>
+            {openDropdown === item.id && (
+              <DesktopDropdown
+                items={item.children!}
+                onClose={() => setOpenDropdown(null)}
+              />
+            )}
+          </AnimatePresence>
         </div>
       );
     }
@@ -144,83 +145,8 @@ export const Header: React.FC = () => {
     );
   };
 
-  // Mobile nav item component - moved outside to fix React hooks error
-  const MobileNavItem: React.FC<{ item: MenuItem; level?: number }> = ({ item, level = 0 }) => {
-    const hasChildren = item.children && item.children.length > 0;
-    const [isExpanded, setIsExpanded] = useState(false);
-
-    if (hasChildren) {
-      return (
-        <div key={item.id}>
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className={`w-full flex items-center justify-between text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-medium ${level > 0 ? 'pl-4' : ''}`}
-          >
-            <span>{item.label}</span>
-            <svg
-              className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          {isExpanded && (
-            <div className="ml-4 mt-2 space-y-2">
-              {item.children!.map((child) => (
-                child.target_blank ? (
-                  <a
-                    key={child.id}
-                    href={child.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    {child.label}
-                  </a>
-                ) : (
-                  <Link
-                    key={child.id}
-                    to={child.url}
-                    className="block text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    {child.label}
-                  </Link>
-                )
-              ))}
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    return item.target_blank ? (
-      <a
-        key={item.id}
-        href={item.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={`block text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-medium ${level > 0 ? 'pl-4' : ''}`}
-        onClick={() => setIsMobileMenuOpen(false)}
-      >
-        {item.label}
-      </a>
-    ) : (
-      <Link
-        key={item.id}
-        to={item.url}
-        className={`block text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-medium ${level > 0 ? 'pl-4' : ''}`}
-        onClick={() => setIsMobileMenuOpen(false)}
-      >
-        {item.label}
-      </Link>
-    );
-  };
-
   return (
+    <>
     <header className="bg-white dark:bg-slate-900 shadow-sm sticky top-0 z-50 border-b border-gray-200 dark:border-slate-800">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
@@ -299,7 +225,7 @@ export const Header: React.FC = () => {
 
             {/* User Menu */}
             {isAuthenticated ? (
-              <div className="relative">
+              <div className="relative" ref={userMenuRef}>
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition"
@@ -465,16 +391,19 @@ export const Header: React.FC = () => {
           </div>
         </div>
 
-        {/* Mobile Menu */}
-        {isMobileMenuOpen && (
-          <div className="md:hidden border-t border-gray-200 dark:border-slate-800 py-4">
-            <div className="flex flex-col space-y-4">
-              {headerItems.map((item) => <MobileNavItem key={item.id} item={item} />)}
-            </div>
-          </div>
-        )}
       </nav>
     </header>
+
+    {/* Mobile Drawer - rendered outside header to avoid stacking context trap */}
+    <MobileDrawer
+      isOpen={isMobileMenuOpen}
+      onClose={() => setIsMobileMenuOpen(false)}
+      user={user}
+      isAuthenticated={isAuthenticated}
+      onLogout={handleLogout}
+      navItems={headerItems}
+    />
+    </>
   );
 };
 

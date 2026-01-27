@@ -10,8 +10,13 @@ from typing import List, Optional
 from datetime import datetime, timedelta
 
 from app.core.database import get_db
+from app.core.config import settings
 from app.auth.dependencies import get_current_user, get_optional_user, require_admin
 from app.users.models import User
+from app.plugins.skills.service import award_skill_xp, calculate_typing_skill_xp
+import logging
+
+logger = logging.getLogger(__name__)
 
 from . import crud, schemas, models
 
@@ -154,6 +159,33 @@ async def submit_game(
 
     session, metrics = result
 
+    # =========== SKILL XP INTEGRATION ===========
+    # Award typing skill XP (if skills plugin enabled)
+    if settings.PLUGINS_ENABLED.get("skills", False):
+        try:
+            wpm = metrics["metrics"].get("wpm", 0)
+            accuracy = metrics["metrics"].get("accuracy", 0)
+            skill_xp = calculate_typing_skill_xp(wpm, accuracy)
+
+            # Award XP to programming skill (typing practice improves coding speed)
+            skill_result = await award_skill_xp(
+                db=db,
+                user_id=current_user.id,
+                skill_slug="programming",
+                xp_amount=skill_xp,
+                source_type="typing_game",
+                source_id=str(session.id),
+                source_metadata={
+                    "wpm": wpm,
+                    "accuracy": accuracy,
+                    "time_elapsed": request.time_elapsed
+                }
+            )
+            if skill_result.level_up:
+                logger.info(f"User {current_user.id} leveled up programming: {skill_result.old_level} -> {skill_result.new_level}")
+        except Exception as e:
+            logger.error(f"Failed to award skill XP for typing game: {e}")
+
     return schemas.TypingGameResultsResponse(
         session_id=session.id,
         metrics=schemas.TypingPerformanceMetrics(**metrics["metrics"]),
@@ -271,6 +303,31 @@ async def get_leaderboard(
     )
 
 
+# ==================== PVP SETTINGS ====================
+
+@router.get("/pvp/settings")
+async def get_pvp_settings():
+    """Get PVP mode settings (public)"""
+    return {
+        "pvp_enabled": settings.PLUGINS_ENABLED.get("typing_game_pvp", False)
+    }
+
+
+@router.put("/admin/pvp/settings")
+async def update_pvp_settings(
+    enabled: bool = Query(..., description="Enable or disable PVP mode"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    """Toggle PVP mode on/off (admin only)"""
+    settings.PLUGIN_TYPING_GAME_PVP_ENABLED = enabled
+    settings.PLUGINS_ENABLED["typing_game_pvp"] = enabled
+    return {
+        "pvp_enabled": enabled,
+        "message": f"PVP mode {'enabled' if enabled else 'disabled'}"
+    }
+
+
 # ==================== PVP ====================
 
 @router.post("/pvp/find-match", response_model=schemas.PVPMatchResponse)
@@ -280,6 +337,9 @@ async def find_pvp_match(
     current_user: User = Depends(get_current_user)
 ):
     """Find or create PVP match"""
+    if not settings.PLUGINS_ENABLED.get("typing_game_pvp", False):
+        raise HTTPException(status_code=403, detail="PVP mode is currently disabled")
+
     # Try to find existing match
     existing_match = crud.find_match_for_player(
         db=db,
@@ -725,3 +785,335 @@ async def get_sentence_pool_stats(
             for p in top_pools
         ]
     }
+
+
+# ==================== ANALYTICS ROUTES ====================
+
+@router.get("/analytics/me")
+async def get_my_analytics(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get current user's detailed typing analytics"""
+    return crud.get_user_analytics_summary(db, current_user.id)
+
+
+@router.get("/analytics/letter-stats")
+async def get_my_letter_stats(
+    limit: int = Query(50, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get letter-by-letter accuracy breakdown"""
+    stats = crud.get_user_letter_stats(db, current_user.id, limit)
+
+    return {
+        "letters": [
+            {
+                "character": s.character,
+                "total_attempts": s.total_attempts,
+                "total_correct": s.total_correct,
+                "accuracy_rate": round(s.accuracy_rate, 1),
+                "avg_time_ms": round(s.avg_time_to_type, 1) if s.avg_time_to_type else None,
+                "min_time_ms": round(s.min_time_to_type, 1) if s.min_time_to_type else None,
+                "max_time_ms": round(s.max_time_to_type, 1) if s.max_time_to_type else None,
+                "common_mistakes": s.common_mistakes or []
+            }
+            for s in stats
+        ],
+        "total_tracked": len(stats)
+    }
+
+
+@router.get("/analytics/pattern-stats")
+async def get_my_pattern_stats(
+    limit: int = Query(50, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get pattern/digraph accuracy breakdown"""
+    stats = crud.get_user_pattern_stats(db, current_user.id, limit)
+
+    return {
+        "patterns": [
+            {
+                "pattern": s.pattern,
+                "total_attempts": s.total_attempts,
+                "total_correct": s.total_correct,
+                "accuracy_rate": round(s.accuracy_rate, 1),
+                "avg_time_ms": round(s.avg_time_ms, 1) if s.avg_time_ms else None
+            }
+            for s in stats
+        ],
+        "total_tracked": len(stats)
+    }
+
+
+@router.get("/analytics/weak-spots")
+async def get_my_weak_spots(
+    min_attempts: int = Query(10, ge=1, description="Minimum attempts to consider"),
+    limit: int = Query(10, ge=1, le=20),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get personalized weak spot recommendations"""
+    weak_letters = crud.get_user_weak_letters(db, current_user.id, min_attempts, limit)
+    weak_patterns = crud.get_user_weak_patterns(db, current_user.id, min_attempts=5, limit=limit)
+    recommendations = crud.generate_practice_recommendations(weak_letters, weak_patterns)
+
+    return {
+        "weak_letters": [
+            {
+                "character": s.character,
+                "accuracy_rate": round(s.accuracy_rate, 1),
+                "attempts": s.total_attempts,
+                "common_mistakes": s.common_mistakes[:3] if s.common_mistakes else []
+            }
+            for s in weak_letters
+        ],
+        "weak_patterns": [
+            {
+                "pattern": s.pattern,
+                "accuracy_rate": round(s.accuracy_rate, 1),
+                "attempts": s.total_attempts
+            }
+            for s in weak_patterns
+        ],
+        "recommendations": recommendations
+    }
+
+
+@router.get("/analytics/session/{session_id}")
+async def get_session_analytics(
+    session_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get detailed analytics for a specific session"""
+    # Verify session belongs to user
+    session = crud.get_game_session(db, session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    if session.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to view this session")
+
+    analytics = crud.get_session_analytics(db, session_id)
+    if not analytics:
+        return {
+            "session_id": session_id,
+            "message": "Detailed analytics not available for this session",
+            "basic_stats": {
+                "wpm": session.wpm,
+                "accuracy": session.accuracy,
+                "mistakes": session.mistakes,
+                "time_taken": session.time_taken
+            }
+        }
+
+    return {
+        "session_id": session_id,
+        "wpm_timeline": analytics.wpm_timeline,
+        "error_positions": analytics.error_positions,
+        "error_heatmap": analytics.error_heatmap,
+        "avg_inter_key_time": round(analytics.avg_inter_key_time, 1),
+        "std_dev_inter_key_time": round(analytics.std_dev_inter_key_time, 1),
+        "slowest_words": analytics.slowest_words,
+        "fastest_words": analytics.fastest_words,
+        "confidence_score": analytics.confidence_score,
+        "basic_stats": {
+            "wpm": session.wpm,
+            "accuracy": session.accuracy,
+            "mistakes": session.mistakes,
+            "time_taken": session.time_taken
+        }
+    }
+
+
+# ==================== STREAK ROUTES ====================
+
+@router.get("/streak/me")
+async def get_my_streak(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get current user's streak information"""
+    return crud.get_user_streak_info(db, current_user.id)
+
+
+@router.post("/streak/freeze")
+async def use_streak_freeze(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Use a streak freeze to protect streak"""
+    return crud.use_streak_freeze(db, current_user.id)
+
+
+# ==================== DAILY CHALLENGE ROUTES ====================
+
+@router.get("/challenges/daily")
+async def get_daily_challenges(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get today's daily challenges with progress"""
+    challenges = crud.get_daily_challenges_with_progress(db, current_user.id)
+    streak_info = crud.get_user_streak_info(db, current_user.id)
+
+    return {
+        "challenges": challenges,
+        "streak": streak_info,
+        "date": datetime.utcnow().date().isoformat()
+    }
+
+
+@router.post("/challenges/{challenge_id}/claim")
+async def claim_challenge_reward(
+    challenge_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Claim reward for a completed challenge"""
+    result = crud.claim_challenge_reward(db, current_user.id, challenge_id)
+
+    if not result.get('success'):
+        raise HTTPException(status_code=400, detail=result.get('message', 'Failed to claim reward'))
+
+    return result
+
+
+# ==================== ENHANCED SUBMIT V2 ====================
+
+@router.post("/submit/v2", response_model=schemas.TypingGameResultsResponse)
+async def submit_game_v2(
+    request: schemas.TypingGameSubmitRequestV2,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Enhanced game submission with anti-cheat validation and analytics.
+    Includes combo tracking, streak updates, and daily challenge progress.
+    """
+    # Prepare anti-cheat data if provided
+    anti_cheat_data = None
+    if request.anti_cheat:
+        anti_cheat_data = {
+            "keystroke_timings": request.anti_cheat.keystroke_timings,
+            "keystroke_count": request.anti_cheat.keystroke_count,
+            "paste_attempts": request.anti_cheat.paste_attempts,
+            "focus_lost_count": request.anti_cheat.focus_lost_count,
+            "total_focus_lost_time": request.anti_cheat.total_focus_lost_time,
+            "first_segment_avg": request.anti_cheat.first_segment_avg,
+            "last_segment_avg": request.anti_cheat.last_segment_avg
+        }
+
+    # Complete game session with anti-cheat
+    result = crud.complete_game_session_v2(
+        db=db,
+        session_id=request.session_id,
+        user_input=request.user_input,
+        time_elapsed=request.time_elapsed,
+        checksum=request.checksum,
+        max_combo=request.max_combo,
+        anti_cheat_data=anti_cheat_data
+    )
+
+    if not result:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid session or checksum"
+        )
+
+    session, metrics = result
+
+    # Update user streak
+    streak_result = crud.update_user_streak(db, current_user.id)
+
+    # Process daily challenges
+    words_typed = len(request.user_input.split())
+    completed_challenges = crud.process_game_completion_for_challenges(
+        db=db,
+        user_id=current_user.id,
+        wpm=metrics["metrics"]["wpm"],
+        accuracy=metrics["metrics"]["accuracy"],
+        words_typed=words_typed,
+        max_combo=request.max_combo
+    )
+
+    # =========== SKILL XP INTEGRATION ===========
+    # Award typing skill XP (if skills plugin enabled)
+    if settings.PLUGINS_ENABLED.get("skills", False):
+        try:
+            wpm = metrics["metrics"].get("wpm", 0)
+            accuracy = metrics["metrics"].get("accuracy", 0)
+            skill_xp = calculate_typing_skill_xp(wpm, accuracy)
+
+            # Award XP to programming skill (typing practice improves coding speed)
+            skill_result = await award_skill_xp(
+                db=db,
+                user_id=current_user.id,
+                skill_slug="programming",
+                xp_amount=skill_xp,
+                source_type="typing_game",
+                source_id=str(session.id),
+                source_metadata={
+                    "wpm": wpm,
+                    "accuracy": accuracy,
+                    "time_elapsed": request.time_elapsed,
+                    "max_combo": request.max_combo
+                }
+            )
+            if skill_result.level_up:
+                logger.info(f"User {current_user.id} leveled up programming: {skill_result.old_level} -> {skill_result.new_level}")
+        except Exception as e:
+            logger.error(f"Failed to award skill XP for typing game v2: {e}")
+
+    # Build response
+    response = schemas.TypingGameResultsResponse(
+        session_id=session.id,
+        metrics=schemas.TypingPerformanceMetrics(**metrics["metrics"]),
+        xp_earned=metrics["xp_earned"],
+        is_personal_best_wpm=metrics["is_personal_best_wpm"],
+        is_personal_best_accuracy=metrics["is_personal_best_accuracy"],
+        max_combo=metrics.get("max_combo", 0)
+    )
+
+    # Add anti-cheat info if present
+    if "anti_cheat" in metrics:
+        response.anti_cheat = schemas.AntiCheatResultResponse(
+            confidence_score=metrics["anti_cheat"]["confidence_score"],
+            flags=metrics["anti_cheat"]["flags"],
+            is_valid=metrics["anti_cheat"]["is_valid"]
+        )
+
+    # Add streak info
+    if streak_result:
+        streak_bonus_xp = 0
+        if isinstance(streak_result, dict):
+            streak_bonus_xp = streak_result.get("streak_bonus_xp", 0)
+            response.streak = schemas.StreakResultResponse(
+                current_streak=streak_result.get("current_streak", 0),
+                streak_extended=streak_result.get("streak_extended", False),
+                streak_bonus_xp=streak_bonus_xp
+            )
+        else:
+            response.streak = schemas.StreakResultResponse(
+                current_streak=getattr(streak_result, 'current_streak', 0),
+                streak_extended=getattr(streak_result, 'streak_extended', False),
+                streak_bonus_xp=getattr(streak_result, 'streak_bonus_xp', 0)
+            )
+
+    # Add completed challenges
+    if completed_challenges:
+        response.challenges_completed = [
+            schemas.ChallengeCompletedResponse(
+                challenge_id=c.get("challenge_id", "") if isinstance(c, dict) else getattr(c, "challenge_id", ""),
+                challenge_type=c.get("challenge_type", "") if isinstance(c, dict) else getattr(c, "challenge_type", ""),
+                xp_reward=c.get("xp_reward", 0) if isinstance(c, dict) else getattr(c, "xp_reward", 0),
+                difficulty=c.get("difficulty", "medium") if isinstance(c, dict) else getattr(c, "difficulty", "medium"),
+            )
+            for c in completed_challenges
+        ]
+
+    return response

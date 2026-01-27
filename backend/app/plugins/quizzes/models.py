@@ -55,6 +55,7 @@ class Quiz(Base):
     category = Column(String(100), nullable=True, index=True)
     tags = Column(JSON, default=list)
     difficulty = Column(SQLEnum(QuizDifficulty), default=QuizDifficulty.MEDIUM, nullable=False)
+    related_skills = Column(JSON, default=list)  # Skill slugs: ["programming", "networking"]
 
     # Quiz settings
     time_limit_minutes = Column(Integer, nullable=True)  # Null = no time limit

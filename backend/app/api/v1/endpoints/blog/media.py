@@ -257,9 +257,11 @@ async def upload_blog_image(
     file_url = f"/static/{relative_path.replace(os.sep, '/')}"
     
     # Create database record
+    # SECURITY: Also sanitize original_filename to prevent display of malicious paths
+    display_filename = sanitize_filename(file.filename) if file.filename else "unnamed"
     db_media = BlogMedia(
         filename=unique_filename,
-        original_filename=file.filename,
+        original_filename=display_filename,
         file_path=str(file_path),
         file_url=file_url,
         file_size=final_size,

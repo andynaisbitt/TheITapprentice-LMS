@@ -56,6 +56,10 @@ class XPConfig:
         # Social rewards
         "first_comment": 15,
         "helpful_comment": 10,
+
+        # Challenge rewards (dynamic, but base for tracking)
+        "typing_daily_challenge": 50,
+        "typing_streak_bonus": 10,  # Per day in streak
     }
 
     # Streak configuration
@@ -362,6 +366,93 @@ class XPService:
             }
             for idx, user in enumerate(users)
         ]
+
+    def award_challenge_xp(
+        self,
+        db: Session,
+        user_id: int,
+        xp_amount: int,
+        challenge_type: str
+    ) -> Dict:
+        """
+        Award XP for completing a daily challenge.
+
+        Args:
+            db: Database session
+            user_id: User ID
+            xp_amount: Amount of XP to award
+            challenge_type: Type of challenge completed
+        """
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            logger.error(f"Cannot award challenge XP: User {user_id} not found")
+            return {"error": "User not found"}
+
+        # Get old level before award
+        old_level = self.calculate_level(user.total_points)
+
+        # Award XP
+        user.total_points += xp_amount
+
+        # Calculate new level
+        new_level = self.calculate_level(user.total_points)
+        user.level = new_level
+
+        db.commit()
+
+        level_up = new_level > old_level
+        if level_up:
+            logger.info(f"User {user_id} leveled up from challenge: {old_level} -> {new_level}")
+
+        logger.info(f"Awarded {xp_amount} XP to user {user_id} for challenge: {challenge_type}")
+
+        return {
+            "xp_awarded": xp_amount,
+            "total_xp": user.total_points,
+            "old_level": old_level,
+            "new_level": new_level,
+            "level_up": level_up,
+            "challenge_type": challenge_type
+        }
+
+    def award_streak_bonus_xp(
+        self,
+        db: Session,
+        user_id: int,
+        streak_days: int
+    ) -> Dict:
+        """
+        Award XP bonus for maintaining a typing streak.
+
+        Args:
+            db: Database session
+            user_id: User ID
+            streak_days: Current streak length in days
+        """
+        # 10 XP per day, capped at 100 (10 days)
+        xp_amount = min(streak_days * 10, 100)
+
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            return {"error": "User not found"}
+
+        old_level = self.calculate_level(user.total_points)
+        user.total_points += xp_amount
+        new_level = self.calculate_level(user.total_points)
+        user.level = new_level
+
+        db.commit()
+
+        logger.info(f"Awarded {xp_amount} XP streak bonus to user {user_id} ({streak_days} day streak)")
+
+        return {
+            "xp_awarded": xp_amount,
+            "total_xp": user.total_points,
+            "old_level": old_level,
+            "new_level": new_level,
+            "level_up": new_level > old_level,
+            "streak_days": streak_days
+        }
 
 
 # Singleton instance

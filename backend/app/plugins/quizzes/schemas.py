@@ -115,6 +115,7 @@ class QuizCreate(BaseModel):
     module_id: Optional[str] = None
     status: QuizStatus = QuizStatus.DRAFT
     is_featured: bool = False
+    related_skills: List[str] = []  # Skill slugs for XP awards
     questions: List[QuestionCreate] = []
 
 
@@ -138,6 +139,7 @@ class QuizUpdate(BaseModel):
     module_id: Optional[str] = None
     status: Optional[QuizStatus] = None
     is_featured: Optional[bool] = None
+    related_skills: Optional[List[str]] = None
 
 
 class QuizSummary(BaseModel):
@@ -156,6 +158,7 @@ class QuizSummary(BaseModel):
     total_attempts: int
     avg_score: float
     pass_rate: float
+    related_skills: List[str] = []
     created_at: datetime
 
     class Config:
@@ -183,6 +186,7 @@ class QuizResponse(BaseModel):
     questions: List[QuestionResponse] = []
     total_attempts: int
     avg_score: float
+    related_skills: List[str] = []
     created_at: datetime
 
     class Config:

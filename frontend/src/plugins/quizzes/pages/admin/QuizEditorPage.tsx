@@ -13,6 +13,9 @@ import {
   updateQuestion,
   deleteQuestion,
 } from '../../hooks/useQuizzes';
+import { QuizImportModal } from '../../components';
+import { useToast } from '../../../../components/ui';
+import { SkillSelector } from '../../../../components/admin/SkillSelector';
 import type {
   QuizCreateInput,
   QuestionCreateInput,
@@ -63,12 +66,15 @@ const QuizEditorPage: React.FC = () => {
     xp_perfect: 100,
     status: 'draft',
     is_featured: false,
+    related_skills: [],
     questions: [],
   });
 
   // Question editor state
   const [editingQuestion, setEditingQuestion] = useState<Partial<QuestionCreateInput> & { id?: number } | null>(null);
   const [questionModalOpen, setQuestionModalOpen] = useState(false);
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const { toast } = useToast();
 
   // Load existing quiz data
   useEffect(() => {
@@ -91,6 +97,7 @@ const QuizEditorPage: React.FC = () => {
         xp_perfect: existingQuiz.xp_perfect,
         status: existingQuiz.status,
         is_featured: existingQuiz.is_featured,
+        related_skills: existingQuiz.related_skills || [],
       });
     }
   }, [existingQuiz]);
@@ -223,6 +230,31 @@ const QuizEditorPage: React.FC = () => {
       refetch();
     } catch (err: any) {
       alert(err.response?.data?.detail || 'Failed to delete question');
+    }
+  };
+
+  const handleImportQuestions = async (questions: QuestionCreateInput[]) => {
+    if (!id) return;
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const question of questions) {
+      try {
+        await addQuestion(id, question);
+        successCount++;
+      } catch (err) {
+        errorCount++;
+        console.error('Failed to import question:', err);
+      }
+    }
+
+    refetch();
+
+    if (errorCount === 0) {
+      toast.success(`Successfully imported ${successCount} question${successCount !== 1 ? 's' : ''}`);
+    } else {
+      toast.warning(`Imported ${successCount} questions, ${errorCount} failed`);
     }
   };
 
@@ -496,7 +528,7 @@ const QuizEditorPage: React.FC = () => {
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
               <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">XP Rewards</h2>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     XP for Passing
@@ -524,6 +556,13 @@ const QuizEditorPage: React.FC = () => {
                   />
                 </div>
               </div>
+
+              {/* Skill Selector */}
+              <SkillSelector
+                selectedSlugs={formData.related_skills || []}
+                onChange={(slugs) => setFormData(prev => ({ ...prev, related_skills: slugs }))}
+                helpText="Skills that will receive XP when this quiz is passed"
+              />
             </div>
 
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
@@ -575,15 +614,26 @@ const QuizEditorPage: React.FC = () => {
             <h2 className="text-lg font-bold text-gray-900 dark:text-white">
               Questions ({existingQuiz.questions.length})
             </h2>
-            <button
-              onClick={() => openQuestionModal()}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Add Question
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setImportModalOpen(true)}
+                className="px-4 py-2 border border-purple-600 text-purple-600 dark:text-purple-400 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 flex items-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                Import
+              </button>
+              <button
+                onClick={() => openQuestionModal()}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Add Question
+              </button>
+            </div>
           </div>
 
           {existingQuiz.questions.length === 0 ? (
@@ -661,6 +711,16 @@ const QuizEditorPage: React.FC = () => {
             setQuestionModalOpen(false);
             setEditingQuestion(null);
           }}
+        />
+      )}
+
+      {/* Import Questions Modal */}
+      {id && (
+        <QuizImportModal
+          isOpen={importModalOpen}
+          onClose={() => setImportModalOpen(false)}
+          onImport={handleImportQuestions}
+          quizId={id}
         />
       )}
     </div>

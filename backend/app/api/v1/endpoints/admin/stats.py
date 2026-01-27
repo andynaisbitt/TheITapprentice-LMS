@@ -369,7 +369,7 @@ async def get_content_stats(
         },
         "pages": {
             "total": db.query(Page).count(),
-            "published": db.query(Page).filter(Page.is_published == True).count()
+            "published": db.query(Page).filter(Page.published == True).count()
         }
     }
 

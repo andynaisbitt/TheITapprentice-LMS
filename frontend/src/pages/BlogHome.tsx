@@ -1,11 +1,11 @@
 // src/pages/BlogHome.tsx
 /**
- * Enhanced Blog Homepage V2
- * Features: Hero, Featured Carousel, Recent Grid, Categories, LMS Marketing Components
+ * Enhanced Blog Homepage V3
+ * Features: Feature Showcase Hero, LMS Widgets, then Blog Content
  */
 
 import { Helmet } from 'react-helmet-async';
-import HeroSection from '../components/home/HeroSection';
+import FeatureShowcaseHero from '../components/home/FeatureShowcaseHero';
 import FeaturedCarousel from '../components/home/FeaturedCarousel';
 import RecentPostsGrid from '../components/home/RecentPostsGrid';
 import CategoryShowcase from '../components/home/CategoryShowcase';
@@ -16,7 +16,9 @@ import QuickQuizWidget from '../components/home/QuickQuizWidget';
 import TutorialPathsShowcase from '../components/home/TutorialPathsShowcase';
 import LeaderboardPreview from '../components/home/LeaderboardPreview';
 import HomepageStatsWidget from '../components/home/HomepageStatsWidget';
-import { Sparkles } from 'lucide-react';
+import MoreToExplore from '../components/home/MoreToExplore';
+import Section from '../components/home/Section';
+import { Sparkles, Newspaper, FolderOpen } from 'lucide-react';
 import { useSiteSettings } from '../store/useSiteSettingsStore';
 import { useAuth } from '../state/contexts/AuthContext';
 
@@ -31,6 +33,9 @@ export const BlogHome: React.FC = () => {
 
   // Use OG image from settings, fallback to /og-image.jpg
   const ogImage = settings.ogImage || `${settings.siteUrl}/og-image.jpg`;
+
+  // Check if any blog sections are enabled
+  const hasBlogContent = settings.showCarousel || settings.showCategories || settings.showRecentPosts;
 
   return (
     <>
@@ -64,82 +69,128 @@ export const BlogHome: React.FC = () => {
       </Helmet>
 
       <div className="min-h-screen bg-gray-50 dark:bg-slate-900 scroll-smooth">
-        {/* Hero Section */}
-        <HeroSection />
+        {/* ============================================ */}
+        {/* SECTION 1: Feature Showcase Hero            */}
+        {/* Auto-cycling hero showcasing LMS features   */}
+        {/* ============================================ */}
+        <FeatureShowcaseHero />
 
-        {/* Daily Challenge Banner - Show for logged-in users with setting enabled */}
+        {/* ============================================ */}
+        {/* SECTION 2: Daily Challenge Banner           */}
+        {/* Only shows for logged-in users              */}
+        {/* ============================================ */}
         {user && settings.showDailyChallengeBanner && <DailyChallengeBanner />}
 
-        {/* Featured Posts Carousel */}
-        {settings.showCarousel && (
-          <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-            <div className="mb-8 sm:mb-12">
-              <div className="flex items-center gap-2 sm:gap-3 mb-3">
-                <Sparkles className="text-yellow-500 w-6 h-6 sm:w-7 sm:h-7" size={28} />
-                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white">
-                  {settings.carouselTitle || 'Featured Articles'}
-                </h2>
-              </div>
-              <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400">
-                {settings.carouselSubtitle || 'Hand-picked posts showcasing our best content'}
-              </p>
-            </div>
-            <FeaturedCarousel />
-          </section>
-        )}
-
-        {/* Featured Courses Carousel - LMS */}
+        {/* ============================================ */}
+        {/* SECTION 3: Featured Courses                 */}
+        {/* LMS courses carousel                        */}
+        {/* ============================================ */}
         {settings.showFeaturedCourses && <FeaturedCoursesCarousel />}
 
-        {/* Categories Showcase */}
-        {settings.showCategories && (
-          <section className="bg-white dark:bg-gray-800 py-12 sm:py-16">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="text-center mb-8 sm:mb-12">
-                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-3">
-                  {settings.categoriesTitle || 'Explore by Category'}
-                </h2>
-                <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400">
-                  {settings.categoriesSubtitle || 'Dive into topics that interest you'}
-                </p>
-              </div>
-              <CategoryShowcase />
-            </div>
-          </section>
-        )}
-
-        {/* Typing Challenge CTA - LMS */}
-        {settings.showTypingChallenge && <TypingChallengeCTA />}
-
-        {/* Tutorial Paths Showcase - LMS */}
+        {/* ============================================ */}
+        {/* SECTION 4: Tutorial Paths                   */}
+        {/* Structured learning paths                   */}
+        {/* ============================================ */}
         {settings.showTutorialPaths && <TutorialPathsShowcase />}
 
-        {/* Recent Posts Grid */}
-        {settings.showRecentPosts && (
-          <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-            <div className="mb-8 sm:mb-12">
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-3">
-                {settings.recentPostsTitle || 'Latest Posts'}
-              </h2>
-              <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400">
-                {settings.recentPostsSubtitle || 'Fresh content from our writers'}
-              </p>
-            </div>
-            <RecentPostsGrid />
+        {/* ============================================ */}
+        {/* SECTION 5: Typing Challenge CTA             */}
+        {/* Typing game promotion                       */}
+        {/* ============================================ */}
+        {settings.showTypingChallenge && <TypingChallengeCTA />}
+
+        {/* ============================================ */}
+        {/* SECTION 5b: More to Explore                 */}
+        {/* Compact LMS feature showcase                */}
+        {/* ============================================ */}
+        <MoreToExplore exclude={['typing']} limit={6} />
+
+        {/* ============================================ */}
+        {/* SECTION 6: Quick Quiz Widget                */}
+        {/* Quiz promotion section                      */}
+        {/* ============================================ */}
+        {settings.showQuickQuiz && <QuickQuizWidget />}
+
+        {/* ============================================ */}
+        {/* SECTION 7: Leaderboard Preview              */}
+        {/* Top learners showcase                       */}
+        {/* ============================================ */}
+        {settings.showLeaderboardPreview && <LeaderboardPreview />}
+
+        {/* ============================================ */}
+        {/* SECTION 8: Community Stats                  */}
+        {/* Platform statistics                         */}
+        {/* ============================================ */}
+        {settings.showHomepageStats && (
+          <section className="bg-gradient-to-b from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-800 py-8">
+            <HomepageStatsWidget />
           </section>
         )}
 
-        {/* Quick Quiz Widget - LMS */}
-        {settings.showQuickQuiz && <QuickQuizWidget />}
+        {/* ============================================ */}
+        {/* BLOG CONTENT SECTION                        */}
+        {/* Blog articles and categories below LMS      */}
+        {/* ============================================ */}
+        {hasBlogContent && (
+          <div className="border-t border-slate-200 dark:border-slate-800">
+            {/* Blog Section Header */}
+            <Section
+              icon={Newspaper}
+              eyebrow="Blog"
+              title="Latest from the Blog"
+              subtitle="Articles, tutorials, and insights from our community"
+              centerHeader
+              paddingY="lg"
+              noPadding={false}
+            >
+              {/* Empty content - header only */}
+              <div className="hidden" />
+            </Section>
 
-        {/* Leaderboard Preview - LMS */}
-        {settings.showLeaderboardPreview && <LeaderboardPreview />}
+            {/* Featured Posts Carousel */}
+            {settings.showCarousel && (
+              <Section
+                icon={Sparkles}
+                eyebrow="Featured"
+                title={settings.carouselTitle || 'Featured Articles'}
+                subtitle={settings.carouselSubtitle || 'Hand-picked posts showcasing our best content'}
+                paddingY="md"
+              >
+                <FeaturedCarousel />
+              </Section>
+            )}
 
-        {/* Homepage Stats Widget - LMS */}
-        {settings.showHomepageStats && (
-          <section className="bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-8">
-            <HomepageStatsWidget />
-          </section>
+            {/* Categories Showcase */}
+            {settings.showCategories && (
+              <Section
+                icon={FolderOpen}
+                eyebrow="Categories"
+                title={settings.categoriesTitle || 'Explore by Category'}
+                subtitle={settings.categoriesSubtitle || 'Dive into topics that interest you'}
+                background="muted"
+                centerHeader
+                viewAllLink="/blog"
+                viewAllText="Browse all categories"
+                paddingY="md"
+              >
+                <CategoryShowcase />
+              </Section>
+            )}
+
+            {/* Recent Posts Grid */}
+            {settings.showRecentPosts && (
+              <Section
+                eyebrow="Latest"
+                title={settings.recentPostsTitle || 'Latest Posts'}
+                subtitle={settings.recentPostsSubtitle || 'Fresh content from our writers'}
+                viewAllLink="/blog"
+                viewAllText="View all posts"
+                paddingY="lg"
+              >
+                <RecentPostsGrid limit={6} />
+              </Section>
+            )}
+          </div>
         )}
       </div>
     </>

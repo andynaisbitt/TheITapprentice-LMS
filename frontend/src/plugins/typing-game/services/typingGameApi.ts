@@ -9,6 +9,7 @@ import {
   TypingGameStartRequest,
   TypingGameStartResponse,
   TypingGameSubmitRequest,
+  TypingGameSubmitRequestV2,
   TypingGameResultsResponse,
   TypingGameHistoryResponse,
   UserTypingStats,
@@ -20,29 +21,30 @@ import {
   UserPVPStats,
   LeaderboardResponse,
 } from '../types';
+import { apiClient } from '../../../services/api/client';
 
 const API_BASE = '/api/v1/games/typing';
 
-// Helper for API calls
+// Helper for API calls using apiClient (axios) for proper auth/CSRF handling
 async function apiCall<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: { method?: string; body?: string } = {}
 ): Promise<T> {
-  const response = await fetch(`${API_BASE}${endpoint}`, {
-    ...options,
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
+  const url = `${API_BASE}${endpoint}`;
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
-    throw new Error(error.detail || `API error: ${response.status}`);
+  if (options.method === 'POST') {
+    const { data } = await apiClient.post<T>(url, options.body ? JSON.parse(options.body) : undefined);
+    return data;
+  } else if (options.method === 'PUT') {
+    const { data } = await apiClient.put<T>(url, options.body ? JSON.parse(options.body) : undefined);
+    return data;
+  } else if (options.method === 'DELETE') {
+    const { data } = await apiClient.delete<T>(url);
+    return data;
+  } else {
+    const { data } = await apiClient.get<T>(url);
+    return data;
   }
-
-  return response.json();
 }
 
 // ==================== WORD LISTS ====================
@@ -91,6 +93,18 @@ export async function submitGame(
   });
 }
 
+/**
+ * Submit game with enhanced V2 endpoint including anti-cheat data
+ */
+export async function submitGameV2(
+  request: TypingGameSubmitRequestV2
+): Promise<TypingGameResultsResponse> {
+  return apiCall<TypingGameResultsResponse>('/submit/v2', {
+    method: 'POST',
+    body: JSON.stringify(request),
+  });
+}
+
 export async function getGameHistory(
   page: number = 1,
   pageSize: number = 10
@@ -103,7 +117,8 @@ export async function getGameHistory(
 // ==================== USER STATS ====================
 
 export async function getMyStats(): Promise<UserTypingStats> {
-  return apiCall<UserTypingStats>('/stats/me');
+  // Add cache-busting timestamp to ensure fresh data
+  return apiCall<UserTypingStats>(`/stats/me?_t=${Date.now()}`);
 }
 
 export async function getUserStats(userId: number): Promise<UserTypingStats> {
@@ -116,9 +131,78 @@ export async function getLeaderboard(
   type: 'wpm' | 'accuracy' | 'pvp' = 'wpm',
   limit: number = 100
 ): Promise<LeaderboardResponse> {
+  // Add cache-busting timestamp to ensure fresh data
   return apiCall<LeaderboardResponse>(
-    `/leaderboard?leaderboard_type=${type}&limit=${limit}`
+    `/leaderboard?leaderboard_type=${type}&limit=${limit}&_t=${Date.now()}`
   );
+}
+
+// ==================== STREAK & CHALLENGES ====================
+
+export interface StreakInfo {
+  current_streak: number;
+  longest_streak: number;
+  last_play_date: string | null;
+  games_today: number;
+  freeze_available: boolean;
+  streak_at_risk: boolean;
+  freeze_will_auto_apply: boolean;
+  played_today: boolean;
+}
+
+export interface DailyChallenge {
+  challenge_id: string;
+  challenge_type: string;
+  name: string;
+  description: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  target_value: number;
+  current_value: number;
+  progress_percent: number;
+  is_completed: boolean;
+  is_claimed: boolean;
+  xp_reward: number;
+}
+
+export interface DailyChallengesResponse {
+  challenges: DailyChallenge[];
+  streak: StreakInfo;
+  date: string;
+}
+
+export async function getMyStreak(): Promise<StreakInfo> {
+  return apiCall<StreakInfo>('/streak/me');
+}
+
+export async function useStreakFreeze(): Promise<{ success: boolean; message: string }> {
+  return apiCall<{ success: boolean; message: string }>('/streak/freeze', {
+    method: 'POST',
+  });
+}
+
+export async function getDailyChallenges(): Promise<DailyChallengesResponse> {
+  return apiCall<DailyChallengesResponse>('/challenges/daily');
+}
+
+export async function claimChallengeReward(
+  challengeId: string
+): Promise<{ success: boolean; xp_earned: number; message?: string }> {
+  return apiCall<{ success: boolean; xp_earned: number; message?: string }>(
+    `/challenges/${challengeId}/claim`,
+    { method: 'POST' }
+  );
+}
+
+// ==================== PVP SETTINGS ====================
+
+export async function getPVPSettings(): Promise<{ pvp_enabled: boolean }> {
+  return apiCall<{ pvp_enabled: boolean }>('/pvp/settings');
+}
+
+export async function updatePVPSettings(enabled: boolean): Promise<{ pvp_enabled: boolean; message: string }> {
+  return apiCall<{ pvp_enabled: boolean; message: string }>(`/admin/pvp/settings?enabled=${enabled}`, {
+    method: 'PUT',
+  });
 }
 
 // ==================== PVP ====================
@@ -166,6 +250,7 @@ export const typingGameApi = {
   // Game Sessions
   startGame,
   submitGame,
+  submitGameV2,
   getGameHistory,
 
   // User Stats
@@ -174,6 +259,16 @@ export const typingGameApi = {
 
   // Leaderboard
   getLeaderboard,
+
+  // Streak & Challenges
+  getMyStreak,
+  useStreakFreeze,
+  getDailyChallenges,
+  claimChallengeReward,
+
+  // PVP Settings
+  getPVPSettings,
+  updatePVPSettings,
 
   // PVP
   findPVPMatch,

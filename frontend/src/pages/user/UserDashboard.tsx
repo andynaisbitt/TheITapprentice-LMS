@@ -27,6 +27,7 @@ import {
   Clock,
   ChevronRight,
   Play,
+  Swords,
 } from 'lucide-react';
 import * as tutorialApi from '../../plugins/tutorials/services/tutorialApi';
 import type { TutorialProgress } from '../../plugins/tutorials/types';
@@ -35,6 +36,7 @@ import type { DashboardData, AchievementProgress } from '../../plugins/shared/ty
 import { XPProgressBar } from '../../plugins/shared/components/XPProgressBar';
 import { StreakCounter } from '../../plugins/shared/components/StreakCounter';
 import { AchievementBadge } from '../../plugins/shared/components/AchievementBadge';
+import { SkillsWidget } from '../../plugins/skills/components/SkillsWidget';
 
 export const UserDashboard = () => {
   const { user, logout } = useAuth();
@@ -102,6 +104,14 @@ export const UserDashboard = () => {
       href: '/leaderboard',
       color: 'from-yellow-500 to-orange-600',
       description: 'See top learners',
+    });
+
+    actions.push({
+      icon: Swords,
+      label: 'IT Skills',
+      href: '/skills',
+      color: 'from-cyan-500 to-blue-600',
+      description: 'Track your skills',
     });
 
     // Authors and above can write blog posts
@@ -399,11 +409,20 @@ export const UserDashboard = () => {
               </div>
             </motion.div>
 
-            {/* Recent Achievements */}
+            {/* Skills Widget */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
+            >
+              <SkillsWidget maxSkills={6} showLeaderboardLink />
+            </motion.div>
+
+            {/* Recent Achievements */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
               className="bg-white dark:bg-gray-800 rounded-xl shadow"
             >
               <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
@@ -469,7 +488,7 @@ export const UserDashboard = () => {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
+                transition={{ delay: 0.3 }}
                 className="bg-white dark:bg-gray-800 rounded-xl shadow"
               >
                 <div className="p-4 border-b border-gray-100 dark:border-gray-700">

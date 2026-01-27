@@ -4,9 +4,10 @@
  * Shows game modes, stats, and leaderboard preview
  */
 
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { RefreshCw } from 'lucide-react';
 import {
   Keyboard,
   Zap,
@@ -17,7 +18,9 @@ import {
   TrendingUp,
   Play,
   Users,
-  Award
+  Award,
+  Infinity,
+  Ghost,
 } from 'lucide-react';
 import { useAuth } from '../../../state/contexts/AuthContext';
 import { typingGameApi } from '../services/typingGameApi';
@@ -26,32 +29,84 @@ import type { UserTypingStats, LeaderboardEntry } from '../types';
 export const TypingGamePage: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [stats, setStats] = useState<UserTypingStats | null>(null);
   const [topPlayers, setTopPlayers] = useState<LeaderboardEntry[]>([]);
+  const [pvpEnabled, setPvpEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
+  // Fetch all data - extracted as callback for manual refresh
+  const fetchData = useCallback(async (showRefreshIndicator = false) => {
+    if (showRefreshIndicator) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+
+    try {
+      // Fetch leaderboard and PVP settings in parallel
+      const [leaderboard, pvpSettings] = await Promise.all([
+        typingGameApi.getLeaderboard('wpm', 5).catch(() => ({ entries: [] })),
+        typingGameApi.getPVPSettings().catch(() => ({ pvp_enabled: false })),
+      ]);
+      setTopPlayers(leaderboard.entries);
+      setPvpEnabled(pvpSettings.pvp_enabled);
+
+      // Fetch user stats if authenticated
+      if (isAuthenticated) {
+        const userStats = await typingGameApi.getMyStats();
+        setStats(userStats);
+      }
+    } catch (error) {
+      console.error('Failed to fetch typing game data:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [isAuthenticated]);
+
+  // Re-fetch data when navigating back to this page
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Fetch leaderboard
-        const leaderboard = await typingGameApi.getLeaderboard('wpm', 5);
-        setTopPlayers(leaderboard.entries);
+    fetchData();
+  }, [fetchData, location.key]);
 
-        // Fetch user stats if authenticated
-        if (isAuthenticated) {
-          const userStats = await typingGameApi.getMyStats();
-          setStats(userStats);
-        }
-      } catch (error) {
-        console.error('Failed to fetch typing game data:', error);
-      } finally {
-        setLoading(false);
+  // Also refresh when page becomes visible (user returns via browser back/tab switch)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchData(true);
       }
     };
 
-    fetchData();
-  }, [isAuthenticated]);
+    // Refresh on focus (when user comes back to the tab/window)
+    const handleFocus = () => {
+      fetchData(true);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [fetchData]);
+
+  // Check for navigation state that indicates a game was just completed
+  useEffect(() => {
+    if (location.state?.gameCompleted) {
+      // Clear the state and refresh
+      navigate(location.pathname, { replace: true, state: {} });
+      fetchData(true);
+    }
+  }, [location.state, location.pathname, navigate, fetchData]);
+
+  // Manual refresh handler
+  const handleRefresh = () => {
+    fetchData(true);
+  };
 
   const gameModes: Array<{
     id: string;
@@ -71,6 +126,24 @@ export const TypingGamePage: React.FC = () => {
       link: '/games/typing/play'
     },
     {
+      id: 'infinite-rush',
+      title: 'Infinite Rush',
+      description: '60 seconds of pure speed typing',
+      icon: Infinity,
+      color: 'from-orange-500 to-red-600',
+      link: '/games/typing/infinite-rush',
+      badge: 'New'
+    },
+    {
+      id: 'ghost-mode',
+      title: 'Ghost Mode',
+      description: 'Race against your personal best',
+      icon: Ghost,
+      color: 'from-purple-500 to-indigo-600',
+      link: '/games/typing/ghost',
+      badge: 'New'
+    },
+    {
       id: 'practice',
       title: 'Practice Mode',
       description: 'Train with custom word lists',
@@ -81,10 +154,11 @@ export const TypingGamePage: React.FC = () => {
     {
       id: 'pvp',
       title: 'PVP Battle',
-      description: 'Challenge other players',
+      description: pvpEnabled ? 'Challenge other players' : 'PVP mode is currently disabled',
       icon: Swords,
       color: 'from-red-500 to-orange-600',
-      link: '/games/typing/pvp'
+      link: '/games/typing/pvp',
+      badge: pvpEnabled ? undefined : 'Disabled'
     }
   ];
 
@@ -116,11 +190,21 @@ export const TypingGamePage: React.FC = () => {
             transition={{ delay: 0.1 }}
             className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8"
           >
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-blue-500" />
-              Your Stats
-            </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-blue-500" />
+                Your Stats
+              </h2>
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="p-2 text-gray-500 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors disabled:opacity-50"
+                title="Refresh stats"
+              >
+                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+            <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 transition-opacity ${refreshing ? 'opacity-50' : ''}`}>
               <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
                 <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
                   {stats.best_wpm}
@@ -129,7 +213,7 @@ export const TypingGamePage: React.FC = () => {
               </div>
               <div className="text-center p-4 bg-green-50 dark:bg-green-900/30 rounded-lg">
                 <div className="text-3xl font-bold text-green-600 dark:text-green-400">
-                  {stats.avg_accuracy.toFixed(1)}%
+                  {(stats.avg_accuracy ?? 0).toFixed(1)}%
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">Avg Accuracy</div>
               </div>
@@ -154,47 +238,54 @@ export const TypingGamePage: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="grid md:grid-cols-3 gap-6 mb-8"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8"
         >
-          {gameModes.map((mode, idx) => (
-            <motion.div
-              key={mode.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 + idx * 0.1 }}
-              className="relative bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden group"
-            >
-              {mode.badge && (
-                <div className="absolute top-3 right-3 bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded">
-                  {mode.badge}
+          {gameModes.map((mode, idx) => {
+            const isDisabled = mode.badge === 'Disabled';
+            return (
+              <motion.div
+                key={mode.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 + idx * 0.05 }}
+                className="relative bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden group hover:shadow-xl transition-shadow"
+              >
+                {mode.badge && (
+                  <div className={`absolute top-3 right-3 text-white text-xs font-bold px-2 py-1 rounded ${
+                    mode.badge === 'New' ? 'bg-green-500' :
+                    mode.badge === 'Hot' ? 'bg-orange-500' :
+                    'bg-yellow-500'
+                  }`}>
+                    {mode.badge}
+                  </div>
+                )}
+
+                <div className={`h-2 bg-gradient-to-r ${mode.color}`} />
+
+                <div className="p-5 sm:p-6">
+                  <div className={`w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br ${mode.color} rounded-xl flex items-center justify-center mb-3 sm:mb-4 shadow-md`}>
+                    <mode.icon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                  </div>
+
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2">
+                    {mode.title}
+                  </h3>
+                  <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-4">
+                    {mode.description}
+                  </p>
+
+                  <Link
+                    to={isDisabled ? '#' : mode.link}
+                    className={`inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r ${mode.color} text-white rounded-lg font-medium hover:opacity-90 transition-opacity ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    onClick={(e) => isDisabled && e.preventDefault()}
+                  >
+                    <Play className="w-4 h-4" />
+                    Play Now
+                  </Link>
                 </div>
-              )}
-
-              <div className={`h-2 bg-gradient-to-r ${mode.color}`} />
-
-              <div className="p-6">
-                <div className={`w-14 h-14 bg-gradient-to-br ${mode.color} rounded-xl flex items-center justify-center mb-4 shadow-md`}>
-                  <mode.icon className="w-7 h-7 text-white" />
-                </div>
-
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                  {mode.title}
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  {mode.description}
-                </p>
-
-                <Link
-                  to={mode.badge ? '#' : mode.link}
-                  className={`inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r ${mode.color} text-white rounded-lg font-medium hover:opacity-90 transition-opacity ${mode.badge ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  onClick={(e) => mode.badge && e.preventDefault()}
-                >
-                  <Play className="w-4 h-4" />
-                  Play Now
-                </Link>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </motion.div>
 
         {/* Leaderboard Preview */}
@@ -249,7 +340,7 @@ export const TypingGamePage: React.FC = () => {
                       {player.best_wpm} WPM
                     </div>
                     <div className="text-sm text-gray-500">
-                      {player.avg_accuracy.toFixed(1)}% accuracy
+                      {(player.avg_accuracy ?? 0).toFixed(1)}% accuracy
                     </div>
                   </div>
                 </div>

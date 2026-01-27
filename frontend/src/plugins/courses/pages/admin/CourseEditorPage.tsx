@@ -8,6 +8,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Plus, Trash2, ChevronUp, ChevronDown, GripVertical, BookOpen, FileText } from 'lucide-react';
 import { adminCoursesApi } from '../../services/coursesApi';
 import type { Course, CreateCourseRequest, UpdateCourseRequest, CourseLevel, CourseModule, ModuleSection, CreateModuleRequest, CreateSectionRequest, SectionType } from '../../types';
+import { SkillSelector } from '../../../../components/admin/SkillSelector';
 
 const CourseEditorPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -27,6 +28,7 @@ const CourseEditorPage: React.FC = () => {
     objectives: [],
     is_premium: false,
     price: 0,
+    related_skills: [],
   });
   const [fullCourse, setFullCourse] = useState<Course | null>(null);
   const [modules, setModules] = useState<CourseModule[]>([]);
@@ -45,7 +47,10 @@ const CourseEditorPage: React.FC = () => {
     try {
       setLoading(true);
       const data = await adminCoursesApi.getCourse(id!);
-      setCourse(data);
+      setCourse({
+        ...data,
+        related_skills: data.related_skills || [],
+      });
       setFullCourse(data);
       setModules(data.modules || []);
     } catch (err: any) {
@@ -442,6 +447,15 @@ const CourseEditorPage: React.FC = () => {
               onChange={(e) => setCourse({ ...course, category: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               placeholder="e.g., Programming"
+            />
+          </div>
+
+          {/* Related Skills for XP */}
+          <div>
+            <SkillSelector
+              selectedSlugs={course.related_skills || []}
+              onChange={(slugs) => setCourse({ ...course, related_skills: slugs })}
+              helpText="Skills that will receive XP when course modules are completed"
             />
           </div>
 

@@ -9,6 +9,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Search, X } from 'lucide-react';
+import { apiClient } from '../../services/api/client';
 
 interface Subscriber {
   id: number;
@@ -37,15 +38,8 @@ export const Newsletter: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch('/api/v1/admin/newsletter/subscribers', {
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch subscribers');
-      }
-
-      const data = await response.json();
+      const response = await apiClient.get('/api/v1/admin/newsletter/subscribers');
+      const data = response.data;
 
       // Ensure data is an array
       if (Array.isArray(data)) {
@@ -56,9 +50,9 @@ export const Newsletter: React.FC = () => {
         console.error('Unexpected data format:', data);
         setSubscribers([]);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching subscribers:', err);
-      setError('Failed to load subscribers. Please try again.');
+      setError(err.response?.data?.detail || 'Failed to load subscribers. Please try again.');
       setSubscribers([]);
     } finally {
       setLoading(false);
@@ -71,21 +65,13 @@ export const Newsletter: React.FC = () => {
     }
 
     try {
-      const response = await fetch(`/api/v1/admin/newsletter/subscribers/${id}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to remove subscriber');
-      }
-
+      await apiClient.delete(`/api/v1/admin/newsletter/subscribers/${id}`);
       setSubscribers(subscribers.filter(s => s.id !== id));
       setSuccess(`${email} removed`);
       setTimeout(() => setSuccess(null), 3000);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error removing subscriber:', err);
-      setError('Failed to remove subscriber');
+      setError(err.response?.data?.detail || 'Failed to remove subscriber');
       setTimeout(() => setError(null), 3000);
     }
   };
@@ -100,31 +86,18 @@ export const Newsletter: React.FC = () => {
       setSending(true);
       setError(null);
 
-      const response = await fetch('/api/v1/admin/newsletter/send-to-all', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          subject: newsletter.subject,
-          body: newsletter.body
-        })
+      const response = await apiClient.post('/api/v1/admin/newsletter/send-to-all', {
+        subject: newsletter.subject,
+        body: newsletter.body
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.detail || 'Failed to send newsletter');
-      }
-
-      setSuccess(`Sent to ${data.sent} subscribers!`);
+      setSuccess(`Sent to ${response.data.sent} subscribers!`);
       setShowSendModal(false);
       setNewsletter({ subject: '', body: '' });
       setTimeout(() => setSuccess(null), 5000);
     } catch (err: any) {
       console.error('Error sending newsletter:', err);
-      setError(err.message || 'Failed to send. Check SMTP settings.');
+      setError(err.response?.data?.detail || 'Failed to send. Check SMTP settings.');
     } finally {
       setSending(false);
     }

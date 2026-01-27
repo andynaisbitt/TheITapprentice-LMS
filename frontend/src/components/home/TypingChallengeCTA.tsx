@@ -2,6 +2,7 @@
 /**
  * Typing Challenge CTA - Homepage component promoting the typing game
  * Features animated keyboard visual and quick access to typing modes
+ * Mobile-first design with staggered animations
  */
 
 import { useState, useEffect } from 'react';
@@ -17,6 +18,42 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../../state/contexts/AuthContext';
+
+// Animation variants for staggered feature list
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, x: -20 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: {
+      duration: 0.4,
+      ease: 'easeOut' as const,
+    },
+  },
+};
+
+const buttonVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: 'easeOut' as const,
+    },
+  },
+};
 
 // Animated typing text
 const TYPING_TEXTS = [
@@ -65,13 +102,22 @@ export const TypingChallengeCTA: React.FC = () => {
     }
   }, [displayedText, isTyping, currentTextIndex]);
 
+  // Feature list data
+  const features = [
+    { icon: Zap, label: 'Speed Tests', desc: '60-second challenges', color: 'text-yellow-300' },
+    { icon: Users, label: 'PvP Battles', desc: 'Compete in real-time', color: 'text-green-300' },
+    { icon: Trophy, label: 'Leaderboards', desc: 'Global rankings', color: 'text-orange-300' },
+    { icon: Sparkles, label: 'Earn XP', desc: 'Level up as you play', color: 'text-purple-300' },
+  ];
+
   return (
-    <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+    <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.2 }}
         transition={{ duration: 0.5 }}
-        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-cyan-500 via-blue-600 to-indigo-700 dark:from-cyan-700 dark:via-blue-800 dark:to-indigo-900"
+        className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-cyan-500 via-blue-600 to-indigo-700 dark:from-cyan-700 dark:via-blue-800 dark:to-indigo-900"
       >
         {/* Animated keyboard pattern background */}
         <div className="absolute inset-0 opacity-5">
@@ -81,87 +127,96 @@ export const TypingChallengeCTA: React.FC = () => {
           }} />
         </div>
 
-        <div className="relative px-6 sm:px-8 lg:px-12 py-10 sm:py-14">
-          <div className="grid lg:grid-cols-2 gap-8 items-center">
+        <div className="relative px-5 sm:px-8 lg:px-12 py-8 sm:py-12">
+          <div className="grid lg:grid-cols-2 gap-6 lg:gap-10 items-center">
             {/* Left side - Content */}
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/10 backdrop-blur-sm rounded-full text-cyan-100 text-sm font-medium mb-4">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4 }}
+                className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/10 backdrop-blur-sm rounded-full text-cyan-100 text-sm font-medium mb-3 sm:mb-4"
+              >
                 <Keyboard className="w-4 h-4" />
                 <span>Typing Practice</span>
-              </div>
+              </motion.div>
 
-              <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+              <motion.h2
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: 0.1 }}
+                className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-3"
+              >
                 Master Your Typing Skills
-              </h2>
+              </motion.h2>
 
               {/* Animated typing text */}
-              <div className="h-8 mb-6">
-                <p className="text-lg text-cyan-100 font-mono">
+              <motion.div
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: 0.2 }}
+                className="h-7 sm:h-8 mb-5 sm:mb-6"
+              >
+                <p className="text-base sm:text-lg text-cyan-100 font-mono">
                   <span>{displayedText}</span>
                   <span className="animate-pulse">|</span>
                 </p>
-              </div>
+              </motion.div>
 
-              {/* Feature highlights */}
-              <div className="grid sm:grid-cols-2 gap-4 mb-8">
-                <div className="flex items-center gap-3 text-white/90">
-                  <div className="p-2 bg-white/10 rounded-lg">
-                    <Zap className="w-5 h-5 text-yellow-300" />
-                  </div>
-                  <div>
-                    <div className="font-medium">Speed Tests</div>
-                    <div className="text-sm text-cyan-200">60-second challenges</div>
-                  </div>
-                </div>
+              {/* Feature highlights - staggered animation */}
+              <motion.div
+                variants={containerVariants}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                className="grid grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8"
+              >
+                {features.map((feature, idx) => {
+                  const Icon = feature.icon;
+                  return (
+                    <motion.div
+                      key={idx}
+                      variants={itemVariants}
+                      className="flex items-center gap-2 sm:gap-3 text-white/90"
+                    >
+                      <div className="p-1.5 sm:p-2 bg-white/10 rounded-lg shrink-0">
+                        <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${feature.color}`} />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-medium text-sm sm:text-base truncate">{feature.label}</div>
+                        <div className="text-xs sm:text-sm text-cyan-200 truncate">{feature.desc}</div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </motion.div>
 
-                <div className="flex items-center gap-3 text-white/90">
-                  <div className="p-2 bg-white/10 rounded-lg">
-                    <Users className="w-5 h-5 text-green-300" />
-                  </div>
-                  <div>
-                    <div className="font-medium">PvP Battles</div>
-                    <div className="text-sm text-cyan-200">Compete in real-time</div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 text-white/90">
-                  <div className="p-2 bg-white/10 rounded-lg">
-                    <Trophy className="w-5 h-5 text-orange-300" />
-                  </div>
-                  <div>
-                    <div className="font-medium">Leaderboards</div>
-                    <div className="text-sm text-cyan-200">Global rankings</div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 text-white/90">
-                  <div className="p-2 bg-white/10 rounded-lg">
-                    <Sparkles className="w-5 h-5 text-purple-300" />
-                  </div>
-                  <div>
-                    <div className="font-medium">Earn XP</div>
-                    <div className="text-sm text-cyan-200">Level up as you play</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* CTA Buttons */}
-              <div className="flex flex-wrap gap-4">
+              {/* CTA Buttons - animated */}
+              <motion.div
+                variants={buttonVariants}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                className="flex flex-col sm:flex-row gap-3"
+              >
                 <Link
                   to="/typing"
-                  className="group inline-flex items-center gap-2 px-6 py-3 bg-white text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition-all shadow-lg"
+                  className="group inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 bg-white text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition-all shadow-lg text-sm sm:text-base"
                 >
-                  <Timer className="w-5 h-5" />
+                  <Timer className="w-4 h-4 sm:w-5 sm:h-5" />
                   <span>Start Typing</span>
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
                 </Link>
 
                 {isAuthenticated && (
                   <Link
                     to="/typing/pvp"
-                    className="group inline-flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-sm text-white border-2 border-white/30 rounded-lg font-semibold hover:bg-white/20 transition-all"
+                    className="group inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 bg-white/10 backdrop-blur-sm text-white border-2 border-white/30 rounded-lg font-semibold hover:bg-white/20 transition-all text-sm sm:text-base"
                   >
-                    <Users className="w-5 h-5" />
+                    <Users className="w-4 h-4 sm:w-5 sm:h-5" />
                     <span>Find PvP Match</span>
                   </Link>
                 )}
@@ -169,12 +224,12 @@ export const TypingChallengeCTA: React.FC = () => {
                 {!isAuthenticated && (
                   <Link
                     to="/register"
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-sm text-white border-2 border-white/30 rounded-lg font-semibold hover:bg-white/20 transition-all"
+                    className="inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 bg-white/10 backdrop-blur-sm text-white border-2 border-white/30 rounded-lg font-semibold hover:bg-white/20 transition-all text-sm sm:text-base"
                   >
                     Sign up to compete
                   </Link>
                 )}
-              </div>
+              </motion.div>
             </div>
 
             {/* Right side - Visual */}

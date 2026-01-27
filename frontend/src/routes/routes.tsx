@@ -14,6 +14,7 @@ const BlogEditor = lazy(() => import('../pages/admin/BlogEditor'));
 const BlogPostsList = lazy(() => import('../pages/admin/BlogPostsList'));
 const CategoryManager = lazy(() => import('../pages/admin/CategoryManager'));
 const TagManager = lazy(() => import('../pages/admin/TagManager'));
+const MediaManager = lazy(() => import('../pages/admin/MediaManager'));
 const AdminDashboard = lazy(() => import('../pages/admin/AdminDashboard'));
 const SiteSettings = lazy(() => import('../pages/admin/SiteSettings'));
 const NavigationManager = lazy(() => import('../pages/admin/NavigationManager'));
@@ -58,9 +59,12 @@ const CourseEditorPage = lazy(() => import('../plugins/courses/pages/admin/Cours
 // Typing Game plugin pages
 const TypingGamePage = lazy(() => import('../plugins/typing-game/pages/TypingGamePage'));
 const TypingGamePlayPage = lazy(() => import('../plugins/typing-game/pages/TypingGamePlayPage'));
+const InfiniteRushPage = lazy(() => import('../plugins/typing-game/pages/InfiniteRushPage'));
+const GhostModePage = lazy(() => import('../plugins/typing-game/pages/GhostModePage'));
 const TypingLeaderboardPage = lazy(() => import('../plugins/typing-game/pages/TypingLeaderboardPage'));
 const PVPPage = lazy(() => import('../plugins/typing-game/pages/PVPPage'));
 const PracticeGamePage = lazy(() => import('../plugins/typing-game/pages/PracticeGamePage'));
+const TypingAnalyticsDashboard = lazy(() => import('../plugins/typing-game/pages/TypingAnalyticsDashboard'));
 
 // Quiz plugin pages
 const QuizzesPage = lazy(() => import('../plugins/quizzes/pages/QuizzesPage'));
@@ -70,6 +74,11 @@ const QuizHistoryPage = lazy(() => import('../plugins/quizzes/pages/QuizHistoryP
 // Quiz admin pages
 const QuizManagerPage = lazy(() => import('../plugins/quizzes/pages/admin/QuizManagerPage'));
 const QuizEditorPage = lazy(() => import('../plugins/quizzes/pages/admin/QuizEditorPage'));
+
+// Skills plugin pages
+const SkillsDashboard = lazy(() => import('../plugins/skills/pages/SkillsDashboard'));
+const SkillDetailPage = lazy(() => import('../plugins/skills/pages/SkillDetailPage'));
+const SkillsLeaderboard = lazy(() => import('../plugins/skills/pages/SkillsLeaderboard'));
 
 // New Admin Pages (v2.1)
 const TutorialCategoryManager = lazy(() => import('../pages/admin/TutorialCategoryManager'));
@@ -89,6 +98,10 @@ const TypingChallengesAdmin = lazy(() => import('../pages/admin/TypingChallenges
 const GameLeaderboardAdmin = lazy(() => import('../pages/admin/GameLeaderboardAdmin'));
 const DailyChallengesAdmin = lazy(() => import('../pages/admin/DailyChallengesAdmin'));
 const SentencePoolsAdmin = lazy(() => import('../pages/admin/SentencePoolsAdmin'));
+
+// Skills Admin Pages
+const SkillsAdmin = lazy(() => import('../pages/admin/SkillsAdmin'));
+const SkillsLeaderboardAdmin = lazy(() => import('../pages/admin/SkillsLeaderboardAdmin'));
 
 // Loading component
 const PageLoader = () => (
@@ -348,6 +361,22 @@ export const AppRoutes = () => {
           }
         />
         <Route
+          path="/games/typing/infinite-rush"
+          element={
+            <Layout>
+              <InfiniteRushPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/games/typing/ghost"
+          element={
+            <Layout>
+              <GhostModePage />
+            </Layout>
+          }
+        />
+        <Route
           path="/games/typing/leaderboard"
           element={
             <Layout>
@@ -371,6 +400,16 @@ export const AppRoutes = () => {
             <Layout>
               <PracticeGamePage />
             </Layout>
+          }
+        />
+        <Route
+          path="/games/typing/analytics"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <TypingAnalyticsDashboard />
+              </Layout>
+            </ProtectedRoute>
           }
         />
 
@@ -398,6 +437,32 @@ export const AppRoutes = () => {
           element={
             <Layout>
               <QuizPlayerPage />
+            </Layout>
+          }
+        />
+
+        {/* Skills Plugin Routes */}
+        <Route
+          path="/skills"
+          element={
+            <Layout>
+              <SkillsDashboard />
+            </Layout>
+          }
+        />
+        <Route
+          path="/skills/leaderboard"
+          element={
+            <Layout>
+              <SkillsLeaderboard />
+            </Layout>
+          }
+        />
+        <Route
+          path="/skills/:slug"
+          element={
+            <Layout>
+              <SkillDetailPage />
             </Layout>
           }
         />
@@ -483,6 +548,16 @@ export const AppRoutes = () => {
             <AdminRoute>
               <AdminLayout>
                 <CategoryManager />
+              </AdminLayout>
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/media"
+          element={
+            <AdminRoute>
+              <AdminLayout>
+                <MediaManager />
               </AdminLayout>
             </AdminRoute>
           }
@@ -847,6 +922,28 @@ export const AppRoutes = () => {
             <AdminRoute>
               <AdminLayout>
                 <SentencePoolsAdmin />
+              </AdminLayout>
+            </AdminRoute>
+          }
+        />
+
+        {/* Admin Skills Routes */}
+        <Route
+          path="/admin/skills"
+          element={
+            <AdminRoute>
+              <AdminLayout>
+                <SkillsAdmin />
+              </AdminLayout>
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/skills/leaderboard"
+          element={
+            <AdminRoute>
+              <AdminLayout>
+                <SkillsLeaderboardAdmin />
               </AdminLayout>
             </AdminRoute>
           }

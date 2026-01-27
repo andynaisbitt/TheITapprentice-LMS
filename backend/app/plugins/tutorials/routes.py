@@ -23,6 +23,8 @@ from app.plugins.shared.xp_service import xp_service
 from app.plugins.shared.achievement_service import achievement_service
 from app.plugins.shared.models import ActivityType, ChallengeType
 from app.plugins.shared.challenge_service import challenge_service
+from app.plugins.skills.service import award_skill_xp, CATEGORY_TO_SKILLS_MAP
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -369,6 +371,37 @@ async def complete_tutorial_step(
             )
 
         logger.info(f"User {current_user.id} completed tutorial {tutorial_id}, awarded {xp_result.get('xp_awarded', 0)} XP")
+
+        # =========== SKILL XP INTEGRATION ===========
+        # Award skill XP based on tutorial category (if skills plugin enabled)
+        if settings.PLUGINS_ENABLED.get("skills", False):
+            try:
+                # Get skill slugs from tutorial category
+                category_slug = tutorial.category.slug.lower() if tutorial.category else "problem-solving"
+                skill_slugs = CATEGORY_TO_SKILLS_MAP.get(category_slug, ["problem-solving"])
+
+                # Base XP for tutorial completion (split across skills)
+                skill_xp_base = tutorial.xp_reward if tutorial.xp_reward else 50
+                xp_per_skill = skill_xp_base // len(skill_slugs)
+
+                for skill_slug in skill_slugs:
+                    skill_result = await award_skill_xp(
+                        db=db,
+                        user_id=current_user.id,
+                        skill_slug=skill_slug,
+                        xp_amount=xp_per_skill,
+                        source_type="tutorial",
+                        source_id=str(tutorial_id),
+                        source_metadata={
+                            "tutorial_title": tutorial.title,
+                            "difficulty": tutorial.difficulty,
+                            "category": category_slug
+                        }
+                    )
+                    if skill_result.level_up:
+                        logger.info(f"User {current_user.id} leveled up {skill_slug}: {skill_result.old_level} -> {skill_result.new_level}")
+            except Exception as e:
+                logger.error(f"Failed to award skill XP for tutorial {tutorial_id}: {e}")
 
     # Find next step
     next_step_id = None

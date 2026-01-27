@@ -15,6 +15,7 @@ import * as tutorialApi from '../../plugins/tutorials/services/tutorialApi';
 import { XPProgressBar } from '../../plugins/shared/components/XPProgressBar';
 import { AchievementBadge } from '../../plugins/shared/components/AchievementBadge';
 import { StreakCounter } from '../../plugins/shared/components/StreakCounter';
+import { SkillsWidget } from '../../plugins/skills/components/SkillsWidget';
 import type { LevelProgress, AchievementProgress, Activity, AchievementCategory } from '../../plugins/shared/types';
 import type { UserTypingStats, UserPVPStats } from '../../plugins/typing-game/types';
 import type { TutorialProgress } from '../../plugins/tutorials/types';
@@ -370,6 +371,9 @@ export const Profile = () => {
                         <div className="text-sm opacity-80">Total XP</div>
                       </div>
                     </div>
+
+                    {/* IT Skills Widget */}
+                    <SkillsWidget maxSkills={6} showLeaderboardLink />
 
                     {/* Recent Achievements */}
                     <div>

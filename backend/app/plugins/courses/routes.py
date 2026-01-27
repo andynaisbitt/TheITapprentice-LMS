@@ -9,9 +9,14 @@ from sqlalchemy import or_
 from typing import List, Optional
 
 from app.core.database import get_db
+from app.core.config import settings
 from app.auth.dependencies import get_current_user, get_current_admin_user
 from app.users.models import User
 from app.plugins.courses import models, schemas, crud
+from app.plugins.skills.service import award_skill_xp, CATEGORY_TO_SKILLS_MAP
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -339,6 +344,44 @@ async def update_my_module_progress(
                 "skills_acquired": certificate.skills_acquired or []
             }
             response["certificate_id"] = certificate.id
+
+        # =========== SKILL XP INTEGRATION ===========
+        # Award skill XP based on course category (if skills plugin enabled)
+        if settings.PLUGINS_ENABLED.get("skills", False):
+            try:
+                # Get the course for category info
+                course = crud.get_course(db, course_id)
+                category_slug = course.category.lower() if course and course.category else "problem-solving"
+                skill_slugs = CATEGORY_TO_SKILLS_MAP.get(category_slug, ["problem-solving"])
+
+                # Higher XP for course completion (courses are longer than tutorials)
+                skill_xp_base = 200  # Base XP for completing a course
+                # Bonus for level
+                if course and course.level == "advanced":
+                    skill_xp_base = int(skill_xp_base * 1.5)
+                elif course and course.level == "intermediate":
+                    skill_xp_base = int(skill_xp_base * 1.25)
+
+                xp_per_skill = skill_xp_base // len(skill_slugs)
+
+                for skill_slug in skill_slugs:
+                    skill_result = await award_skill_xp(
+                        db=db,
+                        user_id=current_user.id,
+                        skill_slug=skill_slug,
+                        xp_amount=xp_per_skill,
+                        source_type="course",
+                        source_id=str(course_id),
+                        source_metadata={
+                            "course_title": course.title if course else "Unknown",
+                            "level": course.level if course else None,
+                            "category": category_slug
+                        }
+                    )
+                    if skill_result.level_up:
+                        logger.info(f"User {current_user.id} leveled up {skill_slug}: {skill_result.old_level} -> {skill_result.new_level}")
+            except Exception as e:
+                logger.error(f"Failed to award skill XP for course {course_id}: {e}")
 
     return response
 

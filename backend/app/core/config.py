@@ -45,8 +45,10 @@ class Settings(BaseSettings):
     # Individual plugin settings (can be set in .env)
     PLUGIN_TUTORIALS_ENABLED: bool = True
     PLUGIN_TYPING_GAME_ENABLED: bool = True
+    PLUGIN_TYPING_GAME_PVP_ENABLED: bool = False  # PVP mode disabled by default
     PLUGIN_COURSES_ENABLED: bool = True
     PLUGIN_QUIZZES_ENABLED: bool = False  # Disabled by default
+    PLUGIN_SKILLS_ENABLED: bool = True  # OSRS-style skill progression (12 IT skills)
 
     # Computed dict (built from individual settings)
     PLUGINS_ENABLED: dict = {}
@@ -110,8 +112,10 @@ class Settings(BaseSettings):
         self.PLUGINS_ENABLED = {
             "tutorials": self.PLUGIN_TUTORIALS_ENABLED,
             "typing_game": self.PLUGIN_TYPING_GAME_ENABLED,
+            "typing_game_pvp": self.PLUGIN_TYPING_GAME_PVP_ENABLED,
             "courses": self.PLUGIN_COURSES_ENABLED,
             "quizzes": self.PLUGIN_QUIZZES_ENABLED,
+            "skills": self.PLUGIN_SKILLS_ENABLED,
         }
         return self
 

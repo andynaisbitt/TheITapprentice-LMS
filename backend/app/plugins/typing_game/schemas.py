@@ -109,6 +109,29 @@ class TypingGameSubmitRequest(BaseModel):
     checksum: str
 
 
+class AntiCheatData(BaseModel):
+    """Anti-cheat data collected during typing session"""
+    keystroke_timings: List[float] = Field(default_factory=list, description="Inter-key intervals in ms")
+    keystroke_count: int = Field(default=0, ge=0)
+    paste_attempts: int = Field(default=0, ge=0)
+    focus_lost_count: int = Field(default=0, ge=0)
+    total_focus_lost_time: float = Field(default=0.0, ge=0)
+    avg_inter_key_time: float = Field(default=0.0, ge=0)
+    std_dev_inter_key_time: float = Field(default=0.0, ge=0)
+    first_segment_avg: Optional[float] = Field(default=None, ge=0)
+    last_segment_avg: Optional[float] = Field(default=None, ge=0)
+
+
+class TypingGameSubmitRequestV2(BaseModel):
+    """Enhanced submission request with anti-cheat data"""
+    session_id: str
+    user_input: str
+    time_elapsed: int = Field(..., ge=0, description="Time elapsed in seconds")
+    checksum: str
+    max_combo: int = Field(default=0, ge=0, description="Maximum combo achieved")
+    anti_cheat: Optional[AntiCheatData] = Field(default=None, description="Anti-cheat telemetry data")
+
+
 class TypingPerformanceMetrics(BaseModel):
     wpm: int
     raw_wpm: int
@@ -118,6 +141,26 @@ class TypingPerformanceMetrics(BaseModel):
     time_elapsed: int
 
 
+class AntiCheatResultResponse(BaseModel):
+    """Anti-cheat validation result"""
+    confidence_score: float = Field(..., ge=0.0, le=1.0)
+    flags: List[str] = Field(default_factory=list)
+    is_valid: bool = True
+
+
+class ChallengeCompletedResponse(BaseModel):
+    """A challenge completed during the game"""
+    challenge_id: str
+    challenge_type: str
+    xp_reward: int
+    difficulty: str = "medium"
+
+class StreakResultResponse(BaseModel):
+    """Streak info returned after game completion"""
+    current_streak: int = 0
+    streak_extended: bool = False
+    streak_bonus_xp: int = 0
+
 class TypingGameResultsResponse(BaseModel):
     session_id: str
     metrics: TypingPerformanceMetrics
@@ -125,6 +168,10 @@ class TypingGameResultsResponse(BaseModel):
     is_personal_best_wpm: bool
     is_personal_best_accuracy: bool
     rank_change: Optional[int] = None
+    max_combo: int = 0
+    anti_cheat: Optional[AntiCheatResultResponse] = None
+    challenges_completed: Optional[List[ChallengeCompletedResponse]] = None
+    streak: Optional[StreakResultResponse] = None
 
 
 class TypingGameSessionResponse(BaseModel):

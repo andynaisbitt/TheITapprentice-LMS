@@ -69,6 +69,26 @@ export interface TypingGameSubmitRequest {
   checksum: string;
 }
 
+// V2 Submit with anti-cheat data
+export interface AntiCheatSubmitData {
+  keystroke_timings: number[];
+  keystroke_count: number;
+  paste_attempts: number;
+  focus_lost_count: number;
+  total_focus_lost_time: number;
+  first_segment_avg?: number;
+  last_segment_avg?: number;
+}
+
+export interface TypingGameSubmitRequestV2 {
+  session_id: string;
+  user_input: string;
+  time_elapsed: number;
+  checksum: string;
+  max_combo: number;
+  anti_cheat?: AntiCheatSubmitData;
+}
+
 export interface TypingPerformanceMetrics {
   wpm: number;
   raw_wpm: number;
@@ -78,6 +98,12 @@ export interface TypingPerformanceMetrics {
   time_elapsed: number;
 }
 
+export interface AntiCheatResultResponse {
+  confidence_score: number;
+  flags: string[];
+  is_valid: boolean;
+}
+
 export interface TypingGameResultsResponse {
   session_id: string;
   metrics: TypingPerformanceMetrics;
@@ -85,6 +111,21 @@ export interface TypingGameResultsResponse {
   is_personal_best_wpm: boolean;
   is_personal_best_accuracy: boolean;
   rank_change?: number;
+  max_combo?: number;
+  anti_cheat?: AntiCheatResultResponse;
+  // Challenge completion info
+  challenges_completed?: Array<{
+    challenge_id: string;
+    challenge_type: string;
+    xp_reward: number;
+    difficulty: string;
+  }>;
+  // Streak info
+  streak?: {
+    current_streak: number;
+    streak_extended: boolean;
+    streak_bonus_xp: number;
+  };
 }
 
 export interface TypingGameSession {

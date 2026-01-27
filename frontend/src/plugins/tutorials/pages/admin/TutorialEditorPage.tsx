@@ -32,6 +32,7 @@ import {
   Clock,
   Zap,
 } from 'lucide-react';
+import { SkillSelector } from '../../../../components/admin/SkillSelector';
 
 // Step type options
 const STEP_TYPES = [
@@ -519,7 +520,7 @@ const TutorialEditorPage: React.FC = () => {
   const [categoryId, setCategoryId] = useState<number | null>(null);
   const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [xpReward, setXpReward] = useState(50);
-  const [relatedSkills, setRelatedSkills] = useState('');
+  const [relatedSkills, setRelatedSkills] = useState<string[]>([]);
   const [isPublished, setIsPublished] = useState(false);
   const [isFeatured, setIsFeatured] = useState(false);
 
@@ -557,7 +558,7 @@ const TutorialEditorPage: React.FC = () => {
       setCategoryId(tutorial.category_id);
       setThumbnailUrl(tutorial.thumbnail_url || '');
       setXpReward(tutorial.xp_reward);
-      setRelatedSkills(tutorial.related_skills.join(', '));
+      setRelatedSkills(tutorial.related_skills || []);
       setIsPublished(tutorial.is_published);
       setIsFeatured(tutorial.is_featured);
 
@@ -651,7 +652,7 @@ const TutorialEditorPage: React.FC = () => {
       category_id: categoryId,
       thumbnail_url: thumbnailUrl.trim() || null,
       xp_reward: xpReward,
-      related_skills: relatedSkills.split(',').map(s => s.trim()).filter(Boolean),
+      related_skills: relatedSkills,
       is_published: publish,
       is_featured: isFeatured,
       steps: steps.map(step => ({
@@ -852,15 +853,10 @@ const TutorialEditorPage: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Related Skills
-                    </label>
-                    <input
-                      type="text"
-                      value={relatedSkills}
-                      onChange={(e) => setRelatedSkills(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                      placeholder="Docker, Linux, DevOps"
+                    <SkillSelector
+                      selectedSlugs={relatedSkills}
+                      onChange={setRelatedSkills}
+                      helpText="Skills that will receive XP when this tutorial is completed"
                     />
                   </div>
                 </div>

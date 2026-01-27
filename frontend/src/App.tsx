@@ -4,6 +4,7 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider } from './state/contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { PluginsProvider } from './state/contexts/PluginsContext';
+import { ToastProvider } from './components/ui/Toast';
 import { AppRoutes } from './routes/routes';
 import { GoogleAnalytics } from './components/analytics/GoogleAnalytics';
 import { GoogleAdSense } from './components/analytics/GoogleAdSense';
@@ -28,17 +29,19 @@ function App() {
       <HelmetProvider>
         <BrowserRouter>
           <ThemeProvider>
-            <AuthProvider>
-              <PluginsProvider>
-                <StoreInitializer />
-                <DynamicTitle />
-                <FaviconManager />
-                <GoogleAnalytics />
-                <GoogleAdSense />
-                <CookieConsent />
-                <AppRoutes />
-              </PluginsProvider>
-            </AuthProvider>
+            <ToastProvider>
+              <AuthProvider>
+                <PluginsProvider>
+                  <StoreInitializer />
+                  <DynamicTitle />
+                  <FaviconManager />
+                  <GoogleAnalytics />
+                  <GoogleAdSense />
+                  <CookieConsent />
+                  <AppRoutes />
+                </PluginsProvider>
+              </AuthProvider>
+            </ToastProvider>
           </ThemeProvider>
         </BrowserRouter>
       </HelmetProvider>
