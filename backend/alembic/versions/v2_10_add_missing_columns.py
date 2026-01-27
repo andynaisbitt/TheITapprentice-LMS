@@ -53,7 +53,7 @@ def upgrade() -> None:
     # quizzes - missing related_skills from v2.9
     _add_column_if_not_exists(
         "quizzes", "related_skills",
-        sa.Column("related_skills", sa.ARRAY(sa.String()), nullable=True)
+        sa.Column("related_skills", sa.JSON(), nullable=True, server_default="[]")
     )
 
 
