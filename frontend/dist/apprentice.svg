@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Simple wizard hat for light mode (dark color) -->
+  <path d="M16 4 L6 20 L26 20 Z" fill="#1e293b" stroke="#334155" stroke-width="1.5" stroke-linejoin="round"/>
+  <!-- Hat brim -->
+  <ellipse cx="16" cy="20" rx="11" ry="2.5" fill="#334155"/>
+  <!-- Star decoration -->
+  <path d="M16 10 L16.5 12 L18.5 12 L17 13.5 L17.5 15.5 L16 14 L14.5 15.5 L15 13.5 L13.5 12 L15.5 12 Z" fill="#fbbf24"/>
+</svg>

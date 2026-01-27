@@ -56,9 +56,11 @@ htmlcov/
 # Node (for frontend)
 node_modules/
 Frontend/node_modules/
-Frontend/dist/
 Frontend/build/
 Frontend/.vite/
+
+# Allow frontend dist/ to be committed (pre-built for production deploy)
+!frontend/dist/
 
 # Claude settings (local only)
 .claude/
