@@ -1,0 +1,1 @@
+import{g as s}from"./index-smch1bU1.js";const e={getDashboard:async()=>(await s.get("/api/v1/admin/stats/dashboard")).data,getLMSProgress:async()=>(await s.get("/api/v1/admin/stats/lms/progress")).data,getContentStats:async()=>(await s.get("/api/v1/admin/stats/content")).data};export{e as a};

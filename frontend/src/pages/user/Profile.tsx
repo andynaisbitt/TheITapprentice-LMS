@@ -117,11 +117,11 @@ export const Profile = () => {
       ]);
 
       setLevelProgress(xpProgress);
-      setAchievements(achievementList);
-      setActivities(activityData.activities);
+      setAchievements(Array.isArray(achievementList) ? achievementList : []);
+      setActivities(Array.isArray(activityData?.activities) ? activityData.activities : []);
       setTypingStats(stats);
       setPvpStats(pvp);
-      setTutorialProgress(tutorials);
+      setTutorialProgress(Array.isArray(tutorials) ? tutorials : []);
     } catch (err) {
       console.error('Failed to load learning data:', err);
     } finally {

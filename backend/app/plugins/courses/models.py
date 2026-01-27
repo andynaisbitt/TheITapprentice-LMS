@@ -299,7 +299,7 @@ class CourseEnrollment(Base):
     completed_modules = Column(JSON, default=list)  # List of completed module IDs
 
     # Status
-    status = Column(SQLEnum(EnrollmentStatus), default=EnrollmentStatus.ACTIVE, nullable=False, index=True)
+    status = Column(SQLEnum(EnrollmentStatus, values_callable=lambda x: [e.value for e in x]), default=EnrollmentStatus.ACTIVE, nullable=False, index=True)
     is_complete = Column(Boolean, default=False, index=True)
 
     # Bookmarks & notes
