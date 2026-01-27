@@ -28,7 +28,7 @@ const slideVariants = {
     scale: 1,
     transition: {
       duration: 0.5,
-      ease: [0.32, 0.72, 0, 1], // Custom easing for smooth feel
+      ease: [0.32, 0.72, 0, 1] as const,
     },
   },
   exit: (direction: number) => ({
@@ -37,7 +37,7 @@ const slideVariants = {
     scale: 0.95,
     transition: {
       duration: 0.4,
-      ease: [0.32, 0.72, 0, 1],
+      ease: [0.32, 0.72, 0, 1] as const,
     },
   }),
 };
@@ -52,7 +52,7 @@ const iconVariants = {
     transition: {
       duration: 0.6,
       delay: 0.2,
-      ease: 'easeOut',
+      ease: 'easeOut' as const,
     },
   },
 };
@@ -74,7 +74,7 @@ const textItemVariants = {
   animate: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.5, ease: 'easeOut' },
+    transition: { duration: 0.5, ease: 'easeOut' as const },
   },
 };
 

@@ -297,6 +297,7 @@ export interface CreateCourseRequest {
   objectives?: string[];
   is_premium?: boolean;
   price?: number;
+  related_skills?: string[];
 }
 
 export interface UpdateCourseRequest extends Partial<CreateCourseRequest> {

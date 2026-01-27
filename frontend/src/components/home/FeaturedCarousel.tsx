@@ -119,7 +119,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({ limit }) => 
       opacity: 1,
       transition: {
         duration: reducedMotion ? 0 : 0.4,
-        ease: [0.32, 0.72, 0, 1],
+        ease: [0.32, 0.72, 0, 1] as const,
       },
     },
     exit: (direction: number) => ({
@@ -127,7 +127,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({ limit }) => 
       opacity: 0,
       transition: {
         duration: reducedMotion ? 0 : 0.3,
-        ease: [0.32, 0.72, 0, 1],
+        ease: [0.32, 0.72, 0, 1] as const,
       },
     }),
   };

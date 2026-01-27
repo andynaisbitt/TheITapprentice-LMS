@@ -73,6 +73,7 @@ export interface SiteSettings {
   facebookUrl: string;
   linkedinUrl: string;
   githubUrl: string;
+  youtubeUrl: string;
 
   // Contact
   contactEmail: string;
@@ -199,6 +200,7 @@ const defaultSettings: SiteSettings = {
   facebookUrl: '',
   linkedinUrl: '',
   githubUrl: '',
+  youtubeUrl: '',
   contactEmail: '',
   supportEmail: '',
   siteUrl: 'https://yourdomain.com',

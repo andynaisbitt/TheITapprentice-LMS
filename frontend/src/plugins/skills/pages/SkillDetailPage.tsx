@@ -240,7 +240,7 @@ export const SkillDetailPage: React.FC = () => {
                       ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700'
                       : 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600'
                   } ${isCurrent ? 'ring-2 ring-offset-2 ring-offset-white dark:ring-offset-gray-800 scale-105' : ''}`}
-                  style={isCurrent ? { ringColor: tierColor, borderColor: tierColor, ['--tw-ring-color' as any]: tierColor } : undefined}
+                  style={isCurrent ? { borderColor: tierColor, ['--tw-ring-color' as string]: tierColor } as React.CSSProperties : undefined}
                 >
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
@@ -334,9 +334,9 @@ export const SkillDetailPage: React.FC = () => {
                       </div>
                       <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
                         {entry.sourceType.replace('_', ' ')}
-                        {entry.sourceMetadata?.tutorial_title && `: ${entry.sourceMetadata.tutorial_title}`}
-                        {entry.sourceMetadata?.quiz_title && `: ${entry.sourceMetadata.quiz_title}`}
-                        {entry.sourceMetadata?.course_title && `: ${entry.sourceMetadata.course_title}`}
+                        {entry.sourceMetadata?.tutorial_title ? `: ${String(entry.sourceMetadata.tutorial_title)}` : null}
+                        {entry.sourceMetadata?.quiz_title ? `: ${String(entry.sourceMetadata.quiz_title)}` : null}
+                        {entry.sourceMetadata?.course_title ? `: ${String(entry.sourceMetadata.course_title)}` : null}
                       </div>
                     </div>
                     <div className="text-sm text-gray-400 flex-shrink-0">
