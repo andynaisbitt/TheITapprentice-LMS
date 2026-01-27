@@ -4,7 +4,7 @@ package-lock.json
 yarn.lock
 
 # Build output
-# dist/ is committed so production server can git pull without rebuilding
+dist/
 build/
 *.local
 
