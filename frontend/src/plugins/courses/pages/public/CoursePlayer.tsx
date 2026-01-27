@@ -13,6 +13,7 @@ import {
   Medal
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import ReactMarkdown from 'react-markdown';
 import { coursesApi } from '../../services/coursesApi';
 import type { Course as CourseDetail, CourseModule, ModuleSection, ContentBlock } from '../../types';
 import { useToast } from '../../../../components/ui/Toast';
@@ -471,6 +472,9 @@ const CoursePlayer: React.FC = () => {
   }> = ({ blockId, content, onQuizComplete }) => {
     const questions = content?.questions || [];
     const passingScore = content?.passing_score || 70;
+
+    // Debug logging
+    console.log('QuizBlockPlayer render:', { blockId, content, questions, questionsLength: questions.length });
     const [answers, setAnswers] = useState<Record<string, any>>({});
     const [showResults, setShowResults] = useState(false);
     const [results, setResults] = useState<Record<string, boolean>>({});
@@ -478,7 +482,12 @@ const CoursePlayer: React.FC = () => {
     const [maxScore, setMaxScore] = useState(0);
 
     const handleAnswerChange = (questionId: string, value: any) => {
-      setAnswers(prev => ({ ...prev, [questionId]: value }));
+      console.log('handleAnswerChange:', { questionId, value });
+      setAnswers(prev => {
+        const newAnswers = { ...prev, [questionId]: value };
+        console.log('New answers state:', newAnswers);
+        return newAnswers;
+      });
       // Reset results when answer changes
       if (showResults) {
         setShowResults(false);
@@ -502,6 +511,7 @@ const CoursePlayer: React.FC = () => {
     };
 
     const handleCheckAnswers = () => {
+      console.log('handleCheckAnswers called:', { answers, questions });
       let totalScore = 0;
       let totalMaxScore = 0;
       const newResults: Record<string, boolean> = {};
@@ -509,6 +519,7 @@ const CoursePlayer: React.FC = () => {
       questions.forEach((question: any) => {
         const qId = question.id;
         const userAnswer = answers[qId];
+        console.log('Checking question:', { qId, userAnswer, correctAnswer: question.correct_answer });
         const isCorrect = checkQuizAnswer(question, userAnswer);
         newResults[qId] = isCorrect;
         totalMaxScore += question.points || 1;
@@ -789,9 +800,18 @@ const CoursePlayer: React.FC = () => {
 
       case 'text':
         const textContent = block.content as any;
+        const textValue = textContent.text || textContent;
+        // Use ReactMarkdown for markdown content, plain text otherwise
+        if (textContent.markdown) {
+          return (
+            <div key={key} className="prose prose-slate dark:prose-invert max-w-none prose-headings:text-gray-900 dark:prose-headings:text-white prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-strong:text-gray-900 dark:prose-strong:text-white prose-li:text-gray-700 dark:prose-li:text-gray-300">
+              <ReactMarkdown>{textValue}</ReactMarkdown>
+            </div>
+          );
+        }
         return (
           <p key={key} className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
-            {textContent.text || textContent}
+            {textValue}
           </p>
         );
 
