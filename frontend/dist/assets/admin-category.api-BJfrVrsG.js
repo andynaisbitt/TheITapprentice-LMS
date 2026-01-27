@@ -1,1 +1,0 @@
-import{s as e}from"./index-9AhYSV_Z.js";const o={getAll:async()=>(await e.get("/api/v1/admin/blog/categories")).data,create:async a=>(await e.post("/api/v1/admin/blog/categories",a)).data,update:async(a,t)=>(await e.put(`/api/v1/admin/blog/categories/${a}`,t)).data,delete:async a=>{await e.delete(`/api/v1/admin/blog/categories/${a}`)}};export{o as a};

@@ -22,7 +22,7 @@ import { getTutorials } from '../../plugins/tutorials/services/tutorialApi';
 import { coursesApi } from '../../plugins/courses/services/coursesApi';
 import { apiClient } from '../../services/api/client';
 import type { TutorialListItem } from '../../plugins/tutorials/types';
-import type { CourseListItem } from '../../plugins/courses/types';
+import type { Course } from '../../plugins/courses/types';
 import Section from './Section';
 
 // Types
@@ -94,7 +94,7 @@ const LearningPathsShowcase: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'all' | 'tutorial' | 'course' | 'quiz'>('all');
   const [tutorials, setTutorials] = useState<TutorialListItem[]>([]);
-  const [courses, setCourses] = useState<CourseListItem[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [quizzes, setQuizzes] = useState<QuizSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -103,8 +103,8 @@ const LearningPathsShowcase: React.FC = () => {
       setLoading(true);
       try {
         const [tutorialsRes, coursesRes, quizzesRes] = await Promise.all([
-          getTutorials({ is_published: true, limit: 6 }).catch(() => []),
-          coursesApi.getCourses({ status: 'published', limit: 6 }).catch(() => ({ courses: [] })),
+          getTutorials({ limit: 6 }).catch(() => []),
+          coursesApi.getCourses({ status: 'published', page_size: 6 }).catch(() => ({ courses: [] })),
           apiClient.get('/api/v1/quizzes/featured?limit=6').catch(() => ({ data: [] })),
         ]);
 
@@ -130,13 +130,12 @@ const LearningPathsShowcase: React.FC = () => {
         id: t.id.toString(),
         type: 'tutorial',
         title: t.title,
-        description: t.description,
-        category: t.category_name,
+        description: t.description ?? undefined,
+        category: t.category?.name ?? undefined,
         difficulty: t.difficulty || 'beginner',
-        timeMinutes: t.estimated_time_minutes,
+        timeMinutes: t.estimated_time_minutes ?? undefined,
         xpReward: t.xp_reward || 50,
         isFeatured: t.is_featured,
-        itemCount: t.step_count,
         link: `/tutorials/${t.slug || t.id}`,
       });
     });
@@ -152,7 +151,7 @@ const LearningPathsShowcase: React.FC = () => {
         timeMinutes: (c.estimated_hours || 0) * 60,
         xpReward: c.xp_reward || 100,
         isFeatured: c.is_featured,
-        itemCount: c.module_count,
+        itemCount: c.modules?.length,
         link: `/courses/${c.id}`,
       });
     });
