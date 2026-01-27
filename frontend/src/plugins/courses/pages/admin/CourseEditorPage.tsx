@@ -5,10 +5,11 @@
  */
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Plus, Trash2, ChevronUp, ChevronDown, GripVertical, BookOpen, FileText } from 'lucide-react';
+import { Plus, Trash2, ChevronUp, ChevronDown, GripVertical, BookOpen, FileText, Edit3 } from 'lucide-react';
 import { adminCoursesApi } from '../../services/coursesApi';
 import type { Course, CreateCourseRequest, UpdateCourseRequest, CourseLevel, CourseModule, ModuleSection, CreateModuleRequest, CreateSectionRequest, SectionType } from '../../types';
 import { SkillSelector } from '../../../../components/admin/SkillSelector';
+import { SectionContentEditor } from '../../components/builder/SectionContentEditor';
 
 const CourseEditorPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -33,6 +34,7 @@ const CourseEditorPage: React.FC = () => {
   const [fullCourse, setFullCourse] = useState<Course | null>(null);
   const [modules, setModules] = useState<CourseModule[]>([]);
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
+  const [editingSection, setEditingSection] = useState<{ moduleId: string; section: ModuleSection } | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -139,6 +141,27 @@ const CourseEditorPage: React.FC = () => {
       await fetchCourse();
     } catch (err: any) {
       alert(`Failed to delete section: ${err.message}`);
+    }
+  };
+
+  const handleEditSection = (moduleId: string, section: ModuleSection) => {
+    setEditingSection({ moduleId, section });
+  };
+
+  const handleSaveSection = async (updates: Partial<ModuleSection>) => {
+    if (!id || !editingSection) return;
+
+    try {
+      await adminCoursesApi.updateSection(
+        id,
+        editingSection.moduleId,
+        editingSection.section.id,
+        updates
+      );
+      await fetchCourse();
+      setEditingSection(null);
+    } catch (err: any) {
+      alert(`Failed to save section: ${err.message}`);
     }
   };
 
@@ -314,7 +337,8 @@ const CourseEditorPage: React.FC = () => {
                             {module.sections.sort((a, b) => a.order_index - b.order_index).map((section) => (
                               <div
                                 key={section.id}
-                                className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                                className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer transition-colors"
+                                onClick={() => handleEditSection(module.id, section)}
                               >
                                 <GripVertical className="w-4 h-4 text-gray-400" />
                                 <span className={`px-2 py-0.5 text-xs rounded ${
@@ -332,8 +356,16 @@ const CourseEditorPage: React.FC = () => {
                                   {section.content_blocks?.length || 0} blocks
                                 </span>
                                 <button
-                                  onClick={() => handleDeleteSection(module.id, section.id)}
+                                  onClick={(e) => { e.stopPropagation(); handleEditSection(module.id, section); }}
+                                  className="p-1 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
+                                  title="Edit Content"
+                                >
+                                  <Edit3 className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleDeleteSection(module.id, section.id); }}
                                   className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"
+                                  title="Delete Section"
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </button>
@@ -354,12 +386,21 @@ const CourseEditorPage: React.FC = () => {
               </div>
             )}
 
-            <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-              <p className="text-sm text-amber-700 dark:text-amber-400">
-                <strong>Coming Soon:</strong> Full content block editor for sections. Currently you can manage course structure - content editing will be available in the next update.
+            <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <p className="text-sm text-blue-700 dark:text-blue-400">
+                <strong>Tip:</strong> Click on any section to open the content editor and add text, code, images, quizzes, and more.
               </p>
             </div>
           </div>
+        )}
+
+        {/* Section Content Editor Modal */}
+        {editingSection && (
+          <SectionContentEditor
+            section={editingSection.section}
+            onSave={handleSaveSection}
+            onClose={() => setEditingSection(null)}
+          />
         )}
 
         {/* Info Tab Content */}

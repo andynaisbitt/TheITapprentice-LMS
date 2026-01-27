@@ -17,21 +17,20 @@ import {
   RotateCcw,
   Download,
   Ban,
+  AlertCircle,
 } from 'lucide-react';
+import { apiClient } from '../../services/api/client';
 
 interface LeaderboardEntry {
   rank: number;
-  user: {
-    id: number;
-    username: string;
-    email: string;
-  };
+  id: number;
+  username: string;
+  email: string;
   best_wpm: number;
   avg_wpm: number;
-  avg_accuracy: number;
   games_played: number;
   total_xp: number;
-  last_played: string;
+  last_played: string | null;
   is_suspicious: boolean;
 }
 
@@ -46,6 +45,7 @@ export const GameLeaderboardAdmin: React.FC = () => {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [stats, setStats] = useState<LeaderboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'best_wpm' | 'avg_wpm' | 'games_played'>('best_wpm');
   const [period, setPeriod] = useState<'all' | 'month' | 'week' | 'today'>('all');
@@ -56,30 +56,16 @@ export const GameLeaderboardAdmin: React.FC = () => {
 
   const loadLeaderboard = async () => {
     setLoading(true);
+    setError(null);
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch(`/api/v1/games/typing/admin/leaderboard?sort=${sortBy}&period=${period}`);
-
-      // Mock data
-      setLeaderboard([
-        { rank: 1, user: { id: 1, username: 'speedster_pro', email: 'speed@example.com' }, best_wpm: 145, avg_wpm: 128, avg_accuracy: 98.5, games_played: 342, total_xp: 15600, last_played: new Date(Date.now() - 1000 * 60 * 30).toISOString(), is_suspicious: false },
-        { rank: 2, user: { id: 2, username: 'typing_ninja', email: 'ninja@example.com' }, best_wpm: 138, avg_wpm: 122, avg_accuracy: 97.8, games_played: 256, total_xp: 12400, last_played: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), is_suspicious: false },
-        { rank: 3, user: { id: 3, username: 'keyboard_master', email: 'master@example.com' }, best_wpm: 132, avg_wpm: 118, avg_accuracy: 96.2, games_played: 198, total_xp: 9800, last_played: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), is_suspicious: false },
-        { rank: 4, user: { id: 4, username: 'quick_fingers', email: 'quick@example.com' }, best_wpm: 128, avg_wpm: 112, avg_accuracy: 95.4, games_played: 176, total_xp: 8200, last_played: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(), is_suspicious: false },
-        { rank: 5, user: { id: 5, username: 'suspicious_user', email: 'sus@example.com' }, best_wpm: 200, avg_wpm: 195, avg_accuracy: 100, games_played: 5, total_xp: 500, last_played: new Date(Date.now() - 1000 * 60 * 60 * 1).toISOString(), is_suspicious: true },
-        { rank: 6, user: { id: 6, username: 'code_typer', email: 'coder@example.com' }, best_wpm: 118, avg_wpm: 105, avg_accuracy: 94.8, games_played: 234, total_xp: 11200, last_played: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), is_suspicious: false },
-        { rank: 7, user: { id: 7, username: 'word_warrior', email: 'warrior@example.com' }, best_wpm: 115, avg_wpm: 102, avg_accuracy: 93.5, games_played: 156, total_xp: 7400, last_played: new Date(Date.now() - 1000 * 60 * 60 * 36).toISOString(), is_suspicious: false },
-        { rank: 8, user: { id: 8, username: 'daily_typer', email: 'daily@example.com' }, best_wpm: 108, avg_wpm: 95, avg_accuracy: 92.1, games_played: 412, total_xp: 18500, last_played: new Date(Date.now() - 1000 * 60 * 15).toISOString(), is_suspicious: false },
-      ]);
-
-      setStats({
-        total_players: 1547,
-        games_played_today: 342,
-        avg_wpm_global: 62,
-        top_wpm_today: 145,
+      const response = await apiClient.get('/api/v1/games/typing/admin/leaderboard', {
+        params: { sort: sortBy, period, limit: 100 }
       });
-    } catch (error) {
-      console.error('Failed to load leaderboard:', error);
+      setLeaderboard(response.data.entries);
+      setStats(response.data.stats);
+    } catch (err) {
+      console.error('Failed to load leaderboard:', err);
+      setError('Failed to load leaderboard. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -117,8 +103,8 @@ export const GameLeaderboardAdmin: React.FC = () => {
   const filteredLeaderboard = leaderboard.filter(entry => {
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      if (!entry.user.username.toLowerCase().includes(term) &&
-          !entry.user.email.toLowerCase().includes(term)) {
+      if (!entry.username.toLowerCase().includes(term) &&
+          !entry.email.toLowerCase().includes(term)) {
         return false;
       }
     }
@@ -129,6 +115,21 @@ export const GameLeaderboardAdmin: React.FC = () => {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+        <p className="text-red-600 dark:text-red-400 mb-4">{error}</p>
+        <button
+          onClick={loadLeaderboard}
+          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
+        >
+          Try Again
+        </button>
       </div>
     );
   }
@@ -255,9 +256,6 @@ export const GameLeaderboardAdmin: React.FC = () => {
                   Avg WPM
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Accuracy
-                </th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Games
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -272,7 +270,7 @@ export const GameLeaderboardAdmin: React.FC = () => {
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {filteredLeaderboard.map((entry) => (
                 <tr
-                  key={entry.user.id}
+                  key={entry.id}
                   className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
                     entry.is_suspicious ? 'bg-red-50 dark:bg-red-900/10' : ''
                   }`}
@@ -285,11 +283,11 @@ export const GameLeaderboardAdmin: React.FC = () => {
                   <td className="px-4 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center text-white text-sm font-semibold">
-                        {entry.user.username[0].toUpperCase()}
+                        {entry.username[0].toUpperCase()}
                       </div>
                       <div>
                         <p className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                          {entry.user.username}
+                          {entry.username}
                           {entry.is_suspicious && (
                             <span className="px-1.5 py-0.5 text-xs rounded bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">
                               Suspicious
@@ -297,7 +295,7 @@ export const GameLeaderboardAdmin: React.FC = () => {
                           )}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {entry.user.email}
+                          {entry.email}
                         </p>
                       </div>
                     </div>
@@ -310,9 +308,6 @@ export const GameLeaderboardAdmin: React.FC = () => {
                   <td className="px-4 py-4 text-center text-gray-900 dark:text-white">
                     {entry.avg_wpm}
                   </td>
-                  <td className="px-4 py-4 text-center text-gray-900 dark:text-white">
-                    {entry.avg_accuracy}%
-                  </td>
                   <td className="px-4 py-4 text-center text-gray-600 dark:text-gray-300">
                     {entry.games_played}
                   </td>
@@ -322,19 +317,19 @@ export const GameLeaderboardAdmin: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-4 py-4 text-right text-sm text-gray-500 dark:text-gray-400">
-                    {formatTimeAgo(entry.last_played)}
+                    {entry.last_played ? formatTimeAgo(entry.last_played) : '-'}
                   </td>
                   <td className="px-4 py-4">
                     <div className="flex items-center gap-1">
                       <button
-                        onClick={() => handleResetStats(entry.user.id, entry.user.username)}
+                        onClick={() => handleResetStats(entry.id, entry.username)}
                         className="p-2 text-gray-400 hover:text-yellow-500 transition-colors"
                         title="Reset Stats"
                       >
                         <RotateCcw className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleBanUser(entry.user.id, entry.user.username)}
+                        onClick={() => handleBanUser(entry.id, entry.username)}
                         className="p-2 text-gray-400 hover:text-red-500 transition-colors"
                         title="Ban from Leaderboard"
                       >

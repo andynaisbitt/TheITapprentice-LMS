@@ -564,6 +564,99 @@ async def get_analytics(
     )
 
 
+# ==================== ADMIN LEADERBOARD ====================
+
+@router.get("/admin/leaderboard")
+async def get_admin_leaderboard(
+    sort: str = Query("best_wpm", description="Sort by: best_wpm, avg_wpm, games_played"),
+    period: str = Query("all", description="Period: all, month, week, today"),
+    limit: int = Query(50, ge=1, le=500),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    """
+    Admin-only leaderboard with extra user information.
+    Includes email, total XP, and suspicious activity flags.
+    """
+    from sqlalchemy import func
+
+    # Calculate today's start for period filters
+    today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+
+    # Build base query with user join
+    query = db.query(
+        models.UserTypingStats,
+        User.email,
+        User.display_name,
+        User.username,
+        User.total_points.label("total_xp")
+    ).join(User, models.UserTypingStats.user_id == User.id).filter(
+        models.UserTypingStats.total_games_completed > 0
+    )
+
+    # Sort options
+    sort_columns = {
+        "best_wpm": models.UserTypingStats.best_wpm.desc(),
+        "avg_wpm": models.UserTypingStats.average_wpm.desc(),
+        "games_played": models.UserTypingStats.total_games_completed.desc()
+    }
+    query = query.order_by(sort_columns.get(sort, models.UserTypingStats.best_wpm.desc()))
+
+    results = query.limit(limit).all()
+
+    # Get last played date for each user (subquery)
+    last_played_subq = db.query(
+        models.TypingGameSession.user_id,
+        func.max(models.TypingGameSession.completed_at).label("last_played")
+    ).filter(
+        models.TypingGameSession.is_completed == True
+    ).group_by(models.TypingGameSession.user_id).subquery()
+
+    # Build response with suspicious flag
+    entries = []
+    for idx, (stats, email, display_name, username, total_xp) in enumerate(results):
+        # Flag as suspicious if best WPM > 180 AND games played < 10
+        is_suspicious = stats.best_wpm > 180 and stats.total_games_completed < 10
+
+        # Get last played date
+        last_played = db.query(last_played_subq.c.last_played).filter(
+            last_played_subq.c.user_id == stats.user_id
+        ).scalar()
+
+        entries.append({
+            "rank": idx + 1,
+            "id": stats.user_id,
+            "username": display_name or username,
+            "email": email,
+            "best_wpm": stats.best_wpm or 0,
+            "avg_wpm": round(stats.average_wpm or 0, 1),
+            "games_played": stats.total_games_completed,
+            "total_xp": total_xp or 0,
+            "is_suspicious": is_suspicious,
+            "last_played": last_played.isoformat() if last_played else None
+        })
+
+    # Calculate stats
+    stats_result = {
+        "total_players": db.query(models.UserTypingStats).filter(
+            models.UserTypingStats.total_games_completed > 0
+        ).count(),
+        "games_played_today": db.query(models.TypingGameSession).filter(
+            models.TypingGameSession.completed_at >= today_start,
+            models.TypingGameSession.is_completed == True
+        ).count(),
+        "avg_wpm_global": round(db.query(func.avg(models.UserTypingStats.average_wpm)).scalar() or 0, 1),
+        "top_wpm_today": db.query(func.max(models.TypingGameSession.wpm)).filter(
+            models.TypingGameSession.completed_at >= today_start
+        ).scalar() or 0
+    }
+
+    return {
+        "entries": entries,
+        "stats": stats_result
+    }
+
+
 # ==================== SENTENCE POOL ROUTES ====================
 
 @router.get("/sentence-pools", response_model=schemas.SentencePoolListResponse)

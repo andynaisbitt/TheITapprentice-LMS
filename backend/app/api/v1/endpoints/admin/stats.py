@@ -347,6 +347,33 @@ async def get_lms_progress_stats(
     }
 
 
+@router.get("/users/role-counts")
+async def get_user_role_counts(
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Get user counts grouped by role.
+    Returns a dict like {"ADMIN": 2, "AUTHOR": 5, "APPRENTICE": 150}
+    """
+    from app.users.models import UserRole
+
+    counts = db.query(
+        User.role,
+        func.count(User.id)
+    ).filter(
+        User.is_active == True
+    ).group_by(User.role).all()
+
+    # Build response with all roles (even those with 0 users)
+    result = {role.value: 0 for role in UserRole}
+    for role, count in counts:
+        if role:
+            result[role.value] = count
+
+    return result
+
+
 @router.get("/content")
 async def get_content_stats(
     current_user: User = Depends(require_admin),

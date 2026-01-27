@@ -15,7 +15,9 @@ import {
   X,
   Loader2,
   Info,
+  AlertCircle,
 } from 'lucide-react';
+import { apiClient } from '../../services/api/client';
 
 interface Role {
   id: string;
@@ -56,37 +58,62 @@ const AVAILABLE_PERMISSIONS: Permission[] = [
   { id: 'plugins.manage', name: 'Manage Plugins', description: 'Enable/disable plugins', category: 'System' },
 ];
 
+// Roles matching backend UserRole enum
 const DEFAULT_ROLES: Role[] = [
   {
-    id: 'admin',
+    id: 'ADMIN',
     name: 'Administrator',
-    description: 'Full system access',
+    description: 'Full system access with all permissions',
     permissions: AVAILABLE_PERMISSIONS.map(p => p.id),
-    user_count: 1,
+    user_count: 0,
     is_system: true,
   },
   {
-    id: 'editor',
-    name: 'Editor',
-    description: 'Can manage content but not users or settings',
-    permissions: ['blog.create', 'blog.edit', 'blog.edit_all', 'blog.delete', 'blog.publish', 'pages.manage', 'tutorials.manage', 'courses.manage'],
-    user_count: 3,
+    id: 'TUTOR',
+    name: 'Tutor',
+    description: 'Can create and manage educational content',
+    permissions: ['blog.create', 'blog.edit', 'blog.edit_all', 'blog.publish', 'tutorials.manage', 'courses.manage', 'users.view'],
+    user_count: 0,
     is_system: true,
   },
   {
-    id: 'author',
+    id: 'AUTHOR',
     name: 'Author',
-    description: 'Can create and edit own content',
-    permissions: ['blog.create', 'blog.edit'],
-    user_count: 5,
+    description: 'Can create and manage own blog posts',
+    permissions: ['blog.create', 'blog.edit', 'blog.publish'],
+    user_count: 0,
     is_system: true,
   },
   {
-    id: 'subscriber',
-    name: 'Subscriber',
-    description: 'Basic user with learning access',
+    id: 'MENTOR',
+    name: 'Mentor',
+    description: 'Experienced member who helps other learners',
+    permissions: ['blog.create', 'blog.edit', 'users.view'],
+    user_count: 0,
+    is_system: true,
+  },
+  {
+    id: 'CONTRIBUTOR',
+    name: 'Contributor',
+    description: 'Active community member with contribution rights',
+    permissions: ['blog.create', 'blog.edit'],
+    user_count: 0,
+    is_system: true,
+  },
+  {
+    id: 'SUPPORTER',
+    name: 'Supporter',
+    description: 'Premium supporter with extra features',
     permissions: [],
-    user_count: 150,
+    user_count: 0,
+    is_system: true,
+  },
+  {
+    id: 'APPRENTICE',
+    name: 'Apprentice',
+    description: 'Default role for new learners',
+    permissions: [],
+    user_count: 0,
     is_system: true,
   },
 ];
@@ -109,15 +136,21 @@ export const RolesAdmin: React.FC = () => {
   const loadRoles = async () => {
     setLoading(true);
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/v1/admin/roles');
-      // const data = await response.json();
-      // setRoles(data);
+      // Fetch real user counts from the API
+      const response = await apiClient.get('/api/v1/admin/stats/users/role-counts');
+      const counts = response.data;
 
-      // Use mock data for now
-      setRoles(DEFAULT_ROLES);
+      // Merge counts with role definitions
+      const rolesWithCounts = DEFAULT_ROLES.map(role => ({
+        ...role,
+        user_count: counts[role.id] || 0
+      }));
+
+      setRoles(rolesWithCounts);
     } catch (error) {
       console.error('Failed to load roles:', error);
+      // Fall back to defaults with 0 counts on error
+      setRoles(DEFAULT_ROLES);
     } finally {
       setLoading(false);
     }

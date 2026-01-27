@@ -13,7 +13,7 @@ import DailyChallengeBanner from '../components/home/DailyChallengeBanner';
 import FeaturedCoursesCarousel from '../components/home/FeaturedCoursesCarousel';
 import TypingChallengeCTA from '../components/home/TypingChallengeCTA';
 import QuickQuizWidget from '../components/home/QuickQuizWidget';
-import TutorialPathsShowcase from '../components/home/TutorialPathsShowcase';
+import LearningPathsShowcase from '../components/home/LearningPathsShowcase';
 import LeaderboardPreview from '../components/home/LeaderboardPreview';
 import HomepageStatsWidget from '../components/home/HomepageStatsWidget';
 import MoreToExplore from '../components/home/MoreToExplore';
@@ -88,10 +88,10 @@ export const BlogHome: React.FC = () => {
         {settings.showFeaturedCourses && <FeaturedCoursesCarousel />}
 
         {/* ============================================ */}
-        {/* SECTION 4: Tutorial Paths                   */}
-        {/* Structured learning paths                   */}
+        {/* SECTION 4: Learning Paths                   */}
+        {/* Courses, Tutorials, and Quizzes             */}
         {/* ============================================ */}
-        {settings.showTutorialPaths && <TutorialPathsShowcase />}
+        {settings.showTutorialPaths && <LearningPathsShowcase />}
 
         {/* ============================================ */}
         {/* SECTION 5: Typing Challenge CTA             */}

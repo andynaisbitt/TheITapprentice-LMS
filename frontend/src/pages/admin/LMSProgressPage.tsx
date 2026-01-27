@@ -18,26 +18,14 @@ import {
   ChevronRight,
   Loader2,
   Zap,
+  AlertCircle,
 } from 'lucide-react';
-
-interface StudentProgress {
-  id: number;
-  username: string;
-  email: string;
-  avatar?: string;
-  total_xp: number;
-  level: number;
-  current_streak: number;
-  tutorials_completed: number;
-  courses_completed: number;
-  games_played: number;
-  achievements_unlocked: number;
-  last_active: string;
-}
+import { adminStatsApi, LMSProgressStudent } from '../../services/api/admin-stats.api';
 
 export const LMSProgressPage: React.FC = () => {
-  const [students, setStudents] = useState<StudentProgress[]>([]);
+  const [students, setStudents] = useState<LMSProgressStudent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'xp' | 'tutorials' | 'activity'>('xp');
 
@@ -47,22 +35,13 @@ export const LMSProgressPage: React.FC = () => {
 
   const loadStudentProgress = async () => {
     setLoading(true);
+    setError(null);
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/v1/admin/lms/progress');
-      // const data = await response.json();
-      // setStudents(data);
-
-      // Mock data
-      setStudents([
-        { id: 1, username: 'john_doe', email: 'john@example.com', total_xp: 2450, level: 8, current_streak: 12, tutorials_completed: 15, courses_completed: 2, games_played: 45, achievements_unlocked: 8, last_active: new Date(Date.now() - 1000 * 60 * 30).toISOString() },
-        { id: 2, username: 'jane_smith', email: 'jane@example.com', total_xp: 1890, level: 6, current_streak: 5, tutorials_completed: 12, courses_completed: 1, games_played: 32, achievements_unlocked: 6, last_active: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString() },
-        { id: 3, username: 'bob_wilson', email: 'bob@example.com', total_xp: 3210, level: 10, current_streak: 25, tutorials_completed: 23, courses_completed: 3, games_played: 78, achievements_unlocked: 12, last_active: new Date(Date.now() - 1000 * 60 * 15).toISOString() },
-        { id: 4, username: 'alice_chen', email: 'alice@example.com', total_xp: 980, level: 4, current_streak: 2, tutorials_completed: 5, courses_completed: 0, games_played: 15, achievements_unlocked: 3, last_active: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString() },
-        { id: 5, username: 'mike_brown', email: 'mike@example.com', total_xp: 1560, level: 5, current_streak: 8, tutorials_completed: 9, courses_completed: 1, games_played: 28, achievements_unlocked: 5, last_active: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString() },
-      ]);
-    } catch (error) {
-      console.error('Failed to load student progress:', error);
+      const data = await adminStatsApi.getLMSProgress();
+      setStudents(data.students);
+    } catch (err) {
+      console.error('Failed to load student progress:', err);
+      setError('Failed to load student progress. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -87,7 +66,11 @@ export const LMSProgressPage: React.FC = () => {
       switch (sortBy) {
         case 'xp': return b.total_xp - a.total_xp;
         case 'tutorials': return b.tutorials_completed - a.tutorials_completed;
-        case 'activity': return new Date(b.last_active).getTime() - new Date(a.last_active).getTime();
+        case 'activity': {
+          const aTime = a.last_active ? new Date(a.last_active).getTime() : 0;
+          const bTime = b.last_active ? new Date(b.last_active).getTime() : 0;
+          return bTime - aTime;
+        }
         default: return 0;
       }
     });
@@ -103,6 +86,21 @@ export const LMSProgressPage: React.FC = () => {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+        <p className="text-red-600 dark:text-red-400 mb-4">{error}</p>
+        <button
+          onClick={loadStudentProgress}
+          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
+        >
+          Try Again
+        </button>
       </div>
     );
   }
@@ -272,7 +270,7 @@ export const LMSProgressPage: React.FC = () => {
                     )}
                   </td>
                   <td className="px-4 py-4 text-right text-sm text-gray-500 dark:text-gray-400">
-                    {formatTimeAgo(student.last_active)}
+                    {student.last_active ? formatTimeAgo(student.last_active) : '-'}
                   </td>
                 </tr>
               ))}
