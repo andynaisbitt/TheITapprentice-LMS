@@ -54,7 +54,7 @@ class Quiz(Base):
     # Categorization
     category = Column(String(100), nullable=True, index=True)
     tags = Column(JSON, default=list)
-    difficulty = Column(SQLEnum(QuizDifficulty), default=QuizDifficulty.MEDIUM, nullable=False)
+    difficulty = Column(SQLEnum(QuizDifficulty, values_callable=lambda x: [e.value for e in x]), default=QuizDifficulty.MEDIUM, nullable=False)
     related_skills = Column(JSON, default=list)  # Skill slugs: ["programming", "networking"]
 
     # Quiz settings
@@ -74,7 +74,7 @@ class Quiz(Base):
     module_id = Column(String(100), nullable=True)  # Which module this quiz belongs to
 
     # Status
-    status = Column(SQLEnum(QuizStatus), default=QuizStatus.DRAFT, nullable=False, index=True)
+    status = Column(SQLEnum(QuizStatus, values_callable=lambda x: [e.value for e in x]), default=QuizStatus.DRAFT, nullable=False, index=True)
     is_featured = Column(Boolean, default=False)
 
     # Stats
@@ -108,7 +108,7 @@ class QuizQuestion(Base):
     quiz_id = Column(String(100), ForeignKey("quizzes.id", ondelete="CASCADE"), nullable=False, index=True)
 
     # Question content
-    question_type = Column(SQLEnum(QuestionType), nullable=False)
+    question_type = Column(SQLEnum(QuestionType, values_callable=lambda x: [e.value for e in x]), nullable=False)
     question_text = Column(Text, nullable=False)
     question_html = Column(Text, nullable=True)  # Optional HTML formatting
 
