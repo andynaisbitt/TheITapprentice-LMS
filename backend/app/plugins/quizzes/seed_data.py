@@ -13,6 +13,7 @@ sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
 from app.core.database import SessionLocal
 from app.plugins.quizzes.models import Quiz, QuizQuestion, QuizDifficulty, QuizStatus, QuestionType
+from app.auth.email_verification import EmailVerification  # noqa: F401 - Required for User relationship resolution
 
 
 # Quiz 1: IT Basics Quiz
