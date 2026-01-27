@@ -577,11 +577,13 @@ const CoursePlayer: React.FC = () => {
                 </div>
 
                 {/* Multiple Choice / True-False - Radio buttons */}
-                {(question.type === 'multiple_choice' || question.type === 'true_false') && question.options && (
+                {(question.type === 'multiple_choice' || question.type === 'true_false') && (
                   <div className="space-y-2 ml-6">
-                    {question.options.map((option: string, oIdx: number) => {
-                      const isSelected = answers[qId] === option;
-                      const isCorrectOption = question.correct_answer === option;
+                    {/* For true_false, use default options if not provided */}
+                    {(question.options || (question.type === 'true_false' ? ['True', 'False'] : [])).map((option: string, oIdx: number) => {
+                      const isSelected = answers[qId]?.toString().toLowerCase() === option.toLowerCase();
+                      // Handle case-insensitive comparison for correct answer
+                      const isCorrectOption = question.correct_answer?.toString().toLowerCase() === option.toLowerCase();
                       return (
                         <label
                           key={oIdx}
