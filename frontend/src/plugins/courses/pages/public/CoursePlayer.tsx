@@ -473,8 +473,14 @@ const CoursePlayer: React.FC = () => {
     const questions = content?.questions || [];
     const passingScore = content?.passing_score || 70;
 
+    // Track component mount/unmount
+    useEffect(() => {
+      console.log('🟢 QuizBlockPlayer MOUNTED:', blockId);
+      return () => console.log('🔴 QuizBlockPlayer UNMOUNTED:', blockId);
+    }, [blockId]);
+
     // Debug logging
-    console.log('QuizBlockPlayer render:', { blockId, content, questions, questionsLength: questions.length });
+    console.log('QuizBlockPlayer render:', { blockId, questionsLength: questions.length });
     const [answers, setAnswers] = useState<Record<string, any>>({});
     const [showResults, setShowResults] = useState(false);
     const [results, setResults] = useState<Record<string, boolean>>({});
@@ -543,8 +549,10 @@ const CoursePlayer: React.FC = () => {
     const percentage = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
     const passed = percentage >= passingScore;
 
-    // Debug render state
-    console.log('Render state:', { showResults, score, maxScore, percentage, passed, results });
+    // Debug render state - key values only
+    if (showResults) {
+      console.log('✅ SHOWING RESULTS:', { showResults, score, maxScore, percentage, passed });
+    }
 
     return (
       <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 my-6">
