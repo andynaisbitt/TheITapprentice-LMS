@@ -8,7 +8,10 @@ Run with: python -m app.plugins.courses.seed_data_comprehensive
 from sqlalchemy.orm import Session
 from typing import List
 
+# Import User models first to resolve relationships
 from app.users.models import User, UserRole
+from app.auth.email_verification import EmailVerification
+
 from app.plugins.courses.models import Course, CourseModule, ModuleSection
 from app.plugins.courses.schemas import CourseModuleCreate, ModuleSectionCreate
 
@@ -1666,7 +1669,23 @@ def run_seed():
     db = SessionLocal()
     try:
         print("Seeding comprehensive IT course data...")
-        courses = create_comprehensive_courses(db, instructor_id=1)
+
+        # Find an existing admin/tutor user
+        instructor = db.query(User).filter(
+            (User.role == UserRole.ADMIN) | (User.role == UserRole.TUTOR)
+        ).first()
+
+        if not instructor:
+            # Fall back to any existing user
+            instructor = db.query(User).first()
+
+        if not instructor:
+            print("Error: No users found in database. Please create a user first.")
+            return
+
+        print(f"Using instructor: {instructor.email} (ID: {instructor.id})")
+
+        courses = create_comprehensive_courses(db, instructor_id=instructor.id)
         print(f"\nSuccessfully created {len(courses)} courses!")
         for course in courses:
             print(f"  - {course.title} ({course.id})")
