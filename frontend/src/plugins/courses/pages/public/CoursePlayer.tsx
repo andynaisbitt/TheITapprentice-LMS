@@ -22,6 +22,340 @@ import { useToast } from '../../../../components/ui/Toast';
 const useXPNotification = () => ({ showXPGain: (_xp: number, _reason: string) => {} });
 const useAchievementNotification = () => ({ showAchievementUnlock: (_achievement: any) => {} });
 
+// Quiz answer validation function (standalone to prevent re-creation)
+const checkQuizAnswer = (question: any, userAnswer: any): boolean => {
+  const correct = question.correct_answer;
+  if (correct === undefined || correct === null) return false;
+  if (userAnswer === undefined || userAnswer === null || userAnswer === '') return false;
+
+  switch (question.type) {
+    case 'multiple_choice':
+    case 'true_false':
+      return String(userAnswer).toLowerCase().trim() === String(correct).toLowerCase().trim();
+
+    case 'multiple_select':
+      if (!Array.isArray(userAnswer) || !Array.isArray(correct)) return false;
+      const userSet = new Set(userAnswer.map((a: string) => String(a).toLowerCase().trim()));
+      const correctSet = new Set(correct.map((c: string) => String(c).toLowerCase().trim()));
+      return userSet.size === correctSet.size &&
+        [...userSet].every(v => correctSet.has(v));
+
+    case 'short_answer':
+    case 'fill_blank':
+      const userLower = String(userAnswer).toLowerCase().trim();
+      if (Array.isArray(correct)) {
+        return correct.some((c: string) => String(c).toLowerCase().trim() === userLower);
+      }
+      return userLower === String(correct).toLowerCase().trim();
+
+    case 'code_challenge':
+      return String(userAnswer).trim() === String(correct).trim();
+
+    default:
+      return false;
+  }
+};
+
+// QuizBlockPlayer - MUST be outside CoursePlayer to prevent remounting on parent re-render
+const QuizBlockPlayer: React.FC<{
+  blockId: string;
+  content: any;
+  onQuizComplete: (blockId: string, passed: boolean, score: number, maxScore: number) => void;
+}> = ({ blockId, content, onQuizComplete }) => {
+  const questions = content?.questions || [];
+  const passingScore = content?.passing_score || 70;
+
+  const [answers, setAnswers] = useState<Record<string, any>>({});
+  const [showResults, setShowResults] = useState(false);
+  const [results, setResults] = useState<Record<string, boolean>>({});
+  const [score, setScore] = useState(0);
+  const [maxScore, setMaxScore] = useState(0);
+
+  const handleAnswerChange = (questionId: string, value: any) => {
+    setAnswers(prev => ({ ...prev, [questionId]: value }));
+    if (showResults) {
+      setShowResults(false);
+      setResults({});
+    }
+  };
+
+  const handleMultiSelectChange = (questionId: string, option: string, checked: boolean) => {
+    setAnswers(prev => {
+      const current = Array.isArray(prev[questionId]) ? prev[questionId] : [];
+      if (checked) {
+        return { ...prev, [questionId]: [...current, option] };
+      } else {
+        return { ...prev, [questionId]: current.filter((o: string) => o !== option) };
+      }
+    });
+    if (showResults) {
+      setShowResults(false);
+      setResults({});
+    }
+  };
+
+  const handleCheckAnswers = () => {
+    let totalScore = 0;
+    let totalMaxScore = 0;
+    const newResults: Record<string, boolean> = {};
+
+    questions.forEach((question: any) => {
+      const qId = question.id;
+      const userAnswer = answers[qId];
+      const isCorrect = checkQuizAnswer(question, userAnswer);
+      newResults[qId] = isCorrect;
+      totalMaxScore += question.points || 1;
+      if (isCorrect) {
+        totalScore += question.points || 1;
+      }
+    });
+
+    setResults(newResults);
+    setScore(totalScore);
+    setMaxScore(totalMaxScore);
+    setShowResults(true);
+
+    const percentage = totalMaxScore > 0 ? (totalScore / totalMaxScore) * 100 : 0;
+    const passed = percentage >= passingScore;
+    onQuizComplete(blockId, passed, totalScore, totalMaxScore);
+  };
+
+  const percentage = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
+  const passed = percentage >= passingScore;
+
+  return (
+    <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 my-6">
+      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+        <span className="text-2xl">📝</span>
+        Quiz
+        {showResults && (
+          <span className={`ml-auto text-sm font-normal px-3 py-1 rounded-full ${
+            passed
+              ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+              : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+          }`}>
+            {percentage}% - {passed ? 'Passed!' : `Need ${passingScore}% to pass`}
+          </span>
+        )}
+      </h3>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+        Passing score: {passingScore}% • {questions.length} question{questions.length !== 1 ? 's' : ''}
+      </p>
+
+      <div className="space-y-6">
+        {questions.map((question: any, qIdx: number) => {
+          const qId = question.id;
+          const isCorrect = results[qId];
+          const wasAnswered = showResults;
+
+          return (
+            <div
+              key={qId || qIdx}
+              className={`bg-white dark:bg-gray-900 rounded-lg p-4 border-2 transition-colors ${
+                wasAnswered
+                  ? isCorrect
+                    ? 'border-green-400 dark:border-green-500'
+                    : 'border-red-400 dark:border-red-500'
+                  : 'border-gray-200 dark:border-gray-700'
+              }`}
+            >
+              <div className="flex items-start gap-2 mb-3">
+                <span className="text-blue-600 dark:text-blue-400 font-medium">Q{qIdx + 1}.</span>
+                <p className="font-medium text-gray-900 dark:text-white flex-1">{question.question}</p>
+                {wasAnswered && (
+                  <span className={`text-lg ${isCorrect ? 'text-green-500' : 'text-red-500'}`}>
+                    {isCorrect ? '✓' : '✗'}
+                  </span>
+                )}
+              </div>
+
+              {/* Multiple Choice / True-False */}
+              {(question.type === 'multiple_choice' || question.type === 'true_false') && (
+                <div className="space-y-2 ml-6">
+                  {(question.options || (question.type === 'true_false' ? ['True', 'False'] : [])).map((option: string, oIdx: number) => {
+                    const isSelected = answers[qId]?.toString().toLowerCase() === option.toLowerCase();
+                    const isCorrectOption = question.correct_answer?.toString().toLowerCase() === option.toLowerCase();
+                    return (
+                      <label
+                        key={oIdx}
+                        className={`flex items-center gap-3 p-2 rounded cursor-pointer transition-colors ${
+                          wasAnswered
+                            ? isCorrectOption
+                              ? 'bg-green-50 dark:bg-green-900/20'
+                              : isSelected
+                                ? 'bg-red-50 dark:bg-red-900/20'
+                                : ''
+                            : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name={`quiz-${blockId}-q${qIdx}`}
+                          checked={isSelected}
+                          onChange={() => handleAnswerChange(qId, option)}
+                          disabled={showResults && passed}
+                          className="w-4 h-4 text-blue-600"
+                        />
+                        <span className="text-gray-700 dark:text-gray-300">{option}</span>
+                        {wasAnswered && isCorrectOption && (
+                          <span className="ml-auto text-green-600 dark:text-green-400 text-sm">✓ Correct</span>
+                        )}
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Multiple Select */}
+              {question.type === 'multiple_select' && question.options && (
+                <div className="space-y-2 ml-6">
+                  <p className="text-xs text-gray-500 mb-1">Select all that apply:</p>
+                  {question.options.map((option: string, oIdx: number) => {
+                    const selectedAnswers = Array.isArray(answers[qId]) ? answers[qId] : [];
+                    const isSelected = selectedAnswers.includes(option);
+                    const correctAnswers = Array.isArray(question.correct_answer) ? question.correct_answer : [];
+                    const isCorrectOption = correctAnswers.includes(option);
+                    return (
+                      <label
+                        key={oIdx}
+                        className={`flex items-center gap-3 p-2 rounded cursor-pointer transition-colors ${
+                          wasAnswered
+                            ? isCorrectOption
+                              ? 'bg-green-50 dark:bg-green-900/20'
+                              : isSelected
+                                ? 'bg-red-50 dark:bg-red-900/20'
+                                : ''
+                            : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => handleMultiSelectChange(qId, option, e.target.checked)}
+                          disabled={showResults && passed}
+                          className="w-4 h-4 text-blue-600 rounded"
+                        />
+                        <span className="text-gray-700 dark:text-gray-300">{option}</span>
+                        {wasAnswered && isCorrectOption && (
+                          <span className="ml-auto text-green-600 dark:text-green-400 text-sm">✓ Correct</span>
+                        )}
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Short Answer / Fill Blank */}
+              {(question.type === 'short_answer' || question.type === 'fill_blank') && (
+                <div className="ml-6">
+                  <input
+                    type="text"
+                    value={answers[qId] || ''}
+                    onChange={(e) => handleAnswerChange(qId, e.target.value)}
+                    placeholder="Type your answer..."
+                    disabled={showResults && passed}
+                    className={`w-full p-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${
+                      wasAnswered
+                        ? isCorrect
+                          ? 'border-green-400'
+                          : 'border-red-400'
+                        : 'border-gray-300 dark:border-gray-600'
+                    }`}
+                  />
+                  {wasAnswered && !isCorrect && (
+                    <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+                      Correct answer: {Array.isArray(question.correct_answer) ? question.correct_answer.join(' or ') : question.correct_answer}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Code Challenge */}
+              {question.type === 'code_challenge' && (
+                <div className="ml-6">
+                  <textarea
+                    value={answers[qId] || question.code_snippet || ''}
+                    onChange={(e) => handleAnswerChange(qId, e.target.value)}
+                    rows={4}
+                    disabled={showResults && passed}
+                    className={`w-full p-3 font-mono text-sm rounded-lg bg-gray-900 text-green-400 border ${
+                      wasAnswered
+                        ? isCorrect
+                          ? 'border-green-400'
+                          : 'border-red-400'
+                        : 'border-gray-600'
+                    }`}
+                  />
+                </div>
+              )}
+
+              {/* Explanation */}
+              {wasAnswered && question.explanation && (
+                <div className="mt-3 ml-6 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    <strong>Explanation:</strong> {question.explanation}
+                  </p>
+                </div>
+              )}
+
+              {/* Points */}
+              {question.points && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 ml-6">
+                  {question.points} point{question.points !== 1 ? 's' : ''}
+                  {wasAnswered && (
+                    <span className={isCorrect ? 'text-green-600' : 'text-red-600'}>
+                      {' '}• {isCorrect ? `+${question.points}` : '+0'}
+                    </span>
+                  )}
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {questions.length > 0 && (
+        <div className="mt-4 flex items-center justify-between">
+          {showResults && (
+            <div className={`text-sm font-medium ${passed ? 'text-green-600' : 'text-red-600'}`}>
+              Score: {score}/{maxScore} ({percentage}%)
+            </div>
+          )}
+          <div className="ml-auto flex gap-2">
+            {showResults && !passed && (
+              <button
+                onClick={() => {
+                  setShowResults(false);
+                  setResults({});
+                  setAnswers({});
+                }}
+                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors"
+              >
+                Try Again
+              </button>
+            )}
+            {!showResults && (
+              <button
+                onClick={handleCheckAnswers}
+                disabled={Object.keys(answers).length === 0}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors disabled:cursor-not-allowed"
+              >
+                Check Answers
+              </button>
+            )}
+            {showResults && passed && (
+              <span className="px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg font-medium flex items-center gap-2">
+                <CheckCircle className="w-4 h-4" />
+                Quiz Passed!
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const CoursePlayer: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
@@ -427,366 +761,6 @@ const CoursePlayer: React.FC = () => {
 
     // Navigate to next section
     navigateToSection(nextSection.module, nextSection.section);
-  };
-
-  // Quiz answer validation function (matches backend logic)
-  const checkQuizAnswer = (question: any, userAnswer: any): boolean => {
-    const correct = question.correct_answer;
-    if (correct === undefined || correct === null) return false;
-    if (userAnswer === undefined || userAnswer === null || userAnswer === '') return false;
-
-    switch (question.type) {
-      case 'multiple_choice':
-      case 'true_false':
-        return String(userAnswer).toLowerCase().trim() === String(correct).toLowerCase().trim();
-
-      case 'multiple_select':
-        if (!Array.isArray(userAnswer) || !Array.isArray(correct)) return false;
-        const userSet = new Set(userAnswer.map((a: string) => String(a).toLowerCase().trim()));
-        const correctSet = new Set(correct.map((c: string) => String(c).toLowerCase().trim()));
-        return userSet.size === correctSet.size &&
-          [...userSet].every(v => correctSet.has(v));
-
-      case 'short_answer':
-      case 'fill_blank':
-        const userLower = String(userAnswer).toLowerCase().trim();
-        if (Array.isArray(correct)) {
-          return correct.some((c: string) => String(c).toLowerCase().trim() === userLower);
-        }
-        return userLower === String(correct).toLowerCase().trim();
-
-      case 'code_challenge':
-        // Simple string comparison for now
-        return String(userAnswer).trim() === String(correct).trim();
-
-      default:
-        return false;
-    }
-  };
-
-  // QuizBlockPlayer - handles quiz interactions, grading, and feedback
-  const QuizBlockPlayer: React.FC<{
-    blockId: string;
-    content: any;
-    onQuizComplete: (blockId: string, passed: boolean, score: number, maxScore: number) => void;
-  }> = ({ blockId, content, onQuizComplete }) => {
-    const questions = content?.questions || [];
-    const passingScore = content?.passing_score || 70;
-
-    // Track component mount/unmount
-    useEffect(() => {
-      console.log('🟢 QuizBlockPlayer MOUNTED:', blockId);
-      return () => console.log('🔴 QuizBlockPlayer UNMOUNTED:', blockId);
-    }, [blockId]);
-
-    // Debug logging
-    console.log('QuizBlockPlayer render:', { blockId, questionsLength: questions.length });
-    const [answers, setAnswers] = useState<Record<string, any>>({});
-    const [showResults, setShowResults] = useState(false);
-    const [results, setResults] = useState<Record<string, boolean>>({});
-    const [score, setScore] = useState(0);
-    const [maxScore, setMaxScore] = useState(0);
-
-    const handleAnswerChange = (questionId: string, value: any) => {
-      console.log('handleAnswerChange:', { questionId, value });
-      setAnswers(prev => {
-        const newAnswers = { ...prev, [questionId]: value };
-        console.log('New answers state:', newAnswers);
-        return newAnswers;
-      });
-      // Reset results when answer changes
-      if (showResults) {
-        setShowResults(false);
-        setResults({});
-      }
-    };
-
-    const handleMultiSelectChange = (questionId: string, option: string, checked: boolean) => {
-      setAnswers(prev => {
-        const current = Array.isArray(prev[questionId]) ? prev[questionId] : [];
-        if (checked) {
-          return { ...prev, [questionId]: [...current, option] };
-        } else {
-          return { ...prev, [questionId]: current.filter((o: string) => o !== option) };
-        }
-      });
-      if (showResults) {
-        setShowResults(false);
-        setResults({});
-      }
-    };
-
-    const handleCheckAnswers = () => {
-      console.log('handleCheckAnswers called:', { answers, questions });
-      let totalScore = 0;
-      let totalMaxScore = 0;
-      const newResults: Record<string, boolean> = {};
-
-      questions.forEach((question: any) => {
-        const qId = question.id;
-        const userAnswer = answers[qId];
-        console.log('Checking question:', { qId, userAnswer, correctAnswer: question.correct_answer });
-        const isCorrect = checkQuizAnswer(question, userAnswer);
-        newResults[qId] = isCorrect;
-        totalMaxScore += question.points || 1;
-        if (isCorrect) {
-          totalScore += question.points || 1;
-        }
-      });
-
-      console.log('Setting results:', { newResults, totalScore, totalMaxScore });
-      setResults(newResults);
-      setScore(totalScore);
-      setMaxScore(totalMaxScore);
-      setShowResults(true);
-
-      const percentage = totalMaxScore > 0 ? (totalScore / totalMaxScore) * 100 : 0;
-      const passed = percentage >= passingScore;
-      console.log('Quiz complete:', { percentage, passed, passingScore });
-      onQuizComplete(blockId, passed, totalScore, totalMaxScore);
-    };
-
-    const percentage = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
-    const passed = percentage >= passingScore;
-
-    // Debug render state - key values only
-    if (showResults) {
-      console.log('✅ SHOWING RESULTS:', { showResults, score, maxScore, percentage, passed });
-    }
-
-    return (
-      <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 my-6">
-        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-          <span className="text-2xl">📝</span>
-          Quiz
-          {showResults && (
-            <span className={`ml-auto text-sm font-normal px-3 py-1 rounded-full ${
-              passed
-                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-            }`}>
-              {percentage}% - {passed ? 'Passed!' : `Need ${passingScore}% to pass`}
-            </span>
-          )}
-        </h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-          Passing score: {passingScore}% • {questions.length} question{questions.length !== 1 ? 's' : ''}
-        </p>
-
-        <div className="space-y-6">
-          {questions.map((question: any, qIdx: number) => {
-            const qId = question.id;
-            const isCorrect = results[qId];
-            const wasAnswered = showResults;
-
-            return (
-              <div
-                key={qId || qIdx}
-                className={`bg-white dark:bg-gray-900 rounded-lg p-4 border-2 transition-colors ${
-                  wasAnswered
-                    ? isCorrect
-                      ? 'border-green-400 dark:border-green-500'
-                      : 'border-red-400 dark:border-red-500'
-                    : 'border-gray-200 dark:border-gray-700'
-                }`}
-              >
-                <div className="flex items-start gap-2 mb-3">
-                  <span className="text-blue-600 dark:text-blue-400 font-medium">Q{qIdx + 1}.</span>
-                  <p className="font-medium text-gray-900 dark:text-white flex-1">{question.question}</p>
-                  {wasAnswered && (
-                    <span className={`text-lg ${isCorrect ? 'text-green-500' : 'text-red-500'}`}>
-                      {isCorrect ? '✓' : '✗'}
-                    </span>
-                  )}
-                </div>
-
-                {/* Multiple Choice / True-False - Radio buttons */}
-                {(question.type === 'multiple_choice' || question.type === 'true_false') && (
-                  <div className="space-y-2 ml-6">
-                    {/* For true_false, use default options if not provided */}
-                    {(question.options || (question.type === 'true_false' ? ['True', 'False'] : [])).map((option: string, oIdx: number) => {
-                      const isSelected = answers[qId]?.toString().toLowerCase() === option.toLowerCase();
-                      // Handle case-insensitive comparison for correct answer
-                      const isCorrectOption = question.correct_answer?.toString().toLowerCase() === option.toLowerCase();
-                      return (
-                        <label
-                          key={oIdx}
-                          className={`flex items-center gap-3 p-2 rounded cursor-pointer transition-colors ${
-                            wasAnswered
-                              ? isCorrectOption
-                                ? 'bg-green-50 dark:bg-green-900/20'
-                                : isSelected
-                                  ? 'bg-red-50 dark:bg-red-900/20'
-                                  : ''
-                              : 'hover:bg-gray-50 dark:hover:bg-gray-800'
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name={`quiz-${blockId}-q${qIdx}`}
-                            checked={isSelected}
-                            onChange={() => handleAnswerChange(qId, option)}
-                            disabled={showResults && passed}
-                            className="w-4 h-4 text-blue-600"
-                          />
-                          <span className="text-gray-700 dark:text-gray-300">{option}</span>
-                          {wasAnswered && isCorrectOption && (
-                            <span className="ml-auto text-green-600 dark:text-green-400 text-sm">✓ Correct</span>
-                          )}
-                        </label>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* Multiple Select - Checkboxes */}
-                {question.type === 'multiple_select' && question.options && (
-                  <div className="space-y-2 ml-6">
-                    <p className="text-xs text-gray-500 mb-1">Select all that apply:</p>
-                    {question.options.map((option: string, oIdx: number) => {
-                      const selectedAnswers = Array.isArray(answers[qId]) ? answers[qId] : [];
-                      const isSelected = selectedAnswers.includes(option);
-                      const correctAnswers = Array.isArray(question.correct_answer) ? question.correct_answer : [];
-                      const isCorrectOption = correctAnswers.includes(option);
-                      return (
-                        <label
-                          key={oIdx}
-                          className={`flex items-center gap-3 p-2 rounded cursor-pointer transition-colors ${
-                            wasAnswered
-                              ? isCorrectOption
-                                ? 'bg-green-50 dark:bg-green-900/20'
-                                : isSelected
-                                  ? 'bg-red-50 dark:bg-red-900/20'
-                                  : ''
-                              : 'hover:bg-gray-50 dark:hover:bg-gray-800'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={(e) => handleMultiSelectChange(qId, option, e.target.checked)}
-                            disabled={showResults && passed}
-                            className="w-4 h-4 text-blue-600 rounded"
-                          />
-                          <span className="text-gray-700 dark:text-gray-300">{option}</span>
-                          {wasAnswered && isCorrectOption && (
-                            <span className="ml-auto text-green-600 dark:text-green-400 text-sm">✓ Correct</span>
-                          )}
-                        </label>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* Short Answer / Fill Blank */}
-                {(question.type === 'short_answer' || question.type === 'fill_blank') && (
-                  <div className="ml-6">
-                    <input
-                      type="text"
-                      value={answers[qId] || ''}
-                      onChange={(e) => handleAnswerChange(qId, e.target.value)}
-                      placeholder="Type your answer..."
-                      disabled={showResults && passed}
-                      className={`w-full p-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${
-                        wasAnswered
-                          ? isCorrect
-                            ? 'border-green-400'
-                            : 'border-red-400'
-                          : 'border-gray-300 dark:border-gray-600'
-                      }`}
-                    />
-                    {wasAnswered && !isCorrect && (
-                      <p className="text-sm text-green-600 dark:text-green-400 mt-1">
-                        Correct answer: {Array.isArray(question.correct_answer) ? question.correct_answer.join(' or ') : question.correct_answer}
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {/* Code Challenge */}
-                {question.type === 'code_challenge' && (
-                  <div className="ml-6">
-                    <textarea
-                      value={answers[qId] || question.code_snippet || ''}
-                      onChange={(e) => handleAnswerChange(qId, e.target.value)}
-                      rows={4}
-                      disabled={showResults && passed}
-                      className={`w-full p-3 font-mono text-sm rounded-lg bg-gray-900 text-green-400 border ${
-                        wasAnswered
-                          ? isCorrect
-                            ? 'border-green-400'
-                            : 'border-red-400'
-                          : 'border-gray-600'
-                      }`}
-                    />
-                  </div>
-                )}
-
-                {/* Explanation */}
-                {wasAnswered && question.explanation && (
-                  <div className="mt-3 ml-6 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                    <p className="text-sm text-blue-700 dark:text-blue-300">
-                      <strong>Explanation:</strong> {question.explanation}
-                    </p>
-                  </div>
-                )}
-
-                {/* Points */}
-                {question.points && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 ml-6">
-                    {question.points} point{question.points !== 1 ? 's' : ''}
-                    {wasAnswered && (
-                      <span className={isCorrect ? 'text-green-600' : 'text-red-600'}>
-                        {' '}• {isCorrect ? `+${question.points}` : '+0'}
-                      </span>
-                    )}
-                  </p>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {questions.length > 0 && (
-          <div className="mt-4 flex items-center justify-between">
-            {showResults && (
-              <div className={`text-sm font-medium ${passed ? 'text-green-600' : 'text-red-600'}`}>
-                Score: {score}/{maxScore} ({percentage}%)
-              </div>
-            )}
-            <div className="ml-auto flex gap-2">
-              {showResults && !passed && (
-                <button
-                  onClick={() => {
-                    setShowResults(false);
-                    setResults({});
-                    setAnswers({});
-                  }}
-                  className="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors"
-                >
-                  Try Again
-                </button>
-              )}
-              {!showResults && (
-                <button
-                  onClick={handleCheckAnswers}
-                  disabled={Object.keys(answers).length === 0}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors disabled:cursor-not-allowed"
-                >
-                  Check Answers
-                </button>
-              )}
-              {showResults && passed && (
-                <span className="px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg font-medium flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4" />
-                  Quiz Passed!
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    );
   };
 
   // Handle quiz completion
