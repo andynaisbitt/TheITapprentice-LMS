@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import { useAuth } from '../state/contexts/AuthContext';
 import { Layout } from '../components/layout/Layout';
@@ -35,6 +35,7 @@ const UserDashboard = lazy(() => import('../pages/user/UserDashboard'));
 const Profile = lazy(() => import('../pages/user/Profile'));
 const XPLeaderboardPage = lazy(() => import('../pages/user/XPLeaderboardPage'));
 const ChallengeHistoryPage = lazy(() => import('../pages/user/ChallengeHistoryPage'));
+const MyCertificatesPage = lazy(() => import('../pages/user/MyCertificatesPage'));
 
 // Tutorial plugin pages
 const TutorialsPage = lazy(() => import('../plugins/tutorials/pages/TutorialsPage'));
@@ -117,13 +118,14 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { isAuthenticated, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return <PageLoader />;
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   return <>{children}</>;
@@ -136,13 +138,14 @@ interface AdminRouteProps {
 
 const AdminRoute = ({ children }: AdminRouteProps) => {
   const { isAuthenticated, isAdmin, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return <PageLoader />;
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   if (!isAdmin) {
@@ -274,6 +277,18 @@ export const AppRoutes = () => {
             <ProtectedRoute>
               <Layout>
                 <ChallengeHistoryPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Certificates - Protected */}
+        <Route
+          path="/certifications"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <MyCertificatesPage />
               </Layout>
             </ProtectedRoute>
           }

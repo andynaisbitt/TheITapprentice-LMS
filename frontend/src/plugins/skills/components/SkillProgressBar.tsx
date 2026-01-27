@@ -38,10 +38,10 @@ export const SkillProgressBar: React.FC<SkillProgressBarProps> = ({
     <div className="w-full">
       {showXpText && (
         <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
-          <span>{currentXp.toLocaleString()} XP</span>
+          <span>{(currentXp ?? 0).toLocaleString()} XP</span>
           <span>
-            {currentLevel < 99
-              ? `${xpToNextLevel.toLocaleString()} to Lv.${currentLevel + 1}`
+            {(currentLevel ?? 0) < 99
+              ? `${(xpToNextLevel ?? 0).toLocaleString()} to Lv.${(currentLevel ?? 0) + 1}`
               : 'MAX LEVEL'
             }
           </span>

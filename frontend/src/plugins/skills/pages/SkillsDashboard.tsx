@@ -66,8 +66,8 @@ const SkillCard: React.FC<{ skill: UserSkillProgress }> = ({ skill }) => {
       {/* XP Progress bar */}
       <div className="mb-2">
         <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
-          <span>{skill.currentXp.toLocaleString()} XP</span>
-          <span className="hidden sm:inline">{skill.xpToNextLevel.toLocaleString()} to next</span>
+          <span>{(skill.currentXp ?? 0).toLocaleString()} XP</span>
+          <span className="hidden sm:inline">{(skill.xpToNextLevel ?? 0).toLocaleString()} to next</span>
         </div>
         <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
           <div
@@ -108,7 +108,7 @@ const SkillCard: React.FC<{ skill: UserSkillProgress }> = ({ skill }) => {
 
       {/* Hover tooltip */}
       <div className="absolute left-1/2 -translate-x-1/2 -bottom-8 z-10 text-xs bg-gray-900 text-white px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-        {isMaxed ? 'MAX LEVEL' : `${skill.xpToNextLevel.toLocaleString()} XP to next level`}
+        {isMaxed ? 'MAX LEVEL' : `${(skill.xpToNextLevel ?? 0).toLocaleString()} XP to next level`}
       </div>
 
       {/* Hover arrow */}
@@ -307,7 +307,7 @@ export const SkillsDashboard: React.FC = () => {
         <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
         <div className="flex items-center gap-1.5">
           <Zap className="w-3.5 h-3.5 text-amber-500" />
-          <span className="font-bold text-gray-900 dark:text-white">{overview.totalXp.toLocaleString()}</span>
+          <span className="font-bold text-gray-900 dark:text-white">{(overview.totalXp ?? 0).toLocaleString()}</span>
           <span className="text-gray-400 text-xs">XP</span>
         </div>
         <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
@@ -335,7 +335,7 @@ export const SkillsDashboard: React.FC = () => {
         />
         <StatCard
           label="Total XP"
-          value={overview.totalXp.toLocaleString()}
+          value={(overview.totalXp ?? 0).toLocaleString()}
           icon={<Zap className="w-5 h-5" />}
           color="#F59E0B"
         />

@@ -302,6 +302,21 @@ class XPService:
         streak_xp = 0
         streak_bonus = None
 
+        # Initialize streak for new users who've never had activity
+        if user.current_streak == 0:
+            user.current_streak = 1
+            logger.info(f"User {user_id} streak initialized to 1 (first login)")
+            # Award daily login XP for first login
+            result = self.award_xp(db, user_id, "daily_login", reason="First login")
+            streak_xp += result.get("xp_awarded", 0)
+            streak_bonus = "first_login"
+            db.commit()
+            return {
+                "streak": user.current_streak,
+                "streak_xp_awarded": streak_xp,
+                "streak_bonus": streak_bonus
+            }
+
         # Check if streak should reset
         if hours_since_activity > self.config.STREAK_RESET_HOURS:
             if user.current_streak > 0:

@@ -202,9 +202,9 @@ export const SkillDetailPage: React.FC = () => {
         {userProgress && (
           <div className="mt-6">
             <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
-              <span>{userProgress.currentXp.toLocaleString()} XP</span>
+              <span>{(userProgress.currentXp ?? 0).toLocaleString()} XP</span>
               <span>
-                {userProgress.xpToNextLevel.toLocaleString()} XP to level {userProgress.currentLevel + 1}
+                {(userProgress.xpToNextLevel ?? 0).toLocaleString()} XP to level {(userProgress.currentLevel ?? 0) + 1}
               </span>
             </div>
             <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">

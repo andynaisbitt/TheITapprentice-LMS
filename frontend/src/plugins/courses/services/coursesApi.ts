@@ -23,6 +23,7 @@ import {
   type BulkCourseCreate,
   type CourseEnrollment,
   type ContentBlockTemplate,
+  type Certificate,
 } from '../types';
 
 // ============================================================================
@@ -77,6 +78,14 @@ export const coursesApi = {
     module_completed: boolean;
     completed_sections: string[];
     course_complete: boolean;
+    completed: boolean;
+    certificate?: {
+      title: string;
+      description: string;
+      verification_code: string;
+      skills_acquired: string[];
+    };
+    certificate_id?: number;
   }> => {
     const response = await apiClient.put(
       `/api/v1/courses/progress/${courseId}/module/${moduleId}`,
@@ -105,6 +114,37 @@ export const coursesApi = {
     last_accessed: string;
   }> => {
     const response = await apiClient.get(`/api/v1/courses/progress/${courseId}`);
+    return response.data;
+  },
+
+  // ============================================================================
+  // CERTIFICATE API
+  // ============================================================================
+
+  /**
+   * Get all certificates for the current user (authenticated)
+   */
+  getMyCertificates: async (): Promise<Certificate[]> => {
+    const response = await apiClient.get<Certificate[]>('/api/v1/courses/certificates/me');
+    return response.data;
+  },
+
+  /**
+   * Get certificate for a specific course (authenticated)
+   */
+  getCourseCertificate: async (courseId: string): Promise<Certificate> => {
+    const response = await apiClient.get<Certificate>(`/api/v1/courses/certificates/${courseId}`);
+    return response.data;
+  },
+
+  /**
+   * Verify a certificate by verification code (public)
+   */
+  verifyCertificate: async (code: string): Promise<{
+    valid: boolean;
+    certificate: Certificate;
+  }> => {
+    const response = await apiClient.get(`/api/v1/courses/certificates/verify/${code}`);
     return response.data;
   },
 };

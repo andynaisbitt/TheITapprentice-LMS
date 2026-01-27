@@ -49,8 +49,13 @@ export const Login: React.FC = () => {
       const response = await login(formData.email, formData.password);
 
       // Redirect based on where they came from or user role
+      const searchParams = new URLSearchParams(location.search);
+      const returnUrl = searchParams.get('returnUrl');
+
       if (location.state?.from?.pathname) {
         navigate(location.state.from.pathname, { replace: true });
+      } else if (returnUrl) {
+        navigate(returnUrl, { replace: true });
       } else if (response.user.role === 'admin' || response.user.is_admin) {
         navigate('/admin', { replace: true });
       } else {
@@ -229,6 +234,11 @@ export const Login: React.FC = () => {
                 }}
               />
             </div>
+
+            {/* Google-only notice */}
+            <p className="mt-4 text-center text-xs text-gray-500 dark:text-gray-400">
+              Note: Google Sign-In is the only supported login method for now. Email/password login coming soon!
+            </p>
           </div>
         </div>
 

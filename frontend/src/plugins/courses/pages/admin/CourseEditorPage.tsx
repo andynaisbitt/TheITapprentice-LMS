@@ -9,11 +9,15 @@ import { Plus, Trash2, ChevronUp, ChevronDown, GripVertical, BookOpen, FileText,
 import { adminCoursesApi } from '../../services/coursesApi';
 import type { Course, CreateCourseRequest, UpdateCourseRequest, CourseLevel, CourseModule, ModuleSection, CreateModuleRequest, CreateSectionRequest, SectionType } from '../../types';
 import { SkillSelector } from '../../../../components/admin/SkillSelector';
+import { useAuth } from '../../../../state/contexts/AuthContext';
+import { useToast } from '../../../../components/ui/Toast';
 import { SectionContentEditor } from '../../components/builder/SectionContentEditor';
 
 const CourseEditorPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const isEditMode = !!id;
 
   const [activeTab, setActiveTab] = useState<'info' | 'modules'>('info');
@@ -56,7 +60,7 @@ const CourseEditorPage: React.FC = () => {
       setFullCourse(data);
       setModules(data.modules || []);
     } catch (err: any) {
-      alert(`Failed to load course: ${err.message}`);
+      toast.error(`Failed to load course: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -80,7 +84,7 @@ const CourseEditorPage: React.FC = () => {
       await fetchCourse();
       setExpandedModules(prev => new Set([...prev, newModuleId]));
     } catch (err: any) {
-      alert(`Failed to add module: ${err.message}`);
+      toast.error(`Failed to add module: ${err.message}`);
     }
   };
 
@@ -91,7 +95,7 @@ const CourseEditorPage: React.FC = () => {
       await adminCoursesApi.deleteModule(id, moduleId);
       await fetchCourse();
     } catch (err: any) {
-      alert(`Failed to delete module: ${err.message}`);
+      toast.error(`Failed to delete module: ${err.message}`);
     }
   };
 
@@ -104,7 +108,7 @@ const CourseEditorPage: React.FC = () => {
         m.id === moduleId ? { ...m, ...updates } : m
       ));
     } catch (err: any) {
-      alert(`Failed to update module: ${err.message}`);
+      toast.error(`Failed to update module: ${err.message}`);
     }
   };
 
@@ -129,7 +133,7 @@ const CourseEditorPage: React.FC = () => {
       await adminCoursesApi.addSection(id, moduleId, newSection);
       await fetchCourse();
     } catch (err: any) {
-      alert(`Failed to add section: ${err.message}`);
+      toast.error(`Failed to add section: ${err.message}`);
     }
   };
 
@@ -140,7 +144,7 @@ const CourseEditorPage: React.FC = () => {
       await adminCoursesApi.deleteSection(id, moduleId, sectionId);
       await fetchCourse();
     } catch (err: any) {
-      alert(`Failed to delete section: ${err.message}`);
+      toast.error(`Failed to delete section: ${err.message}`);
     }
   };
 
@@ -161,7 +165,7 @@ const CourseEditorPage: React.FC = () => {
       await fetchCourse();
       setEditingSection(null);
     } catch (err: any) {
-      alert(`Failed to save section: ${err.message}`);
+      toast.error(`Failed to save section: ${err.message}`);
     }
   };
 
@@ -184,12 +188,17 @@ const CourseEditorPage: React.FC = () => {
       if (isEditMode) {
         await adminCoursesApi.updateCourse(id!, course as UpdateCourseRequest);
       } else {
-        await adminCoursesApi.createCourse(course as CreateCourseRequest);
+        // Auto-populate instructor_id from current admin user
+        const createData: CreateCourseRequest = {
+          ...course as CreateCourseRequest,
+          instructor_id: user?.id || 0,
+        };
+        await adminCoursesApi.createCourse(createData);
       }
 
       navigate('/admin/courses');
     } catch (err: any) {
-      alert(`Failed to save course: ${err.message}`);
+      toast.error(`Failed to save course: ${err.message}`);
     } finally {
       setSaving(false);
     }

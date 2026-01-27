@@ -8,9 +8,10 @@
  * 3. Add VITE_GOOGLE_CLIENT_ID to .env
  */
 
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { oauthApi } from '../../services/api/oauth.api';
 import { useState } from 'react';
+import { useAuth } from '../../state/contexts/AuthContext';
 
 import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
 import { jwtDecode } from 'jwt-decode';
@@ -36,7 +37,15 @@ export const GoogleOAuthButton: React.FC<GoogleOAuthButtonProps> = ({
   onError,
 }) => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { refreshAuth } = useAuth();
   const [loading, setLoading] = useState(false);
+
+  // Determine where to redirect after login
+  const getReturnUrl = (): string | null => {
+    const searchParams = new URLSearchParams(location.search);
+    return searchParams.get('returnUrl') || (location.state as any)?.from?.pathname || null;
+  };
 
   const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
     if (!credentialResponse.credential) {
@@ -63,15 +72,23 @@ export const GoogleOAuthButton: React.FC<GoogleOAuthButtonProps> = ({
 
       console.log('Backend OAuth success:', user);
 
+      // Update auth context so navigation re-renders with logged-in state
+      await refreshAuth();
+
       // Success callback
       onSuccess?.();
 
-      // Redirect based on user role
-      if (user.role === 'admin' || user.is_admin) {
-        navigate('/admin', { replace: true });
-      } else {
-        navigate('/', { replace: true });
-      }
+      // Navigate on next tick to ensure auth state has propagated to all consumers
+      const returnUrl = getReturnUrl();
+      setTimeout(() => {
+        if (returnUrl) {
+          navigate(returnUrl, { replace: true });
+        } else if (user.role === 'admin' || user.is_admin) {
+          navigate('/admin', { replace: true });
+        } else {
+          navigate('/dashboard', { replace: true });
+        }
+      }, 0);
     } catch (error: any) {
       console.error('Google OAuth error:', error);
       const errorMessage = error.response?.data?.detail || 'Google sign-in failed. Please try again.';

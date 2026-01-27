@@ -295,6 +295,7 @@ export interface CreateCourseRequest {
   estimated_hours?: number;
   requirements?: string[];
   objectives?: string[];
+  instructor_id: number;
   is_premium?: boolean;
   price?: number;
   related_skills?: string[];
@@ -350,6 +351,28 @@ export interface BulkCourseCreate {
   modules: (CreateModuleRequest & {
     sections: CreateSectionRequest[];
   })[];
+}
+
+// ============================================================================
+// CERTIFICATE TYPES
+// ============================================================================
+
+export interface Certificate {
+  id: number;
+  user_id: number;
+  course_id: string;
+  enrollment_id: number;
+  title: string;
+  description: string | null;
+  verification_code: string;
+  skills_acquired: string[];
+  recipient_name: string | null;
+  instructor_name: string | null;
+  course_title: string;
+  course_level: string | null;
+  total_modules: number;
+  total_sections: number;
+  issued_at: string;
 }
 
 // ============================================================================

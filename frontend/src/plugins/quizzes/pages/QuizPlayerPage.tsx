@@ -4,9 +4,9 @@
  * Interactive quiz-taking interface with timer, progress, and results
  * Includes registration prompt for unauthenticated users
  */
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useQuiz, useQuizLeaderboard, useMyAttempts, startQuizAttempt, submitQuizAttempt } from '../hooks/useQuizzes';
+import { useQuiz, useQuizzes, useQuizLeaderboard, useMyAttempts, startQuizAttempt, submitQuizAttempt } from '../hooks/useQuizzes';
 import { useAuth } from '../../../state/contexts/AuthContext';
 import { RegistrationPrompt } from '../../../components/auth/RegistrationPrompt';
 import { useRegistrationPrompt } from '../../../hooks/useRegistrationPrompt';
@@ -42,6 +42,21 @@ const QuizPlayerPage: React.FC = () => {
   const { quiz, loading, error } = useQuiz(quizId);
   const { leaderboard } = useQuizLeaderboard(quizId);
   const { attempts, refetch: refetchAttempts } = useMyAttempts(quizId);
+
+  // Fetch quizzes for "What's Next?" suggestions on results screen
+  const { quizzes: allQuizzes } = useQuizzes({ limit: 10 });
+  const suggestedQuizzes = useMemo(() => {
+    if (!quiz || !allQuizzes.length) return [];
+    return allQuizzes
+      .filter(q => q.id !== quiz.id)
+      .sort((a, b) => {
+        // Prioritise same category, then same difficulty
+        const aScore = (a.category === quiz.category ? 2 : 0) + (a.difficulty === quiz.difficulty ? 1 : 0);
+        const bScore = (b.category === quiz.category ? 2 : 0) + (b.difficulty === quiz.difficulty ? 1 : 0);
+        return bScore - aScore;
+      })
+      .slice(0, 3);
+  }, [quiz, allQuizzes]);
 
   const [phase, setPhase] = useState<QuizPhase>('overview');
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -390,50 +405,59 @@ const QuizPlayerPage: React.FC = () => {
           </div>
 
           {/* Navigation */}
-          <div className="flex items-center justify-between mt-6">
-            <button
-              onClick={() => setCurrentQuestion(prev => Math.max(0, prev - 1))}
-              disabled={currentQuestion === 0}
-              className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Previous
-            </button>
+          <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4 z-20 md:static md:border-0 md:bg-transparent md:dark:bg-transparent md:p-0 md:mt-6">
+            <div className="flex items-center justify-between max-w-3xl mx-auto">
+              <button
+                onClick={() => setCurrentQuestion(prev => Math.max(0, prev - 1))}
+                disabled={currentQuestion === 0}
+                className="flex-shrink-0 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
 
-            <div className="flex gap-2">
-              {quiz.questions.map((_, idx) => (
+              <div className="hidden md:flex gap-2">
+                {quiz.questions.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentQuestion(idx)}
+                    className={`w-8 h-8 rounded-full text-sm font-medium transition-colors ${
+                      idx === currentQuestion
+                        ? 'bg-purple-600 text-white'
+                        : answers[quiz.questions[idx].id.toString()]
+                        ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    {idx + 1}
+                  </button>
+                ))}
+              </div>
+
+              {/* Mobile: show question counter between buttons */}
+              <span className="md:hidden text-sm text-gray-500 dark:text-gray-400">
+                {currentQuestion + 1} / {quiz.questions.length}
+              </span>
+
+              {currentQuestion < quiz.questions.length - 1 ? (
                 <button
-                  key={idx}
-                  onClick={() => setCurrentQuestion(idx)}
-                  className={`w-8 h-8 rounded-full text-sm font-medium transition-colors ${
-                    idx === currentQuestion
-                      ? 'bg-purple-600 text-white'
-                      : answers[quiz.questions[idx].id.toString()]
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                  }`}
+                  onClick={() => setCurrentQuestion(prev => prev + 1)}
+                  className="flex-shrink-0 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
                 >
-                  {idx + 1}
+                  Next
                 </button>
-              ))}
+              ) : (
+                <button
+                  onClick={handleSubmit}
+                  disabled={submitting}
+                  className="flex-shrink-0 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                >
+                  {submitting ? 'Submitting...' : 'Submit Quiz'}
+                </button>
+              )}
             </div>
-
-            {currentQuestion < quiz.questions.length - 1 ? (
-              <button
-                onClick={() => setCurrentQuestion(prev => prev + 1)}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-              >
-                Next
-              </button>
-            ) : (
-              <button
-                onClick={handleSubmit}
-                disabled={submitting}
-                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
-              >
-                {submitting ? 'Submitting...' : 'Submit Quiz'}
-              </button>
-            )}
           </div>
+          {/* Spacer for fixed bottom nav on mobile */}
+          <div className="h-16 md:hidden"></div>
         </div>
       </div>
     );
@@ -560,6 +584,100 @@ const QuizPlayerPage: React.FC = () => {
             >
               Back to Quizzes
             </Link>
+          </div>
+
+          {/* What's Next? Suggestions */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mt-8">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">What's Next?</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+              {/* Suggested Quizzes */}
+              {suggestedQuizzes.map((sq) => (
+                <Link
+                  key={sq.id}
+                  to={`/quizzes/${sq.id}`}
+                  onClick={() => {
+                    setPhase('overview');
+                    setResult(null);
+                    setAnswers({});
+                  }}
+                  className="group flex flex-col p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-400 dark:hover:border-purple-500 hover:shadow-md transition-all"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">
+                      <svg className="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </span>
+                    <span className="text-xs font-medium text-purple-600 dark:text-purple-400 uppercase">Quiz</span>
+                  </div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors text-sm mb-1 line-clamp-2">
+                    {sq.title}
+                  </h3>
+                  <div className="mt-auto pt-2 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                    <span className={`px-2 py-0.5 rounded-full ${difficultyColors[sq.difficulty]}`}>
+                      {sq.difficulty}
+                    </span>
+                    <span>{sq.question_count} Qs</span>
+                    {sq.xp_reward > 0 && <span className="text-purple-600 dark:text-purple-400">+{sq.xp_reward} XP</span>}
+                  </div>
+                </Link>
+              ))}
+
+              {/* Typing Game Card */}
+              <Link
+                to="/games/typing"
+                className="group flex flex-col p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-emerald-400 dark:hover:border-emerald-500 hover:shadow-md transition-all"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">
+                    <svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </span>
+                  <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 uppercase">Game</span>
+                </div>
+                <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors text-sm mb-1">
+                  Typing Speed Challenge
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                  Test your typing speed and earn XP
+                </p>
+                <div className="mt-auto pt-2 flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400">
+                  Play now
+                  <svg className="w-3 h-3 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </Link>
+
+              {/* Browse Courses Card */}
+              <Link
+                to="/courses"
+                className="group flex flex-col p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-md transition-all"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">
+                    <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                  </span>
+                  <span className="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase">Learn</span>
+                </div>
+                <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors text-sm mb-1">
+                  Browse Courses & Tutorials
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                  Continue building your IT skills
+                </p>
+                <div className="mt-auto pt-2 flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400">
+                  Explore
+                  <svg className="w-3 h-3 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </Link>
+            </div>
           </div>
         </div>
       </div>

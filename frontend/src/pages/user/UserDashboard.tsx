@@ -32,6 +32,8 @@ import {
 import * as tutorialApi from '../../plugins/tutorials/services/tutorialApi';
 import type { TutorialProgress } from '../../plugins/tutorials/types';
 import { progressApi } from '../../plugins/shared/services/progressApi';
+import { coursesApi } from '../../plugins/courses/services/coursesApi';
+import type { Course } from '../../plugins/courses/types';
 import type { DashboardData, AchievementProgress } from '../../plugins/shared/types';
 import { XPProgressBar } from '../../plugins/shared/components/XPProgressBar';
 import { StreakCounter } from '../../plugins/shared/components/StreakCounter';
@@ -45,6 +47,8 @@ export const UserDashboard = () => {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [achievements, setAchievements] = useState<AchievementProgress[]>([]);
   const [loadingDashboard, setLoadingDashboard] = useState(true);
+  const [enrolledCourses, setEnrolledCourses] = useState<(Course & { progress?: number; isComplete?: boolean })[]>([]);
+  const [loadingCourses, setLoadingCourses] = useState(true);
 
   useEffect(() => {
     if (user) {
@@ -56,6 +60,7 @@ export const UserDashboard = () => {
     try {
       setLoadingTutorials(true);
       setLoadingDashboard(true);
+      setLoadingCourses(true);
 
       const [progress, dashboard, achievementList] = await Promise.all([
         tutorialApi.getMyTutorialProgress(),
@@ -66,11 +71,35 @@ export const UserDashboard = () => {
       setTutorialProgress(progress);
       setDashboardData(dashboard);
       setAchievements(achievementList);
+
+      // Fetch enrolled courses with progress
+      try {
+        const myCourses = await coursesApi.getMyCourses();
+        const coursesWithProgress = await Promise.all(
+          myCourses.map(async (course) => {
+            try {
+              const courseProgress = await coursesApi.getProgress(course.id);
+              return {
+                ...course,
+                progress: courseProgress.overall_progress || 0,
+                isComplete: courseProgress.is_complete || false,
+              };
+            } catch {
+              return { ...course, progress: 0, isComplete: false };
+            }
+          })
+        );
+        setEnrolledCourses(coursesWithProgress);
+      } catch (err) {
+        console.log('Could not load enrolled courses:', err);
+        setEnrolledCourses([]);
+      }
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
     } finally {
       setLoadingTutorials(false);
       setLoadingDashboard(false);
+      setLoadingCourses(false);
     }
   };
 
@@ -112,6 +141,14 @@ export const UserDashboard = () => {
       href: '/skills',
       color: 'from-cyan-500 to-blue-600',
       description: 'Track your skills',
+    });
+
+    actions.push({
+      icon: Award,
+      label: 'Certificates',
+      href: '/certifications',
+      color: 'from-amber-500 to-yellow-600',
+      description: 'View earned certs',
     });
 
     // Authors and above can write blog posts
@@ -350,6 +387,112 @@ export const UserDashboard = () => {
                     >
                       <BookOpen className="w-4 h-4" />
                       Browse Tutorials
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+
+            {/* My Courses Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="bg-white dark:bg-gray-800 rounded-xl shadow"
+            >
+              <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                  <Award className="w-5 h-5 text-purple-500" />
+                  My Courses
+                </h3>
+                <Link
+                  to="/courses"
+                  className="text-purple-500 hover:text-purple-600 text-sm font-medium flex items-center gap-1"
+                >
+                  Browse All <ChevronRight className="w-4 h-4" />
+                </Link>
+              </div>
+
+              <div className="p-4">
+                {loadingCourses ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+                  </div>
+                ) : enrolledCourses.length > 0 ? (
+                  <div className="space-y-3">
+                    {enrolledCourses.slice(0, 3).map((course) => (
+                      <Link
+                        key={course.id}
+                        to={`/courses/${course.id}/learn`}
+                        className="block p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="font-medium text-gray-900 dark:text-gray-100 truncate flex-1">
+                            {course.title}
+                          </p>
+                          {course.isComplete ? (
+                            <span className="ml-2 px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full flex items-center gap-1">
+                              <Award className="w-3 h-3" />
+                              Complete
+                            </span>
+                          ) : (
+                            <span className="ml-2 text-sm text-gray-500">
+                              {course.progress || 0}%
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                            <div
+                              className={`h-2 rounded-full transition-all ${
+                                course.isComplete
+                                  ? 'bg-green-500'
+                                  : 'bg-purple-600'
+                              }`}
+                              style={{ width: `${course.progress || 0}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 mt-2 text-xs text-gray-500 dark:text-gray-400">
+                          <span className="capitalize">{course.level}</span>
+                          <span>•</span>
+                          <span>{course.estimated_hours}h</span>
+                          {course.isComplete && (
+                            <>
+                              <span>•</span>
+                              <Link
+                                to="/certifications"
+                                onClick={(e) => e.stopPropagation()}
+                                className="text-purple-500 hover:text-purple-600"
+                              >
+                                View Certificate
+                              </Link>
+                            </>
+                          )}
+                        </div>
+                      </Link>
+                    ))}
+                    {enrolledCourses.length > 3 && (
+                      <Link
+                        to="/courses"
+                        className="block text-center text-sm text-purple-500 hover:text-purple-600 py-2"
+                      >
+                        View all {enrolledCourses.length} courses →
+                      </Link>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Award className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-600 dark:text-gray-400 mb-3">
+                      Enroll in a course to start learning!
+                    </p>
+                    <Link
+                      to="/courses"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition"
+                    >
+                      <Award className="w-4 h-4" />
+                      Browse Courses
                     </Link>
                   </div>
                 )}

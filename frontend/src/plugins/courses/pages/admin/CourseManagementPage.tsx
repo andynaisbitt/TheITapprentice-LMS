@@ -7,8 +7,10 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { adminCoursesApi } from '../../services/coursesApi';
 import type { Course, CourseLevel, CourseStatus } from '../../types';
+import { useToast } from '../../../../components/ui/Toast';
 
 const CourseManagementPage: React.FC = () => {
+  const { toast } = useToast();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,9 +43,21 @@ const CourseManagementPage: React.FC = () => {
   const handlePublish = async (courseId: string) => {
     try {
       await adminCoursesApi.togglePublish(courseId, true);
+      toast.success('Course published successfully');
       fetchCourses();
     } catch (err: any) {
-      alert(`Failed to publish course: ${err.message}`);
+      toast.error(`Failed to publish course: ${err.message}`);
+    }
+  };
+
+  const handleUnpublish = async (courseId: string) => {
+    if (!confirm('Are you sure you want to unpublish this course? It will no longer be visible to students.')) return;
+    try {
+      await adminCoursesApi.togglePublish(courseId, false);
+      toast.success('Course unpublished - now in draft status');
+      fetchCourses();
+    } catch (err: any) {
+      toast.error(`Failed to unpublish course: ${err.message}`);
     }
   };
 
@@ -54,7 +68,7 @@ const CourseManagementPage: React.FC = () => {
       await adminCoursesApi.deleteCourse(courseId);
       fetchCourses();
     } catch (err: any) {
-      alert(`Failed to delete course: ${err.message}`);
+      toast.error(`Failed to delete course: ${err.message}`);
     }
   };
 
@@ -187,6 +201,14 @@ const CourseManagementPage: React.FC = () => {
                             className="text-green-600 hover:text-green-900 dark:text-green-400"
                           >
                             Publish
+                          </button>
+                        )}
+                        {course.status === 'published' && (
+                          <button
+                            onClick={() => handleUnpublish(course.id)}
+                            className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400"
+                          >
+                            Unpublish
                           </button>
                         )}
                         <button

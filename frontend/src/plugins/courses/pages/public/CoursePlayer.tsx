@@ -12,8 +12,10 @@ import {
   Award,
   Medal
 } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import { coursesApi } from '../../services/coursesApi';
 import type { Course as CourseDetail, CourseModule, ModuleSection, ContentBlock } from '../../types';
+import { useToast } from '../../../../components/ui/Toast';
 
 // Placeholder hooks until XP notification system is implemented
 const useXPNotification = () => ({ showXPGain: (_xp: number, _reason: string) => {} });
@@ -22,6 +24,7 @@ const useAchievementNotification = () => ({ showAchievementUnlock: (_achievement
 const CoursePlayer: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { showXPGain } = useXPNotification();
   const { showAchievementUnlock } = useAchievementNotification();
 
@@ -36,6 +39,37 @@ const CoursePlayer: React.FC = () => {
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [completionData, setCompletionData] = useState<any>(null);
   const [courseWasAlreadyComplete, setCourseWasAlreadyComplete] = useState(false);
+  const [courseJustCompleted, setCourseJustCompleted] = useState(false);
+  const [earnedCertificate, setEarnedCertificate] = useState<any>(null);
+  // Quiz state - tracks which quizzes have been passed in current section
+  const [quizResults, setQuizResults] = useState<Record<string, { passed: boolean; score: number; maxScore: number }>>({});
+
+  // Fire confetti when course completion modal shows
+  useEffect(() => {
+    if (showCompletionModal && completionData?.course_complete) {
+      const duration = 3000;
+      const end = Date.now() + duration;
+
+      const frame = () => {
+        confetti({
+          particleCount: 3,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0, y: 0.7 },
+        });
+        confetti({
+          particleCount: 3,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1, y: 0.7 },
+        });
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      };
+      frame();
+    }
+  }, [showCompletionModal, completionData]);
 
   // Fetch course and progress data
   useEffect(() => {
@@ -116,6 +150,11 @@ const CoursePlayer: React.FC = () => {
 
   // Navigate to section (with completion check)
   const navigateToSection = (module: CourseModule, section: ModuleSection) => {
+    // Reset quiz results when changing sections
+    if (currentSection?.id !== section.id) {
+      setQuizResults({});
+    }
+
     // Allow navigation to already completed sections (review)
     if (completedSections.has(section.id)) {
       setCurrentModule(module);
@@ -153,7 +192,7 @@ const CoursePlayer: React.FC = () => {
     }
 
     if (!canAccess) {
-      alert('Please complete the previous sections in order before accessing this one.');
+      toast.warning('Please complete the previous sections in order before accessing this one.');
       return;
     }
 
@@ -170,6 +209,21 @@ const CoursePlayer: React.FC = () => {
     if (completedSections.has(currentSection.id)) {
       console.log('Section already marked complete');
       return;
+    }
+
+    // Check if section has quizzes that need to be passed
+    const quizBlocks = currentSection.content_blocks?.filter(b => b.type === 'quiz') || [];
+    if (quizBlocks.length > 0) {
+      const unpassed = quizBlocks.filter(block => {
+        const blockId = block.id || `block-${currentSection.content_blocks.indexOf(block)}`;
+        const result = quizResults[blockId];
+        return !result || !result.passed;
+      });
+
+      if (unpassed.length > 0) {
+        toast.warning(`Please pass ${unpassed.length === 1 ? 'the quiz' : 'all quizzes'} before marking this section complete.`);
+        return;
+      }
     }
 
     try {
@@ -205,16 +259,12 @@ const CoursePlayer: React.FC = () => {
 
       // Show XP notification if course was just completed
       const resultAny = result as any;
-      if (result.course_complete && resultAny.xp_gains && resultAny.xp_gains.length > 0) {
+      if (result.course_complete && resultAny?.xp_gains?.length > 0) {
         showXPGain(resultAny.total_xp_gained || 0, 'Course completed');
-
-        // Show achievement notifications if any were unlocked
         resultAny.xp_gains.forEach((xpGain: any) => {
-          if (xpGain.achievements_unlocked && xpGain.achievements_unlocked.length > 0) {
-            xpGain.achievements_unlocked.forEach((achievement: any) => {
-              showAchievementUnlock(achievement);
-            });
-          }
+          xpGain?.achievements_unlocked?.forEach((achievement: any) => {
+            showAchievementUnlock(achievement);
+          });
         });
       }
 
@@ -226,17 +276,43 @@ const CoursePlayer: React.FC = () => {
           module_completed: result.module_completed,
           course_complete: result.course_complete,
           was_already_complete: courseWasAlreadyComplete,
-          certificate: resultAny.certificate,
-          certificate_id: resultAny.certificate_id
+          certificate: result.certificate,
+          certificate_id: result.certificate_id
         });
-        setCompletionData(result);
+
+        // If course just completed, fetch certificate as backup if not in response
+        let certificateData = result.certificate || null;
+        if (result.course_complete) {
+          setCourseJustCompleted(true);
+
+          if (!certificateData && courseId) {
+            try {
+              const cert = await coursesApi.getCourseCertificate(courseId);
+              certificateData = {
+                title: cert.title,
+                description: cert.description || '',
+                verification_code: cert.verification_code,
+                skills_acquired: cert.skills_acquired || [],
+              };
+              console.log('[CoursePlayer] Fetched certificate as backup:', certificateData);
+            } catch (certErr) {
+              console.log('[CoursePlayer] No certificate available yet:', certErr);
+            }
+          }
+
+          if (certificateData) {
+            setEarnedCertificate(certificateData);
+          }
+        }
+
+        setCompletionData({ ...result, certificate: certificateData });
         setShowCompletionModal(true);
       } else if (courseWasAlreadyComplete) {
         console.log('[CoursePlayer] Skipping completion modal - course already complete');
       }
     } catch (err: any) {
       console.error('Error marking section complete:', err);
-      alert('Failed to save progress. Please try again.');
+      toast.error('Failed to save progress. Please try again.');
 
       // Rollback optimistic update on error
       setCompletedSections(prev => {
@@ -327,23 +403,372 @@ const CoursePlayer: React.FC = () => {
     // If no next section, we're at the end
     if (!nextSection) {
       if (completedSections.has(currentSection!.id)) {
-        // Already marked complete, course should be complete
-        alert('Course Complete! Check your dashboard for your certificate and achievements.');
-        setTimeout(() => navigate('/dashboard'), 1000);
+        // Course is done - show completion modal or navigate
+        if (completionData) {
+          setShowCompletionModal(true);
+        } else if (courseJustCompleted) {
+          // Course was completed this session but modal was dismissed
+          setCourseWasAlreadyComplete(true);
+        } else {
+          navigate('/dashboard');
+        }
       } else {
-        alert('Please mark this section as complete to finish the course.');
+        toast.warning('Please mark this section as complete to finish the course.');
       }
       return;
     }
 
     // Check if current section is complete before allowing navigation
     if (!completedSections.has(currentSection!.id)) {
-      alert('Please mark the current section as complete before moving to the next one.');
+      toast.warning('Please mark the current section as complete before moving to the next one.');
       return;
     }
 
     // Navigate to next section
     navigateToSection(nextSection.module, nextSection.section);
+  };
+
+  // Quiz answer validation function (matches backend logic)
+  const checkQuizAnswer = (question: any, userAnswer: any): boolean => {
+    const correct = question.correct_answer;
+    if (correct === undefined || correct === null) return false;
+    if (userAnswer === undefined || userAnswer === null || userAnswer === '') return false;
+
+    switch (question.type) {
+      case 'multiple_choice':
+      case 'true_false':
+        return String(userAnswer).toLowerCase().trim() === String(correct).toLowerCase().trim();
+
+      case 'multiple_select':
+        if (!Array.isArray(userAnswer) || !Array.isArray(correct)) return false;
+        const userSet = new Set(userAnswer.map((a: string) => String(a).toLowerCase().trim()));
+        const correctSet = new Set(correct.map((c: string) => String(c).toLowerCase().trim()));
+        return userSet.size === correctSet.size &&
+          [...userSet].every(v => correctSet.has(v));
+
+      case 'short_answer':
+      case 'fill_blank':
+        const userLower = String(userAnswer).toLowerCase().trim();
+        if (Array.isArray(correct)) {
+          return correct.some((c: string) => String(c).toLowerCase().trim() === userLower);
+        }
+        return userLower === String(correct).toLowerCase().trim();
+
+      case 'code_challenge':
+        // Simple string comparison for now
+        return String(userAnswer).trim() === String(correct).trim();
+
+      default:
+        return false;
+    }
+  };
+
+  // QuizBlockPlayer - handles quiz interactions, grading, and feedback
+  const QuizBlockPlayer: React.FC<{
+    blockId: string;
+    content: any;
+    onQuizComplete: (blockId: string, passed: boolean, score: number, maxScore: number) => void;
+  }> = ({ blockId, content, onQuizComplete }) => {
+    const questions = content?.questions || [];
+    const passingScore = content?.passing_score || 70;
+    const [answers, setAnswers] = useState<Record<string, any>>({});
+    const [showResults, setShowResults] = useState(false);
+    const [results, setResults] = useState<Record<string, boolean>>({});
+    const [score, setScore] = useState(0);
+    const [maxScore, setMaxScore] = useState(0);
+
+    const handleAnswerChange = (questionId: string, value: any) => {
+      setAnswers(prev => ({ ...prev, [questionId]: value }));
+      // Reset results when answer changes
+      if (showResults) {
+        setShowResults(false);
+        setResults({});
+      }
+    };
+
+    const handleMultiSelectChange = (questionId: string, option: string, checked: boolean) => {
+      setAnswers(prev => {
+        const current = Array.isArray(prev[questionId]) ? prev[questionId] : [];
+        if (checked) {
+          return { ...prev, [questionId]: [...current, option] };
+        } else {
+          return { ...prev, [questionId]: current.filter((o: string) => o !== option) };
+        }
+      });
+      if (showResults) {
+        setShowResults(false);
+        setResults({});
+      }
+    };
+
+    const handleCheckAnswers = () => {
+      let totalScore = 0;
+      let totalMaxScore = 0;
+      const newResults: Record<string, boolean> = {};
+
+      questions.forEach((question: any) => {
+        const qId = question.id;
+        const userAnswer = answers[qId];
+        const isCorrect = checkQuizAnswer(question, userAnswer);
+        newResults[qId] = isCorrect;
+        totalMaxScore += question.points || 1;
+        if (isCorrect) {
+          totalScore += question.points || 1;
+        }
+      });
+
+      setResults(newResults);
+      setScore(totalScore);
+      setMaxScore(totalMaxScore);
+      setShowResults(true);
+
+      const percentage = totalMaxScore > 0 ? (totalScore / totalMaxScore) * 100 : 0;
+      const passed = percentage >= passingScore;
+      onQuizComplete(blockId, passed, totalScore, totalMaxScore);
+    };
+
+    const percentage = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
+    const passed = percentage >= passingScore;
+
+    return (
+      <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 my-6">
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+          <span className="text-2xl">📝</span>
+          Quiz
+          {showResults && (
+            <span className={`ml-auto text-sm font-normal px-3 py-1 rounded-full ${
+              passed
+                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+            }`}>
+              {percentage}% - {passed ? 'Passed!' : `Need ${passingScore}% to pass`}
+            </span>
+          )}
+        </h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          Passing score: {passingScore}% • {questions.length} question{questions.length !== 1 ? 's' : ''}
+        </p>
+
+        <div className="space-y-6">
+          {questions.map((question: any, qIdx: number) => {
+            const qId = question.id;
+            const isCorrect = results[qId];
+            const wasAnswered = showResults;
+
+            return (
+              <div
+                key={qId || qIdx}
+                className={`bg-white dark:bg-gray-900 rounded-lg p-4 border-2 transition-colors ${
+                  wasAnswered
+                    ? isCorrect
+                      ? 'border-green-400 dark:border-green-500'
+                      : 'border-red-400 dark:border-red-500'
+                    : 'border-gray-200 dark:border-gray-700'
+                }`}
+              >
+                <div className="flex items-start gap-2 mb-3">
+                  <span className="text-blue-600 dark:text-blue-400 font-medium">Q{qIdx + 1}.</span>
+                  <p className="font-medium text-gray-900 dark:text-white flex-1">{question.question}</p>
+                  {wasAnswered && (
+                    <span className={`text-lg ${isCorrect ? 'text-green-500' : 'text-red-500'}`}>
+                      {isCorrect ? '✓' : '✗'}
+                    </span>
+                  )}
+                </div>
+
+                {/* Multiple Choice / True-False - Radio buttons */}
+                {(question.type === 'multiple_choice' || question.type === 'true_false') && question.options && (
+                  <div className="space-y-2 ml-6">
+                    {question.options.map((option: string, oIdx: number) => {
+                      const isSelected = answers[qId] === option;
+                      const isCorrectOption = question.correct_answer === option;
+                      return (
+                        <label
+                          key={oIdx}
+                          className={`flex items-center gap-3 p-2 rounded cursor-pointer transition-colors ${
+                            wasAnswered
+                              ? isCorrectOption
+                                ? 'bg-green-50 dark:bg-green-900/20'
+                                : isSelected
+                                  ? 'bg-red-50 dark:bg-red-900/20'
+                                  : ''
+                              : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name={`quiz-${blockId}-q${qIdx}`}
+                            checked={isSelected}
+                            onChange={() => handleAnswerChange(qId, option)}
+                            disabled={showResults && passed}
+                            className="w-4 h-4 text-blue-600"
+                          />
+                          <span className="text-gray-700 dark:text-gray-300">{option}</span>
+                          {wasAnswered && isCorrectOption && (
+                            <span className="ml-auto text-green-600 dark:text-green-400 text-sm">✓ Correct</span>
+                          )}
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Multiple Select - Checkboxes */}
+                {question.type === 'multiple_select' && question.options && (
+                  <div className="space-y-2 ml-6">
+                    <p className="text-xs text-gray-500 mb-1">Select all that apply:</p>
+                    {question.options.map((option: string, oIdx: number) => {
+                      const selectedAnswers = Array.isArray(answers[qId]) ? answers[qId] : [];
+                      const isSelected = selectedAnswers.includes(option);
+                      const correctAnswers = Array.isArray(question.correct_answer) ? question.correct_answer : [];
+                      const isCorrectOption = correctAnswers.includes(option);
+                      return (
+                        <label
+                          key={oIdx}
+                          className={`flex items-center gap-3 p-2 rounded cursor-pointer transition-colors ${
+                            wasAnswered
+                              ? isCorrectOption
+                                ? 'bg-green-50 dark:bg-green-900/20'
+                                : isSelected
+                                  ? 'bg-red-50 dark:bg-red-900/20'
+                                  : ''
+                              : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => handleMultiSelectChange(qId, option, e.target.checked)}
+                            disabled={showResults && passed}
+                            className="w-4 h-4 text-blue-600 rounded"
+                          />
+                          <span className="text-gray-700 dark:text-gray-300">{option}</span>
+                          {wasAnswered && isCorrectOption && (
+                            <span className="ml-auto text-green-600 dark:text-green-400 text-sm">✓ Correct</span>
+                          )}
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Short Answer / Fill Blank */}
+                {(question.type === 'short_answer' || question.type === 'fill_blank') && (
+                  <div className="ml-6">
+                    <input
+                      type="text"
+                      value={answers[qId] || ''}
+                      onChange={(e) => handleAnswerChange(qId, e.target.value)}
+                      placeholder="Type your answer..."
+                      disabled={showResults && passed}
+                      className={`w-full p-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${
+                        wasAnswered
+                          ? isCorrect
+                            ? 'border-green-400'
+                            : 'border-red-400'
+                          : 'border-gray-300 dark:border-gray-600'
+                      }`}
+                    />
+                    {wasAnswered && !isCorrect && (
+                      <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+                        Correct answer: {Array.isArray(question.correct_answer) ? question.correct_answer.join(' or ') : question.correct_answer}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Code Challenge */}
+                {question.type === 'code_challenge' && (
+                  <div className="ml-6">
+                    <textarea
+                      value={answers[qId] || question.code_snippet || ''}
+                      onChange={(e) => handleAnswerChange(qId, e.target.value)}
+                      rows={4}
+                      disabled={showResults && passed}
+                      className={`w-full p-3 font-mono text-sm rounded-lg bg-gray-900 text-green-400 border ${
+                        wasAnswered
+                          ? isCorrect
+                            ? 'border-green-400'
+                            : 'border-red-400'
+                          : 'border-gray-600'
+                      }`}
+                    />
+                  </div>
+                )}
+
+                {/* Explanation */}
+                {wasAnswered && question.explanation && (
+                  <div className="mt-3 ml-6 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                      <strong>Explanation:</strong> {question.explanation}
+                    </p>
+                  </div>
+                )}
+
+                {/* Points */}
+                {question.points && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 ml-6">
+                    {question.points} point{question.points !== 1 ? 's' : ''}
+                    {wasAnswered && (
+                      <span className={isCorrect ? 'text-green-600' : 'text-red-600'}>
+                        {' '}• {isCorrect ? `+${question.points}` : '+0'}
+                      </span>
+                    )}
+                  </p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {questions.length > 0 && (
+          <div className="mt-4 flex items-center justify-between">
+            {showResults && (
+              <div className={`text-sm font-medium ${passed ? 'text-green-600' : 'text-red-600'}`}>
+                Score: {score}/{maxScore} ({percentage}%)
+              </div>
+            )}
+            <div className="ml-auto flex gap-2">
+              {showResults && !passed && (
+                <button
+                  onClick={() => {
+                    setShowResults(false);
+                    setResults({});
+                    setAnswers({});
+                  }}
+                  className="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors"
+                >
+                  Try Again
+                </button>
+              )}
+              {!showResults && (
+                <button
+                  onClick={handleCheckAnswers}
+                  disabled={Object.keys(answers).length === 0}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors disabled:cursor-not-allowed"
+                >
+                  Check Answers
+                </button>
+              )}
+              {showResults && passed && (
+                <span className="px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg font-medium flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4" />
+                  Quiz Passed!
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Handle quiz completion
+  const handleQuizComplete = (blockId: string, passed: boolean, score: number, maxScore: number) => {
+    setQuizResults(prev => ({
+      ...prev,
+      [blockId]: { passed, score, maxScore }
+    }));
   };
 
   // Render content block based on type
@@ -466,81 +891,13 @@ const CoursePlayer: React.FC = () => {
         );
 
       case 'quiz':
-        const quizContent = block.content as any;
-        const quizQuestions = quizContent?.questions || [];
         return (
-          <div key={key} className="bg-gray-50 dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 my-6">
-            {quizContent.title && (
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                <span className="text-2xl">📝</span>
-                {quizContent.title}
-              </h3>
-            )}
-
-            <div className="space-y-6">
-              {quizQuestions.map((question: any, qIdx: number) => (
-                <div key={question.id || qIdx} className="bg-white dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                  <p className="font-medium text-gray-900 dark:text-white mb-3">
-                    <span className="text-blue-600 dark:text-blue-400 mr-2">Q{qIdx + 1}.</span>
-                    {question.question}
-                  </p>
-
-                  {/* Multiple choice / Multiple select / True-False options */}
-                  {(question.type === 'multiple_choice' || question.type === 'multiple_select' || question.type === 'true_false') && question.options && (
-                    <div className="space-y-2 ml-6">
-                      {question.options.map((option: string, oIdx: number) => (
-                        <label key={oIdx} className="flex items-center gap-3 p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
-                          <input
-                            type={question.type === 'multiple_select' ? 'checkbox' : 'radio'}
-                            name={`quiz-${key}-q${qIdx}`}
-                            className="w-4 h-4 text-blue-600"
-                          />
-                          <span className="text-gray-700 dark:text-gray-300">{option}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Short answer / Fill blank */}
-                  {(question.type === 'short_answer' || question.type === 'fill_blank') && (
-                    <div className="ml-6">
-                      <input
-                        type="text"
-                        placeholder="Type your answer..."
-                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                      />
-                    </div>
-                  )}
-
-                  {/* Code challenge */}
-                  {question.type === 'code_challenge' && (
-                    <div className="ml-6">
-                      <textarea
-                        rows={4}
-                        placeholder={question.code_template || '// Write your code here...'}
-                        className="w-full p-3 font-mono text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-900 text-green-400"
-                      />
-                    </div>
-                  )}
-
-                  {/* Points indicator */}
-                  {question.points && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 ml-6">
-                      {question.points} point{question.points !== 1 ? 's' : ''}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {quizQuestions.length > 0 && (
-              <div className="mt-4 flex justify-end">
-                <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">
-                  Check Answers
-                </button>
-              </div>
-            )}
-          </div>
+          <QuizBlockPlayer
+            key={key}
+            blockId={key}
+            content={block.content}
+            onQuizComplete={handleQuizComplete}
+          />
         );
 
       case 'interactive':
@@ -726,8 +1083,9 @@ const CoursePlayer: React.FC = () => {
       {showCompletionModal && completionData && (
         <div className="fixed inset-0 bg-black/50 dark:bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
+            initial={{ scale: 0.5, opacity: 0, y: 40 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            transition={{ type: 'spring', stiffness: 150, damping: 20, duration: 0.6 }}
             className="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full border border-gray-200 dark:border-gray-700 shadow-xl"
           >
             <div className="text-center">
@@ -751,23 +1109,23 @@ const CoursePlayer: React.FC = () => {
                           </div>
                           <div className="text-left flex-1">
                             <p className="text-gray-900 dark:text-white font-bold text-lg mb-1">
-                              {completionData.certificate.title}
+                              Your Certificate
                             </p>
                             <p className="text-gray-600 dark:text-gray-300 text-sm">
-                              {completionData.certificate.description}
+                              {completionData.certificate.title}
                             </p>
                           </div>
                         </div>
 
                         {/* Verification Code */}
-                        {completionData.certificate?.verification_code && (
+                        {completionData.certificate.verification_code && (
                           <div className="bg-gray-100 dark:bg-black/40 rounded-lg p-3 mb-3">
                             <div className="flex items-center justify-between mb-1">
                               <p className="text-gray-500 dark:text-gray-400 text-xs">Verification Code</p>
                               <button
                                 onClick={() => {
                                   navigator.clipboard.writeText(completionData.certificate.verification_code);
-                                  alert('Verification code copied!');
+                                  toast.success('Verification code copied!');
                                 }}
                                 className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-xs"
                               >
@@ -780,21 +1138,9 @@ const CoursePlayer: React.FC = () => {
                           </div>
                         )}
 
-                        {/* Fallback if no certificate object */}
-                        {!completionData.certificate && completionData.certificate_id && (
-                          <div className="bg-blue-50 dark:bg-blue-500/20 border border-blue-200 dark:border-blue-500 rounded-lg p-3 mb-3 text-center">
-                            <p className="text-blue-700 dark:text-blue-300 text-sm">
-                              Certificate ID: {completionData.certificate_id}
-                            </p>
-                            <p className="text-gray-500 dark:text-gray-400 text-xs mt-1">
-                              View full details in your certificates page
-                            </p>
-                          </div>
-                        )}
-
                         {/* Skills */}
                         {completionData.certificate.skills_acquired && completionData.certificate.skills_acquired.length > 0 && (
-                          <div className="flex flex-wrap gap-2">
+                          <div className="flex flex-wrap gap-2 mb-3">
                             {completionData.certificate.skills_acquired.map((skill: string, idx: number) => (
                               <span
                                 key={idx}
@@ -805,25 +1151,21 @@ const CoursePlayer: React.FC = () => {
                             ))}
                           </div>
                         )}
-                      </div>
-                    ) : completionData.certificate_id ? (
-                      <div className="bg-yellow-50 dark:bg-yellow-500/20 border-2 border-yellow-300 dark:border-yellow-500 rounded-xl p-5 text-center">
-                        <Award size={48} className="mx-auto mb-3 text-yellow-500" />
-                        <p className="text-gray-900 dark:text-white font-bold mb-2">Certificate Earned!</p>
-                        <p className="text-gray-600 dark:text-gray-300 text-sm mb-3">
-                          Your certificate has been generated and saved
-                        </p>
-                        <p className="text-yellow-600 dark:text-yellow-400 text-xs font-mono bg-yellow-100 dark:bg-black/40 rounded p-2 mb-3">
-                          ID: {completionData.certificate_id}
-                        </p>
-                        <p className="text-gray-500 dark:text-gray-400 text-xs">
-                          View full details in your Certificates page
+
+                        {/* View later note */}
+                        <p className="text-gray-500 dark:text-gray-400 text-xs text-center">
+                          You can view this certificate anytime from your Dashboard under Certificates.
                         </p>
                       </div>
                     ) : (
-                      <div className="bg-blue-50 dark:bg-blue-500/20 border border-blue-200 dark:border-blue-400 rounded-xl p-4 text-center">
-                        <p className="text-blue-700 dark:text-blue-300 text-sm">
-                          Certificate will be available in your profile shortly
+                      <div className="bg-gradient-to-br from-yellow-50 to-amber-50 dark:from-yellow-600/20 dark:to-amber-600/20 border-2 border-yellow-300 dark:border-yellow-500 rounded-xl p-5 text-center">
+                        <Award size={48} className="mx-auto mb-3 text-yellow-500" />
+                        <p className="text-gray-900 dark:text-white font-bold mb-2">Certificate Earned!</p>
+                        <p className="text-gray-600 dark:text-gray-300 text-sm mb-2">
+                          Your certificate of completion has been generated.
+                        </p>
+                        <p className="text-gray-500 dark:text-gray-400 text-xs">
+                          You can view it anytime from your Dashboard under Certificates.
                         </p>
                       </div>
                     )}
@@ -845,23 +1187,24 @@ const CoursePlayer: React.FC = () => {
 
                   <div className="flex flex-col gap-3">
                     <button
-                      onClick={() => navigate('/dashboard')}
-                      className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white rounded-lg font-semibold transition-colors shadow-lg"
+                      onClick={() => navigate('/certifications')}
+                      className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white rounded-lg font-semibold transition-colors shadow-lg flex items-center justify-center gap-2"
                     >
-                      Go to Dashboard
+                      <Award size={18} />
+                      View My Certificate
                     </button>
                     <div className="flex gap-3">
-                      {completionData.certificate && (
-                        <button
-                          onClick={() => navigate('/certifications')}
-                          className="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
-                        >
-                          <Award size={18} />
-                          View Certificates
-                        </button>
-                      )}
                       <button
-                        onClick={() => setShowCompletionModal(false)}
+                        onClick={() => navigate('/dashboard')}
+                        className="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg font-semibold transition-colors"
+                      >
+                        Go to Dashboard
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowCompletionModal(false);
+                          setCourseJustCompleted(true);
+                        }}
                         className="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg font-semibold transition-colors"
                       >
                         Review Course
@@ -912,6 +1255,22 @@ const CoursePlayer: React.FC = () => {
               <X size={20} />
             </button>
           </div>
+
+          {/* Course Completed Banner */}
+          {courseJustCompleted && (
+            <div className="mb-4 p-3 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-lg">
+              <div className="flex items-center gap-2 mb-1">
+                <CheckCircle size={16} className="text-green-600 dark:text-green-400" />
+                <span className="text-green-700 dark:text-green-400 font-semibold text-sm">Course Completed</span>
+              </div>
+              <button
+                onClick={() => navigate('/certifications')}
+                className="text-xs text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 underline"
+              >
+                View Certificate
+              </button>
+            </div>
+          )}
 
           {/* Module & Section Navigation */}
           <div className="space-y-4">
@@ -1009,17 +1368,34 @@ const CoursePlayer: React.FC = () => {
 
               {/* Show completion message if at end and complete */}
               {isLastSection && isCurrentComplete && (
-                <div className="mt-8 p-6 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500 rounded-lg">
-                  <h3 className="text-green-700 dark:text-green-400 font-semibold mb-2">Course Complete!</h3>
-                  <p className="text-gray-600 dark:text-gray-300 mb-4">
-                    You've completed all sections. Check your dashboard for your certificate!
+                <div className="mt-8 p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-500/10 dark:to-emerald-500/10 border border-green-200 dark:border-green-500 rounded-xl">
+                  <div className="flex items-center gap-3 mb-3">
+                    <Award size={28} className="text-green-600 dark:text-green-400" />
+                    <h3 className="text-green-700 dark:text-green-400 font-bold text-lg">Course Complete!</h3>
+                  </div>
+                  <p className="text-gray-600 dark:text-gray-300 mb-2">
+                    You've completed all sections of this course.
                   </p>
-                  <button
-                    onClick={() => navigate('/dashboard')}
-                    className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold transition-colors"
-                  >
-                    Go to Dashboard
-                  </button>
+                  {(earnedCertificate || courseJustCompleted) && (
+                    <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">
+                      Your certificate has been generated. You can view it anytime from your Dashboard.
+                    </p>
+                  )}
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => navigate('/certifications')}
+                      className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors flex items-center gap-2"
+                    >
+                      <Award size={16} />
+                      View Certificate
+                    </button>
+                    <button
+                      onClick={() => navigate('/dashboard')}
+                      className="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg font-semibold transition-colors"
+                    >
+                      Go to Dashboard
+                    </button>
+                  </div>
                 </div>
               )}
             </motion.div>

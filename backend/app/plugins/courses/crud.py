@@ -683,19 +683,14 @@ def update_module_progress(
                             course_id=enrollment.course_id,
                             enrollment_id=enrollment.id
                         )
-                        # Store certificate info on progress for return
-                        progress.certificate_info = {
-                            "id": certificate.id,
-                            "title": certificate.title,
-                            "description": certificate.description,
-                            "verification_code": certificate.verification_code,
-                            "skills_acquired": certificate.skills_acquired
-                        }
                         logger.info(f"Certificate created: {certificate.verification_code}")
+                    except (ValueError, HTTPException) as cert_err:
+                        # create_certificate raises ValueError if course/user not found
+                        logger.error(f"Certificate creation failed: {cert_err}")
                     except Exception as cert_err:
-                        logger.error(f"Failed to create certificate: {cert_err}")
-                        # Don't fail the whole operation if certificate creation fails
-                        progress.certificate_info = None
+                        logger.error(f"Unexpected error creating certificate: {cert_err}")
+                        import traceback
+                        logger.error(traceback.format_exc())
 
                     # Log course completion activity
                     achievement_service.log_activity(
@@ -875,18 +870,14 @@ def create_certificate(
     # Get course details
     course = get_course(db, course_id)
     if not course:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Course not found"
-        )
+        logger.error(f"Cannot create certificate: course {course_id} not found")
+        raise ValueError(f"Course {course_id} not found")
 
     # Get user details
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
+        logger.error(f"Cannot create certificate: user {user_id} not found")
+        raise ValueError(f"User {user_id} not found")
 
     # Calculate total sections
     total_sections = sum(
@@ -925,8 +916,9 @@ def create_certificate(
     )
 
     db.add(certificate)
-    db.commit()
-    db.refresh(certificate)
+    # Don't commit here - let the caller (update_module_progress) handle the commit
+    # to keep everything in a single transaction
+    db.flush()
 
     logger.info(f"Created certificate {verification_code} for user {user_id}, course {course_id}")
 
