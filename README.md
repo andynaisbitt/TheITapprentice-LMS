@@ -2,7 +2,7 @@
 
 > **A modern Learning Management System for IT apprentices, students, and self-taught developers. Built with React, FastAPI, and a modular plugin architecture.**
 
-[![Version](https://img.shields.io/badge/Version-2.0-brightgreen.svg)](https://github.com/andynaisbitt/TheITapprentice-LMS/releases)
+[![Version](https://img.shields.io/badge/Version-2.9-brightgreen.svg)](https://github.com/andynaisbitt/TheITapprentice-LMS/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![React](https://img.shields.io/badge/React-18.x-61dafb.svg)](https://reactjs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-009688.svg)](https://fastapi.tiangolo.com/)
@@ -27,34 +27,68 @@ Built on a solid CMS foundation with a **modular plugin system**, it combines co
 
 ### Learning Management
 - **Interactive Tutorials** - Step-by-step coding tutorials with progress tracking
-- **Typing Game** - Improve coding speed with gamified typing practice
+- **Structured Courses** - Multi-lesson courses with enrollment, progress, and completion
+- **Quizzes & Assessments** - Multiple question types with scoring and history
+- **Skills System** - Granular skill tracking with XP per skill, levels, and leaderboards
+- **Typing Game** - Multiple game modes for improving coding speed (see below)
 - **XP & Leveling System** - Earn experience points and level up as you learn
 - **Achievements** - Unlock badges for completing milestones
 - **Activity Tracking** - Full timeline of learning progress
 - **Streak System** - Stay motivated with daily learning streaks
+- **Leaderboards** - XP leaderboard and skills leaderboard
+
+### Typing Game Modes
+- **Quick Brown Fox** - Classic typing test with WPM tracking
+- **Infinite Rush** - Endless mode with combo multipliers and streak bonuses
+- **Ghost Mode** - Race against your previous best performance
+- **PvP Mode** - Real-time typing races against other players
+- **Practice Mode** - Focused practice with custom word lists
+- **Daily Challenges** - New challenges every day with leaderboard rankings
+- **Analytics Dashboard** - Letter accuracy heatmaps, speed trends, detailed stats
+- **Anti-Cheat System** - Server-side validation of game results
+- **Sound Effects** - Audio feedback with configurable settings
 
 ### User Experience
 - **Role-Based Dashboards** - Different views for students, tutors, and admins
 - **Enhanced Profile Pages** - Stats, achievements, game history, and activity
 - **Public Profiles** - View other learners' progress and achievements
 - **Dark Mode** - Full dark/light theme support
+- **Responsive Mobile Navigation** - Tabbed mobile drawer with swipe-to-close
+- **Desktop Dropdown Menus** - Animated navigation with rich dropdowns
 
 ### Content Management (CMS Core)
 - **Rich Blog Editor** - Markdown support with image uploads
 - **Dynamic Pages** - Modular block system for custom pages
 - **Category & Tag System** - Organize content effectively
+- **Media Manager** - Upload and manage images and files
 - **SEO Optimized** - Canonical URLs, meta tags, RSS feeds, sitemaps
 - **Theme Customization** - Real-time color and typography controls
+- **Newsletter System** - Subscriber management with email campaigns
+
+### Admin Panel
+- **Dashboard** - Overview stats and recent activity
+- **User Management** - Roles, permissions, XP configuration
+- **Content Management** - Blog posts, pages, categories, tags, media
+- **LMS Management** - Tutorials, courses, quizzes, skills administration
+- **Game Management** - Word lists, sentence pools, challenges, leaderboards
+- **Plugin Manager** - Enable/disable plugins
+- **System Health** - Server status monitoring
+- **Activity Log** - Audit trail of admin actions
+- **Analytics** - Site-wide analytics dashboard
+- **Navigation Manager** - Configure header and footer navigation
+- **Site Settings** - Logo, title, newsletter, widget customization
 
 ### Plugin Architecture
 The LMS is built on a modular plugin system:
 
 | Plugin | Description |
 |--------|-------------|
-| **Tutorials** | Interactive coding tutorials with steps and progress |
-| **Typing Game** | Speed typing practice with word lists and PVP mode |
-| **Progress/XP** | Experience points, leveling, and achievements |
-| **Courses** | Structured learning paths (coming soon) |
+| **Tutorials** | Interactive coding tutorials with steps, progress tracking, and categories |
+| **Courses** | Structured multi-lesson courses with enrollment and completion |
+| **Quizzes** | Assessments with multiple question types, scoring, and import |
+| **Typing Game** | Speed typing with 6 game modes, analytics, PvP, and anti-cheat |
+| **Skills** | Granular skill tracking with XP, levels, badges, and leaderboards |
+| **Progress/XP** | Experience points, leveling, achievements, and streaks |
 
 ### Security & Performance
 - **HTTP-Only Cookies** - JWT tokens never exposed to JavaScript
@@ -62,6 +96,7 @@ The LMS is built on a modular plugin system:
 - **Rate Limiting** - Brute force protection
 - **Google OAuth** - Social login support
 - **A+ Security Rating** - Comprehensive security hardening
+- **Input Validation** - Pydantic v2 schemas on all endpoints
 
 ---
 
@@ -74,6 +109,7 @@ The LMS is built on a modular plugin system:
 - Zustand (state management)
 - Framer Motion (animations)
 - React Router v6
+- Lucide React (icons)
 
 **Backend:**
 - FastAPI (Python)
@@ -170,9 +206,12 @@ TheITapprentice-LMS/
 │   │   ├── api/               # REST API endpoints
 │   │   ├── plugins/           # Plugin modules
 │   │   │   ├── tutorials/     # Tutorial system
-│   │   │   ├── typing_game/   # Typing game
+│   │   │   ├── typing_game/   # Typing game (6 modes + analytics)
+│   │   │   ├── courses/       # Course system
+│   │   │   ├── quizzes/       # Quiz & assessment system
+│   │   │   ├── skills/        # Skills tracking system
 │   │   │   ├── progress/      # XP & achievements
-│   │   │   └── courses/       # Course system
+│   │   │   └── shared/        # Shared XP service
 │   │   ├── users/             # User management
 │   │   └── core/              # Config, security
 │   ├── alembic/               # Database migrations
@@ -180,18 +219,30 @@ TheITapprentice-LMS/
 ├── frontend/                   # React frontend
 │   ├── src/
 │   │   ├── components/        # Shared components
+│   │   │   ├── admin/         # Admin components
+│   │   │   ├── home/          # Homepage sections
+│   │   │   ├── layout/        # Header, Footer, MobileNav
+│   │   │   └── ui/            # Reusable UI (Toast, ConfirmDialog)
 │   │   ├── pages/             # Page components
-│   │   │   ├── admin/         # Admin dashboard
+│   │   │   ├── admin/         # Admin dashboard pages
 │   │   │   └── user/          # User dashboard & profile
 │   │   ├── plugins/           # Plugin UI components
 │   │   │   ├── tutorials/     # Tutorial UI
-│   │   │   ├── typing-game/   # Typing game UI
+│   │   │   ├── typing-game/   # Typing game UI (6 modes)
+│   │   │   ├── courses/       # Course UI
+│   │   │   ├── quizzes/       # Quiz UI
+│   │   │   ├── skills/        # Skills UI
 │   │   │   └── shared/        # XP, achievements, etc.
 │   │   ├── services/          # API clients
 │   │   ├── store/             # Zustand stores
 │   │   └── routes/            # React Router config
 ├── docs/                       # Documentation
-└── deployment/                 # Deployment configs
+│   ├── deployment/            # Deployment guides
+│   ├── development/           # Development guides
+│   ├── releases/              # Release notes
+│   ├── security/              # Security reports
+│   └── setup/                 # Setup guides (OAuth, Analytics, AdSense)
+└── archive/                    # Archived planning docs
 ```
 
 ---
@@ -200,10 +251,10 @@ TheITapprentice-LMS/
 
 | Role | Access |
 |------|--------|
-| **Admin** | Full access, user management, content creation |
+| **Admin** | Full access, user management, content creation, all admin panels |
 | **Tutor** | Create tutorials, view student progress |
 | **Author** | Create and manage blog posts |
-| **Apprentice** | Access learning content, track progress |
+| **Apprentice** | Access learning content, track progress, play games |
 
 ---
 
@@ -261,11 +312,28 @@ Interactive API documentation available at:
 - `POST /api/v1/tutorials/{id}/start` - Start a tutorial
 - `POST /api/v1/tutorials/{id}/steps/{step}/complete` - Complete step
 
+**Courses:**
+- `GET /api/v1/courses` - List courses
+- `POST /api/v1/courses/{id}/enroll` - Enroll in a course
+- `GET /api/v1/courses/{id}/progress` - Get course progress
+
+**Quizzes:**
+- `GET /api/v1/quizzes` - List quizzes
+- `POST /api/v1/quizzes/{id}/submit` - Submit quiz answers
+- `GET /api/v1/quizzes/history` - Get quiz history
+
+**Skills:**
+- `GET /api/v1/skills` - List all skills
+- `GET /api/v1/skills/{slug}` - Get skill detail with user progress
+- `GET /api/v1/skills/leaderboard` - Skills leaderboard
+
 **Typing Game:**
 - `GET /api/v1/games/typing/word-lists` - Get word lists
 - `POST /api/v1/games/typing/start` - Start game session
 - `POST /api/v1/games/typing/submit` - Submit game results
 - `GET /api/v1/games/typing/stats/me` - Get typing stats
+- `GET /api/v1/games/typing/analytics` - Get detailed analytics
+- `GET /api/v1/games/typing/daily-challenge` - Get daily challenge
 
 ---
 
@@ -328,17 +396,24 @@ Contributions are welcome! Please see [docs/development/CONTRIBUTING.md](docs/de
 
 ## Roadmap
 
-### Current (v2.0)
+### Current (v2.9)
 - Interactive tutorials with progress tracking
-- Typing game with PVP mode
-- XP and achievement system
-- Enhanced user profiles
-- Plugin architecture
+- Structured courses with enrollment and completion
+- Quizzes and assessments with multiple question types
+- Skills system with per-skill XP and leaderboards
+- Typing game with 6 modes (Quick Fox, Infinite Rush, Ghost, PvP, Practice, Daily Challenge)
+- Typing analytics with letter accuracy heatmaps
+- Anti-cheat system for game results
+- XP, achievement, and streak systems
+- Enhanced admin panel with 15+ management pages
+- Redesigned homepage with feature showcase
+- Responsive mobile navigation
 
 ### Planned
-- Course system with structured learning paths
-- Quiz and assessment features
 - Certificates of completion
+- Course prerequisites and learning paths
+- Code playground integration
+- Collaborative features
 
 ---
 
@@ -356,6 +431,8 @@ Built with:
 - [Vite](https://vitejs.dev/)
 - [Tailwind CSS](https://tailwindcss.com/)
 - [PostgreSQL](https://www.postgresql.org/)
+- [Framer Motion](https://www.framer.com/motion/)
+- [Lucide Icons](https://lucide.dev/)
 
 Originally forked from [FastReactCMS](https://github.com/andynaisbitt/Fast-React-CMS).
 
