@@ -528,6 +528,7 @@ const CoursePlayer: React.FC = () => {
         }
       });
 
+      console.log('Setting results:', { newResults, totalScore, totalMaxScore });
       setResults(newResults);
       setScore(totalScore);
       setMaxScore(totalMaxScore);
@@ -535,11 +536,15 @@ const CoursePlayer: React.FC = () => {
 
       const percentage = totalMaxScore > 0 ? (totalScore / totalMaxScore) * 100 : 0;
       const passed = percentage >= passingScore;
+      console.log('Quiz complete:', { percentage, passed, passingScore });
       onQuizComplete(blockId, passed, totalScore, totalMaxScore);
     };
 
     const percentage = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
     const passed = percentage >= passingScore;
+
+    // Debug render state
+    console.log('Render state:', { showResults, score, maxScore, percentage, passed, results });
 
     return (
       <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 my-6">
