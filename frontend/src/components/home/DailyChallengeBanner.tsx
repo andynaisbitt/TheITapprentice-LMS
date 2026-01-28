@@ -213,12 +213,21 @@ export const DailyChallengeBanner: React.FC = () => {
             </div>
           )}
 
-          {/* All completed message */}
-          {completedCount === state.challenges.length && claimedCount === state.challenges.length && (
+          {/* All completed message - only show if there were challenges */}
+          {state.challenges.length > 0 && completedCount === state.challenges.length && claimedCount === state.challenges.length && (
             <div className="mt-4 text-center py-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
               <p className="text-green-700 dark:text-green-400 font-medium flex items-center justify-center gap-2">
                 <Gift className="w-5 h-5" />
                 All challenges complete! Come back tomorrow for more.
+              </p>
+            </div>
+          )}
+
+          {/* No challenges available */}
+          {state.challenges.length === 0 && (
+            <div className="text-center py-6">
+              <p className="text-gray-500 dark:text-gray-400">
+                No challenges available today. Check back soon!
               </p>
             </div>
           )}

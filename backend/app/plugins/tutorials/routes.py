@@ -490,6 +490,21 @@ async def get_all_tutorials_admin(
     return tutorials
 
 
+@router.get("/admin/tutorials/{tutorial_id}", response_model=schemas.TutorialDetailResponse, dependencies=[Depends(require_admin)])
+async def get_tutorial_admin(
+    tutorial_id: int,
+    db: Session = Depends(get_db)
+):
+    """Get tutorial by ID (admin only)"""
+    tutorial = crud.get_tutorial(db, tutorial_id)
+    if not tutorial:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Tutorial not found"
+        )
+    return tutorial
+
+
 @router.put("/admin/tutorials/{tutorial_id}", response_model=schemas.TutorialDetailResponse, dependencies=[Depends(require_admin)])
 async def update_tutorial(
     tutorial_id: int,

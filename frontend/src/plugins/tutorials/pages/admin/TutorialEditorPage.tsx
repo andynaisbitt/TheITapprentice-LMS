@@ -548,7 +548,7 @@ const TutorialEditorPage: React.FC = () => {
   const loadTutorial = async (tutorialId: number) => {
     try {
       setLoading(true);
-      const tutorial = await tutorialApi.getTutorialBySlug(tutorialId.toString());
+      const tutorial = await tutorialApi.getTutorialById(tutorialId);
 
       setTitle(tutorial.title);
       setSlug(tutorial.slug);

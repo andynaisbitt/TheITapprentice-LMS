@@ -82,6 +82,18 @@ def seed_achievements(db):
         return None
 
 
+def seed_challenges(db):
+    """Seed daily challenge templates."""
+    try:
+        from app.plugins.shared.seed_challenges import seed_challenge_templates
+        result = seed_challenge_templates(db)
+        print(f"  Challenges: {result.get('created', 0)} created, {result.get('updated', 0)} updated")
+        return result
+    except ImportError:
+        print("  Challenges: seed_challenges.py not found")
+        return None
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Seed BlogCMS database with initial data",
@@ -101,13 +113,14 @@ Examples:
     parser.add_argument("--tutorials", action="store_true", help="Seed tutorials and categories")
     parser.add_argument("--quizzes", action="store_true", help="Seed beginner quizzes")
     parser.add_argument("--achievements", action="store_true", help="Seed achievement definitions")
+    parser.add_argument("--challenges", action="store_true", help="Seed daily challenge templates")
     parser.add_argument("--dry-run", action="store_true", help="Show what would be seeded without making changes")
 
     args = parser.parse_args()
 
     # If no args provided, show help
     if not any([args.all, args.skills, args.word_lists, args.courses,
-                args.tutorials, args.quizzes, args.achievements]):
+                args.tutorials, args.quizzes, args.achievements, args.challenges]):
         parser.print_help()
         print("\nNo seed options specified. Use --all to run all seeds.")
         return
@@ -128,6 +141,8 @@ Examples:
             print("Would seed: Quizzes (5 beginner quizzes)")
         if args.all or args.achievements:
             print("Would seed: Achievements (16 achievement definitions)")
+        if args.all or args.challenges:
+            print("Would seed: Challenges (16 daily challenge templates)")
         return
 
     print("\n" + "=" * 50)
@@ -199,7 +214,7 @@ Examples:
 
         # Achievements - uses shared session (Phase 3)
         if args.all or args.achievements:
-            print("[6/6] Seeding Achievements...")
+            print("[6/7] Seeding Achievements...")
             try:
                 result = seed_achievements(db)
                 if result is not None:
@@ -211,6 +226,21 @@ Examples:
                 db.rollback()
                 print(f"  ERROR: {e}")
                 results["failed"].append("achievements")
+
+        # Challenges - uses shared session
+        if args.all or args.challenges:
+            print("[7/7] Seeding Daily Challenges...")
+            try:
+                result = seed_challenges(db)
+                if result is not None:
+                    db.commit()
+                    results["success"].append("challenges")
+                else:
+                    results["skipped"].append("challenges")
+            except Exception as e:
+                db.rollback()
+                print(f"  ERROR: {e}")
+                results["failed"].append("challenges")
 
     except Exception as e:
         db.rollback()

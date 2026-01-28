@@ -204,22 +204,23 @@ export const FeatureShowcaseHero: React.FC = () => {
         />
       </div>
 
-      {/* Main content */}
+      {/* Main content - fixed height container to prevent layout shift */}
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:py-28">
-        <AnimatePresence mode="wait" custom={direction}>
-          <motion.div
-            key={currentSlide.id}
-            custom={direction}
-            variants={slideVariants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            drag="x"
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.1}
-            onDragEnd={handleDragEnd}
-            className="flex flex-col lg:flex-row items-center gap-8 lg:gap-16 cursor-grab active:cursor-grabbing"
-          >
+        <div className="min-h-[280px] sm:min-h-[260px] lg:min-h-[240px]">
+          <AnimatePresence mode="wait" custom={direction}>
+            <motion.div
+              key={currentSlide.id}
+              custom={direction}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.1}
+              onDragEnd={handleDragEnd}
+              className="flex flex-col lg:flex-row items-center gap-8 lg:gap-16 cursor-grab active:cursor-grabbing"
+            >
             {/* Icon Section */}
             <motion.div
               variants={iconVariants}
@@ -285,6 +286,7 @@ export const FeatureShowcaseHero: React.FC = () => {
             </motion.div>
           </motion.div>
         </AnimatePresence>
+        </div>
 
         {/* Navigation Controls */}
         <div className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-6">

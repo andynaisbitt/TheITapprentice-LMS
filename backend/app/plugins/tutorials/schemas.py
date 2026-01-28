@@ -188,6 +188,8 @@ class TutorialListResponse(BaseModel):
     category_id: Optional[int]
     category: Optional[TutorialCategoryResponse] = None
     thumbnail_url: Optional[str]
+    is_published: bool = False
+    is_featured: bool = False
     xp_reward: int
     related_skills: List[str]
     view_count: int

@@ -455,12 +455,6 @@ const CoursesList: React.FC = () => {
                         <Users size={14} />
                         <span>{course.enrollment_count} enrolled</span>
                       </div>
-                      {course.difficulty_rating > 0 && (
-                        <div className="flex items-center gap-1">
-                          <Star size={14} className="fill-amber-400 text-amber-400" />
-                          <span>{course.difficulty_rating}/5</span>
-                        </div>
-                      )}
                     </div>
 
                     {/* Progress Bar for enrolled courses */}

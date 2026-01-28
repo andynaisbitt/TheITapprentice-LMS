@@ -260,12 +260,6 @@ const CourseDetail: React.FC = () => {
                   <Users size={18} className="text-purple-500 dark:text-purple-400" />
                   <span>{course.enrollment_count} enrolled</span>
                 </div>
-                {course.difficulty_rating > 0 && (
-                  <div className="flex items-center gap-2">
-                    <Star size={18} className="text-yellow-500 dark:text-yellow-400 fill-yellow-500 dark:fill-yellow-400" />
-                    <span>{course.difficulty_rating}/5</span>
-                  </div>
-                )}
                 {course.completion_count > 0 && (
                   <div className="flex items-center gap-2">
                     <Award size={18} className="text-green-500 dark:text-green-400" />

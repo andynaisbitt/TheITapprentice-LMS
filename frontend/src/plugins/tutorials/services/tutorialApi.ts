@@ -126,6 +126,14 @@ export async function getMyTutorialProgress(
 // ============================================================================
 
 /**
+ * Get tutorial by ID (admin only)
+ */
+export async function getTutorialById(tutorialId: number): Promise<TutorialDetail> {
+  const response = await api.get(`/admin/tutorials/${tutorialId}`);
+  return response.data;
+}
+
+/**
  * Create new tutorial (admin only)
  */
 export async function createTutorial(
