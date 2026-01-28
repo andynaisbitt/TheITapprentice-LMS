@@ -6,6 +6,7 @@ Adapted from ITAppBetaV1 for BlogCMS plugin architecture
 """
 from typing import List, Optional
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
 from datetime import datetime
@@ -529,7 +530,10 @@ def update_module_progress(
         if progress_update.completed_sections is not None:
             progress.completed_sections = progress_update.completed_sections
         if progress_update.quiz_scores:
-            progress.quiz_scores.update(progress_update.quiz_scores)
+            updated_scores = dict(progress.quiz_scores or {})
+            updated_scores.update(progress_update.quiz_scores)
+            progress.quiz_scores = updated_scores
+            flag_modified(progress, "quiz_scores")
         if progress_update.last_position:
             progress.last_position = progress_update.last_position
         if progress_update.notes:
@@ -543,214 +547,234 @@ def update_module_progress(
         .count()
 
     # Check if module is completed
+    module_just_completed = False
     if len(progress.completed_sections) >= total_sections and total_sections > 0:
         if not progress.completed:
             progress.completed = True
             progress.completed_at = datetime.utcnow()
+            module_just_completed = True
 
-            # Update enrollment progress
-            enrollment = db.query(CourseEnrollment).filter(
-                CourseEnrollment.id == enrollment_id
-            ).first()
+    # Always recalculate enrollment progress from actual ModuleProgress records
+    # This self-heals any previously corrupted completed_modules data
+    enrollment = db.query(CourseEnrollment).filter(
+        CourseEnrollment.id == enrollment_id
+    ).first()
 
-            if enrollment and module_id not in enrollment.completed_modules:
-                enrollment.completed_modules.append(module_id)
+    if enrollment:
+        # Get all modules for this course
+        course_modules = db.query(CourseModule)\
+            .filter(CourseModule.course_id == enrollment.course_id)\
+            .all()
+        total_modules = len(course_modules)
 
-                # Get module details for XP award
-                module = get_module(db, module_id)
-                module_title = module.title if module else module_id
+        # Build completed_modules from actual ModuleProgress records
+        all_progress = db.query(ModuleProgress)\
+            .filter(
+                ModuleProgress.enrollment_id == enrollment_id,
+                ModuleProgress.completed == True
+            )\
+            .all()
+        actual_completed = [mp.module_id for mp in all_progress]
 
-                # Award XP for module completion
-                xp_result = xp_service.award_xp(
-                    db=db,
-                    user_id=enrollment.user_id,
-                    action="module_complete",
-                    reason=f"Completed module: {module_title}"
-                )
+        # Update enrollment's completed_modules to match reality
+        old_completed = enrollment.completed_modules or []
+        if set(actual_completed) != set(old_completed):
+            enrollment.completed_modules = actual_completed
+            flag_modified(enrollment, "completed_modules")
+            logger.info(f"Repaired completed_modules for enrollment {enrollment_id}: {old_completed} -> {actual_completed}")
 
-                logger.info(f"User {enrollment.user_id} completed module {module_id}, awarded {xp_result.get('xp_awarded', 0)} XP")
+        # Calculate progress percentage
+        enrollment.progress = int(
+            (len(actual_completed) / total_modules * 100)
+            if total_modules > 0 else 0
+        )
 
-                # Log module completion activity
+        # Award XP for module completion (only if this module was just completed)
+        if module_just_completed and module_id not in old_completed:
+            # Get module details for XP award
+            module = get_module(db, module_id)
+            module_title = module.title if module else module_id
+
+            # Award XP for module completion
+            xp_result = xp_service.award_xp(
+                db=db,
+                user_id=enrollment.user_id,
+                action="module_complete",
+                reason=f"Completed module: {module_title}"
+            )
+
+            logger.info(f"User {enrollment.user_id} completed module {module_id}, awarded {xp_result.get('xp_awarded', 0)} XP")
+
+            # Log module completion activity
+            achievement_service.log_activity(
+                db=db,
+                user_id=enrollment.user_id,
+                activity_type=ActivityType.MODULE_COMPLETE,
+                title=f"Completed module: {module_title}",
+                reference_type="module",
+                reference_id=module_id,
+                activity_data={
+                    "course_id": enrollment.course_id,
+                    "time_spent": progress.time_spent,
+                    "sections_completed": len(progress.completed_sections)
+                },
+                xp_earned=xp_result.get("xp_awarded", 0)
+            )
+
+            # Check for level up
+            if xp_result.get("level_up"):
+                logger.info(f"User {enrollment.user_id} leveled up to {xp_result.get('new_level')}!")
                 achievement_service.log_activity(
                     db=db,
                     user_id=enrollment.user_id,
-                    activity_type=ActivityType.MODULE_COMPLETE,
-                    title=f"Completed module: {module_title}",
-                    reference_type="module",
-                    reference_id=module_id,
+                    activity_type=ActivityType.LEVEL_UP,
+                    title=f"Reached level {xp_result.get('new_level')}!",
                     activity_data={
-                        "course_id": enrollment.course_id,
-                        "time_spent": progress.time_spent,
-                        "sections_completed": len(progress.completed_sections)
-                    },
-                    xp_earned=xp_result.get("xp_awarded", 0)
-                )
-
-                # Check for level up
-                if xp_result.get("level_up"):
-                    logger.info(f"User {enrollment.user_id} leveled up to {xp_result.get('new_level')}!")
-                    achievement_service.log_activity(
-                        db=db,
-                        user_id=enrollment.user_id,
-                        activity_type=ActivityType.LEVEL_UP,
-                        title=f"Reached level {xp_result.get('new_level')}!",
-                        activity_data={
-                            "old_level": xp_result.get("old_level"),
-                            "new_level": xp_result.get("new_level"),
-                            "trigger": "module_complete"
-                        }
-                    )
-
-                # Check and unlock achievements for module completion
-                achievement_service.check_and_unlock_achievements(
-                    db=db,
-                    user_id=enrollment.user_id,
-                    action="module_complete",
-                    context={
-                        "module_id": module_id,
-                        "course_id": enrollment.course_id
+                        "old_level": xp_result.get("old_level"),
+                        "new_level": xp_result.get("new_level"),
+                        "trigger": "module_complete"
                     }
                 )
 
-                # Track challenge progress for module/course section completion
+            # Check and unlock achievements for module completion
+            achievement_service.check_and_unlock_achievements(
+                db=db,
+                user_id=enrollment.user_id,
+                action="module_complete",
+                context={
+                    "module_id": module_id,
+                    "course_id": enrollment.course_id
+                }
+            )
+
+            # Track challenge progress for module/course section completion
+            challenge_service.increment_progress(
+                db=db,
+                user_id=enrollment.user_id,
+                challenge_type=ChallengeType.COURSE_SECTION,
+                amount=1
+            )
+
+            # Track XP earned for XP challenges
+            if xp_result.get("xp_awarded", 0) > 0:
                 challenge_service.increment_progress(
                     db=db,
                     user_id=enrollment.user_id,
-                    challenge_type=ChallengeType.COURSE_SECTION,
-                    amount=1
+                    challenge_type=ChallengeType.XP_EARN,
+                    amount=xp_result.get("xp_awarded", 0)
                 )
 
-                # Track XP earned for XP challenges
-                if xp_result.get("xp_awarded", 0) > 0:
-                    challenge_service.increment_progress(
-                        db=db,
-                        user_id=enrollment.user_id,
-                        challenge_type=ChallengeType.XP_EARN,
-                        amount=xp_result.get("xp_awarded", 0)
-                    )
+        # Check if course is completed
+        if enrollment.progress >= 100 and not enrollment.is_complete:
+            enrollment.is_complete = True
+            enrollment.completed_at = datetime.utcnow()
+            enrollment.status = EnrollmentStatus.COMPLETED
 
-                # Calculate overall course progress
-                total_modules = db.query(CourseModule)\
-                    .filter(CourseModule.course_id == enrollment.course_id)\
-                    .count()
+            # Get course details for XP award
+            course = get_course(db, enrollment.course_id)
+            course_title = course.title if course else enrollment.course_id
 
-                enrollment.progress = int(
-                    (len(enrollment.completed_modules) / total_modules * 100)
-                    if total_modules > 0 else 0
+            # Increment course completion count
+            if course:
+                course.completion_count += 1
+
+            # Award XP for course completion
+            # Use course's custom xp_reward if set, otherwise use default
+            if course and course.xp_reward and course.xp_reward > 0:
+                base_xp = xp_service.config.REWARDS.get("course_complete", 250)
+                multiplier = course.xp_reward / base_xp if base_xp > 0 else 1.0
+                course_xp_result = xp_service.award_xp(
+                    db=db,
+                    user_id=enrollment.user_id,
+                    action="course_complete",
+                    multiplier=multiplier,
+                    reason=f"Completed course: {course_title}"
+                )
+            else:
+                course_xp_result = xp_service.award_xp(
+                    db=db,
+                    user_id=enrollment.user_id,
+                    action="course_complete",
+                    reason=f"Completed course: {course_title}"
                 )
 
-                # Check if course is completed
-                if enrollment.progress >= 100:
-                    enrollment.is_complete = True
-                    enrollment.completed_at = datetime.utcnow()
-                    enrollment.status = EnrollmentStatus.COMPLETED
+            logger.info(f"User {enrollment.user_id} completed course {enrollment.course_id}, awarded {course_xp_result.get('xp_awarded', 0)} XP")
 
-                    # Get course details for XP award
-                    course = get_course(db, enrollment.course_id)
-                    course_title = course.title if course else enrollment.course_id
+            # Create certificate for course completion
+            try:
+                certificate = create_certificate(
+                    db=db,
+                    user_id=enrollment.user_id,
+                    course_id=enrollment.course_id,
+                    enrollment_id=enrollment.id
+                )
+                logger.info(f"Certificate created: {certificate.verification_code}")
+            except (ValueError, HTTPException) as cert_err:
+                logger.error(f"Certificate creation failed: {cert_err}")
+            except Exception as cert_err:
+                logger.error(f"Unexpected error creating certificate: {cert_err}")
+                import traceback
+                logger.error(traceback.format_exc())
 
-                    # Increment course completion count
-                    if course:
-                        course.completion_count += 1
+            # Log course completion activity
+            achievement_service.log_activity(
+                db=db,
+                user_id=enrollment.user_id,
+                activity_type=ActivityType.COURSE_COMPLETE,
+                title=f"Completed course: {course_title}",
+                reference_type="course",
+                reference_id=enrollment.course_id,
+                activity_data={
+                    "total_modules": total_modules,
+                    "total_time_spent": enrollment.time_spent,
+                    "level": course.level.value if course else None
+                },
+                xp_earned=course_xp_result.get("xp_awarded", 0)
+            )
 
-                    # Award XP for course completion
-                    # Use course's custom xp_reward if set, otherwise use default
-                    if course and course.xp_reward and course.xp_reward > 0:
-                        base_xp = xp_service.config.REWARDS.get("course_complete", 250)
-                        multiplier = course.xp_reward / base_xp if base_xp > 0 else 1.0
-                        course_xp_result = xp_service.award_xp(
-                            db=db,
-                            user_id=enrollment.user_id,
-                            action="course_complete",
-                            multiplier=multiplier,
-                            reason=f"Completed course: {course_title}"
-                        )
-                    else:
-                        course_xp_result = xp_service.award_xp(
-                            db=db,
-                            user_id=enrollment.user_id,
-                            action="course_complete",
-                            reason=f"Completed course: {course_title}"
-                        )
+            # Check for level up from course completion
+            if course_xp_result.get("level_up"):
+                logger.info(f"User {enrollment.user_id} leveled up to {course_xp_result.get('new_level')}!")
+                achievement_service.log_activity(
+                    db=db,
+                    user_id=enrollment.user_id,
+                    activity_type=ActivityType.LEVEL_UP,
+                    title=f"Reached level {course_xp_result.get('new_level')}!",
+                    activity_data={
+                        "old_level": course_xp_result.get("old_level"),
+                        "new_level": course_xp_result.get("new_level"),
+                        "trigger": "course_complete"
+                    }
+                )
 
-                    logger.info(f"User {enrollment.user_id} completed course {enrollment.course_id}, awarded {course_xp_result.get('xp_awarded', 0)} XP")
+            # Update user's courses_completed count
+            user = db.query(User).filter(User.id == enrollment.user_id).first()
+            if user:
+                user.courses_completed = (user.courses_completed or 0) + 1
 
-                    # Create certificate for course completion
-                    try:
-                        certificate = create_certificate(
-                            db=db,
-                            user_id=enrollment.user_id,
-                            course_id=enrollment.course_id,
-                            enrollment_id=enrollment.id
-                        )
-                        logger.info(f"Certificate created: {certificate.verification_code}")
-                    except (ValueError, HTTPException) as cert_err:
-                        # create_certificate raises ValueError if course/user not found
-                        logger.error(f"Certificate creation failed: {cert_err}")
-                    except Exception as cert_err:
-                        logger.error(f"Unexpected error creating certificate: {cert_err}")
-                        import traceback
-                        logger.error(traceback.format_exc())
+            # Check and unlock achievements for course completion
+            unlocked = achievement_service.check_and_unlock_achievements(
+                db=db,
+                user_id=enrollment.user_id,
+                action="course_complete",
+                context={
+                    "course_id": enrollment.course_id,
+                    "level": course.level.value if course else None,
+                    "total_modules": total_modules
+                }
+            )
 
-                    # Log course completion activity
-                    achievement_service.log_activity(
-                        db=db,
-                        user_id=enrollment.user_id,
-                        activity_type=ActivityType.COURSE_COMPLETE,
-                        title=f"Completed course: {course_title}",
-                        reference_type="course",
-                        reference_id=enrollment.course_id,
-                        activity_data={
-                            "total_modules": total_modules,
-                            "total_time_spent": enrollment.time_spent,
-                            "level": course.level.value if course else None
-                        },
-                        xp_earned=course_xp_result.get("xp_awarded", 0)
-                    )
+            if unlocked:
+                logger.info(f"User {enrollment.user_id} unlocked {len(unlocked)} achievement(s) from course completion")
 
-                    # Check for level up from course completion
-                    if course_xp_result.get("level_up"):
-                        logger.info(f"User {enrollment.user_id} leveled up to {course_xp_result.get('new_level')}!")
-                        achievement_service.log_activity(
-                            db=db,
-                            user_id=enrollment.user_id,
-                            activity_type=ActivityType.LEVEL_UP,
-                            title=f"Reached level {course_xp_result.get('new_level')}!",
-                            activity_data={
-                                "old_level": course_xp_result.get("old_level"),
-                                "new_level": course_xp_result.get("new_level"),
-                                "trigger": "course_complete"
-                            }
-                        )
-
-                    # Update user's courses_completed count
-                    user = db.query(User).filter(User.id == enrollment.user_id).first()
-                    if user:
-                        user.courses_completed = (user.courses_completed or 0) + 1
-
-                    # Check and unlock achievements for course completion
-                    unlocked = achievement_service.check_and_unlock_achievements(
-                        db=db,
-                        user_id=enrollment.user_id,
-                        action="course_complete",
-                        context={
-                            "course_id": enrollment.course_id,
-                            "level": course.level.value if course else None,
-                            "total_modules": total_modules
-                        }
-                    )
-
-                    if unlocked:
-                        logger.info(f"User {enrollment.user_id} unlocked {len(unlocked)} achievement(s) from course completion")
-
-                    # Track XP earned for XP challenges (course completion)
-                    if course_xp_result.get("xp_awarded", 0) > 0:
-                        challenge_service.increment_progress(
-                            db=db,
-                            user_id=enrollment.user_id,
-                            challenge_type=ChallengeType.XP_EARN,
-                            amount=course_xp_result.get("xp_awarded", 0)
-                        )
+            # Track XP earned for XP challenges (course completion)
+            if course_xp_result.get("xp_awarded", 0) > 0:
+                challenge_service.increment_progress(
+                    db=db,
+                    user_id=enrollment.user_id,
+                    challenge_type=ChallengeType.XP_EARN,
+                    amount=course_xp_result.get("xp_awarded", 0)
+                )
 
     db.commit()
     db.refresh(progress)
@@ -792,8 +816,8 @@ def get_course_progress(
         "course_id": course_id,
         "enrolled": True,
         "enrollment_id": enrollment.id,
-        "progress": enrollment.progress,
-        "completed_modules": enrollment.completed_modules,
+        "overall_progress": enrollment.progress,
+        "completed_modules": enrollment.completed_modules or [],
         "current_module": enrollment.current_module_id,
         "is_complete": enrollment.is_complete,
         "total_modules": len(modules),

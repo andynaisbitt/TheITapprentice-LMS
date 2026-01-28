@@ -5,7 +5,7 @@
  */
 
 import { useAuth } from '../../state/contexts/AuthContext';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -42,6 +42,7 @@ import { SkillsWidget } from '../../plugins/skills/components/SkillsWidget';
 
 export const UserDashboard = () => {
   const { user, logout } = useAuth();
+  const location = useLocation();
   const [tutorialProgress, setTutorialProgress] = useState<TutorialProgress[]>([]);
   const [loadingTutorials, setLoadingTutorials] = useState(true);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
@@ -54,7 +55,7 @@ export const UserDashboard = () => {
     if (user) {
       loadAllData();
     }
-  }, [user]);
+  }, [user, location.key]);
 
   const loadAllData = async () => {
     try {

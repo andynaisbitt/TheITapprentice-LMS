@@ -423,12 +423,6 @@ const CoursePlayer: React.FC = () => {
         try {
           const progressData = await coursesApi.getProgress(courseId);
 
-          // Track if course was already complete (to prevent showing completion modal again)
-          if (progressData.is_complete) {
-            setCourseWasAlreadyComplete(true);
-            console.log('[CoursePlayer] Course already complete - will not show completion modal');
-          }
-
           // Load completed sections from all modules
           const allCompleted = new Set<string>();
           const progressMap: Record<string, string[]> = {};
@@ -439,6 +433,36 @@ const CoursePlayer: React.FC = () => {
               progressMap[moduleId] = sections;
               sections.forEach((sId: string) => allCompleted.add(sId));
             });
+          }
+
+          // Check if all sections are actually completed but course isn't marked complete
+          // This detects corrupted data from the previous JSON mutation bug
+          if (!progressData.is_complete && courseData.modules) {
+            const totalSections = courseData.modules.reduce(
+              (sum, mod) => sum + (mod.sections?.length || 0), 0
+            );
+            if (totalSections > 0 && allCompleted.size >= totalSections) {
+              console.log('[CoursePlayer] All sections complete but course not marked complete - triggering repair');
+              try {
+                const repairResult = await coursesApi.repairProgress(courseId);
+                console.log('[CoursePlayer] Repair result:', repairResult);
+                if (repairResult.is_complete) {
+                  setCourseWasAlreadyComplete(true);
+                  setCompletedSections(allCompleted);
+                  setModuleProgress(progressMap);
+                  setLoading(false);
+                  return;
+                }
+              } catch (repairErr) {
+                console.error('[CoursePlayer] Repair failed:', repairErr);
+              }
+            }
+          }
+
+          // Track if course was already complete (to prevent showing completion modal again)
+          if (progressData.is_complete) {
+            setCourseWasAlreadyComplete(true);
+            console.log('[CoursePlayer] Course already complete - will not show completion modal');
           }
 
           setCompletedSections(allCompleted);
@@ -974,89 +998,92 @@ const CoursePlayer: React.FC = () => {
   // Course already complete - show completion summary
   if (courseWasAlreadyComplete && course) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 dark:from-slate-900 dark:via-slate-900 dark:to-slate-900 flex items-center justify-center p-6">
         <motion.div
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-2xl w-full border border-gray-200 dark:border-gray-700 shadow-lg"
+          className="max-w-lg w-full"
         >
-          <div className="text-center mb-8">
-            <Award size={80} className="mx-auto mb-4 text-yellow-500" />
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-3">
-              Course Completed!
-            </h1>
-            <p className="text-gray-600 dark:text-gray-300 text-lg">
-              You've already completed <span className="text-blue-600 dark:text-blue-400 font-semibold">{course.title}</span>
-            </p>
-          </div>
-
-          <div className="space-y-4 mb-8">
-            <div className="bg-gray-100 dark:bg-gray-700/50 rounded-lg p-4 flex items-center gap-4">
-              <CheckCircle size={40} className="text-green-500 flex-shrink-0" />
-              <div>
-                <p className="text-gray-900 dark:text-white font-semibold">Course Progress</p>
-                <p className="text-gray-500 dark:text-gray-400 text-sm">100% Complete - All modules finished</p>
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-600/20 dark:to-purple-600/20 border-2 border-blue-300 dark:border-blue-500 rounded-lg p-5">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="bg-gradient-to-r from-blue-500 to-purple-500 rounded-full p-2">
-                  <Award size={24} className="text-white" />
+          {/* Certificate-style card */}
+          <div className="bg-white dark:bg-slate-800 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-xl">
+            {/* Header banner */}
+            <div className="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 px-8 py-10 text-center relative overflow-hidden">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.15),transparent_50%)]" />
+              <div className="relative">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm mb-4">
+                  <Award size={32} className="text-white" />
                 </div>
-                <p className="text-gray-900 dark:text-white font-bold text-lg">Certificate Available</p>
+                <h1 className="text-2xl font-bold text-white mb-1">Course Completed</h1>
+                <p className="text-emerald-100 text-sm">{course.title}</p>
               </div>
-              <p className="text-gray-600 dark:text-gray-300 text-sm">
-                Your certificate of completion is ready to view and share
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <button
-              onClick={() => navigate('/certifications')}
-              className="w-full px-6 py-4 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white rounded-lg font-semibold transition-colors shadow-lg flex items-center justify-center gap-2 text-lg"
-            >
-              <Award size={22} />
-              View My Certificate
-            </button>
-
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => {
-                  // Allow reviewing by clearing the complete flag temporarily
-                  setCourseWasAlreadyComplete(false);
-                  // Start from first module, first section
-                  const sortedModules = course.modules?.sort((a, b) => a.order_index - b.order_index) || [];
-                  if (sortedModules.length > 0) {
-                    const firstModule = sortedModules[0];
-                    const sortedSections = firstModule.sections?.sort((a, b) => a.order_index - b.order_index) || [];
-                    if (sortedSections.length > 0) {
-                      setCurrentModule(firstModule);
-                      setCurrentSection(sortedSections[0]);
-                    }
-                  }
-                }}
-                className="px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
-              >
-                <BookOpen size={18} />
-                Review Course
-              </button>
-
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg font-semibold transition-colors"
-              >
-                Go to Dashboard
-              </button>
             </div>
 
-            <button
-              onClick={() => navigate('/courses')}
-              className="w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg transition-colors"
-            >
-              Browse More Courses
-            </button>
+            <div className="px-8 py-6 space-y-5">
+              {/* Progress indicator */}
+              <div className="flex items-center gap-3 p-3 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl border border-emerald-200 dark:border-emerald-500/20">
+                <CheckCircle size={22} className="text-emerald-500 flex-shrink-0" />
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">All modules completed</span>
+                    <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">100%</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-emerald-200 dark:bg-emerald-900/50 rounded-full">
+                    <div className="h-full bg-emerald-500 rounded-full w-full" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Certificate card */}
+              <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-500/10 dark:to-indigo-500/10 rounded-xl border border-blue-200 dark:border-blue-500/20">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg shadow-sm">
+                    <Award size={18} className="text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white">Certificate Earned</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">View and share your certificate</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="space-y-2.5 pt-1">
+                <button
+                  onClick={() => navigate('/certifications')}
+                  className="w-full px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-semibold transition-all shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2"
+                >
+                  <Award size={18} />
+                  View My Certificate
+                </button>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  <button
+                    onClick={() => {
+                      setCourseWasAlreadyComplete(false);
+                      const sortedModules = course.modules?.sort((a, b) => a.order_index - b.order_index) || [];
+                      if (sortedModules.length > 0) {
+                        const firstModule = sortedModules[0];
+                        const sortedSections = firstModule.sections?.sort((a, b) => a.order_index - b.order_index) || [];
+                        if (sortedSections.length > 0) {
+                          setCurrentModule(firstModule);
+                          setCurrentSection(sortedSections[0]);
+                        }
+                      }
+                    }}
+                    className="px-4 py-2.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 text-sm"
+                  >
+                    <BookOpen size={16} />
+                    Review
+                  </button>
+                  <button
+                    onClick={() => navigate('/courses')}
+                    className="px-4 py-2.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl font-medium transition-colors text-sm"
+                  >
+                    More Courses
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </motion.div>
       </div>
@@ -1090,145 +1117,145 @@ const CoursePlayer: React.FC = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
       {/* Completion Modal */}
       {showCompletionModal && completionData && (
-        <div className="fixed inset-0 bg-black/50 dark:bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <motion.div
-            initial={{ scale: 0.5, opacity: 0, y: 40 }}
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
-            transition={{ type: 'spring', stiffness: 150, damping: 20, duration: 0.6 }}
-            className="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full border border-gray-200 dark:border-gray-700 shadow-xl"
+            transition={{ type: 'spring', stiffness: 200, damping: 25 }}
+            className="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full overflow-hidden border border-slate-200 dark:border-slate-700 shadow-2xl"
           >
-            <div className="text-center">
-              {completionData.course_complete ? (
-                <>
-                  <Award size={64} className="mx-auto mb-4 text-yellow-500 animate-bounce" />
-                  <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">
-                    Course Complete!
-                  </h2>
-                  <p className="text-gray-600 dark:text-gray-300 mb-4">
-                    Congratulations! You've completed the entire course!
-                  </p>
-
-                  {/* Certificate Display */}
-                  <div className="space-y-3 mb-6">
-                    {completionData.certificate ? (
-                      <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-600/20 dark:to-purple-600/20 border-2 border-blue-300 dark:border-blue-500 rounded-xl p-5">
-                        <div className="flex items-start gap-3 mb-3">
-                          <div className="bg-gradient-to-r from-blue-500 to-purple-500 rounded-full p-2.5">
-                            <Award size={24} className="text-white" />
-                          </div>
-                          <div className="text-left flex-1">
-                            <p className="text-gray-900 dark:text-white font-bold text-lg mb-1">
-                              Your Certificate
-                            </p>
-                            <p className="text-gray-600 dark:text-gray-300 text-sm">
-                              {completionData.certificate.title}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Verification Code */}
-                        {completionData.certificate.verification_code && (
-                          <div className="bg-gray-100 dark:bg-black/40 rounded-lg p-3 mb-3">
-                            <div className="flex items-center justify-between mb-1">
-                              <p className="text-gray-500 dark:text-gray-400 text-xs">Verification Code</p>
-                              <button
-                                onClick={() => {
-                                  navigator.clipboard.writeText(completionData.certificate.verification_code);
-                                  toast.success('Verification code copied!');
-                                }}
-                                className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-xs"
-                              >
-                                Copy
-                              </button>
-                            </div>
-                            <p className="text-blue-600 dark:text-blue-300 font-mono text-sm font-semibold tracking-wide break-all">
-                              {completionData.certificate.verification_code}
-                            </p>
-                          </div>
-                        )}
-
-                        {/* Skills */}
-                        {completionData.certificate.skills_acquired && completionData.certificate.skills_acquired.length > 0 && (
-                          <div className="flex flex-wrap gap-2 mb-3">
-                            {completionData.certificate.skills_acquired.map((skill: string, idx: number) => (
-                              <span
-                                key={idx}
-                                className="bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 text-xs px-2.5 py-1 rounded-full font-medium"
-                              >
-                                {skill}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* View later note */}
-                        <p className="text-gray-500 dark:text-gray-400 text-xs text-center">
-                          You can view this certificate anytime from your Dashboard under Certificates.
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="bg-gradient-to-br from-yellow-50 to-amber-50 dark:from-yellow-600/20 dark:to-amber-600/20 border-2 border-yellow-300 dark:border-yellow-500 rounded-xl p-5 text-center">
-                        <Award size={48} className="mx-auto mb-3 text-yellow-500" />
-                        <p className="text-gray-900 dark:text-white font-bold mb-2">Certificate Earned!</p>
-                        <p className="text-gray-600 dark:text-gray-300 text-sm mb-2">
-                          Your certificate of completion has been generated.
-                        </p>
-                        <p className="text-gray-500 dark:text-gray-400 text-xs">
-                          You can view it anytime from your Dashboard under Certificates.
-                        </p>
-                      </div>
-                    )}
-
-                    {completionData.achievement_awarded && (
-                      <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-500/20 dark:to-pink-500/20 border border-purple-200 dark:border-purple-500 rounded-lg p-4">
-                        <div className="flex items-center gap-3">
-                          <div className="bg-purple-500 rounded-full p-2">
-                            <Medal size={20} className="text-white" />
-                          </div>
-                          <div className="text-left">
-                            <p className="text-purple-700 dark:text-purple-300 font-semibold">Achievement Unlocked!</p>
-                            <p className="text-purple-600 dark:text-purple-200 text-sm">Check your achievements</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
+            {completionData.course_complete ? (
+              <>
+                {/* Course Complete Header */}
+                <div className="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 px-6 py-8 text-center relative overflow-hidden">
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(255,255,255,0.2),transparent_50%)]" />
+                  <div className="relative">
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+                      className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm mb-3"
+                    >
+                      <Award size={32} className="text-white" />
+                    </motion.div>
+                    <h2 className="text-2xl font-bold text-white mb-1">Course Complete!</h2>
+                    <p className="text-emerald-100 text-sm">Congratulations on finishing the course</p>
                   </div>
+                </div>
 
-                  <div className="flex flex-col gap-3">
+                <div className="px-6 py-5 space-y-4">
+                  {/* Certificate section */}
+                  {completionData.certificate ? (
+                    <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-500/10 dark:to-indigo-500/10 rounded-xl border border-blue-200 dark:border-blue-500/20">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg shadow-sm">
+                          <Award size={18} className="text-white" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900 dark:text-white">Certificate Earned</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">{completionData.certificate.title}</p>
+                        </div>
+                      </div>
+
+                      {completionData.certificate.verification_code && (
+                        <div className="bg-white/80 dark:bg-slate-900/50 rounded-lg p-3 mb-3">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide font-medium">Verification Code</span>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(completionData.certificate.verification_code);
+                                toast.success('Code copied!');
+                              }}
+                              className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 font-medium"
+                            >
+                              Copy
+                            </button>
+                          </div>
+                          <p className="font-mono text-sm font-semibold text-blue-600 dark:text-blue-300 tracking-wider">
+                            {completionData.certificate.verification_code}
+                          </p>
+                        </div>
+                      )}
+
+                      {completionData.certificate.skills_acquired?.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {completionData.certificate.skills_acquired.map((skill: string, idx: number) => (
+                            <span key={idx} className="text-xs bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full font-medium">
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-500/10 dark:to-teal-500/10 rounded-xl border border-emerald-200 dark:border-emerald-500/20 text-center">
+                      <Award size={36} className="mx-auto mb-2 text-emerald-500" />
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white mb-1">Certificate Generated</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">View it anytime from your Certificates page</p>
+                    </div>
+                  )}
+
+                  {completionData.achievement_awarded && (
+                    <div className="flex items-center gap-3 p-3 bg-purple-50 dark:bg-purple-500/10 rounded-xl border border-purple-200 dark:border-purple-500/20">
+                      <div className="p-1.5 bg-purple-500 rounded-lg">
+                        <Medal size={16} className="text-white" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-purple-700 dark:text-purple-300">Achievement Unlocked!</p>
+                        <p className="text-xs text-purple-500 dark:text-purple-400">Check your achievements page</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="space-y-2 pt-1">
                     <button
                       onClick={() => navigate('/certifications')}
-                      className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white rounded-lg font-semibold transition-colors shadow-lg flex items-center justify-center gap-2"
+                      className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-semibold transition-all shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2"
                     >
                       <Award size={18} />
                       View My Certificate
                     </button>
-                    <div className="flex gap-3">
-                      <button
-                        onClick={() => navigate('/dashboard')}
-                        className="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg font-semibold transition-colors"
-                      >
-                        Go to Dashboard
-                      </button>
+                    <div className="grid grid-cols-2 gap-2">
                       <button
                         onClick={() => {
                           setShowCompletionModal(false);
                           setCourseJustCompleted(true);
                         }}
-                        className="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg font-semibold transition-colors"
+                        className="px-4 py-2.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl font-medium transition-colors text-sm"
                       >
                         Review Course
                       </button>
+                      <button
+                        onClick={() => navigate('/courses')}
+                        className="px-4 py-2.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl font-medium transition-colors text-sm"
+                      >
+                        More Courses
+                      </button>
                     </div>
                   </div>
-                </>
-              ) : completionData.module_completed ? (
-                <>
-                  <Medal size={64} className="mx-auto mb-4 text-green-500" />
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                    Module Complete!
-                  </h2>
-                  <p className="text-gray-600 dark:text-gray-300 mb-4">
-                    Great job! You've finished this module.
+                </div>
+              </>
+            ) : completionData.module_completed ? (
+              <>
+                {/* Module Complete Header */}
+                <div className="bg-gradient-to-r from-blue-500 to-indigo-500 px-6 py-6 text-center relative overflow-hidden">
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.15),transparent_50%)]" />
+                  <div className="relative">
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+                      className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm mb-2"
+                    >
+                      <Medal size={24} className="text-white" />
+                    </motion.div>
+                    <h2 className="text-xl font-bold text-white">Module Complete!</h2>
+                  </div>
+                </div>
+                <div className="px-6 py-5">
+                  <p className="text-slate-600 dark:text-slate-300 text-sm text-center mb-4">
+                    Great work completing this module. {nextSection ? 'Ready for the next one?' : ''}
                   </p>
                   <button
                     onClick={() => {
@@ -1237,13 +1264,14 @@ const CoursePlayer: React.FC = () => {
                         navigateToSection(nextSection.module, nextSection.section);
                       }
                     }}
-                    className="w-full px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold transition-colors"
+                    className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-semibold transition-all shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2"
                   >
                     {nextSection ? 'Continue to Next Module' : 'Close'}
+                    <ChevronRight size={18} />
                   </button>
-                </>
-              ) : null}
-            </div>
+                </div>
+              </>
+            ) : null}
           </motion.div>
         </div>
       )}

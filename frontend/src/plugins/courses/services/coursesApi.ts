@@ -95,6 +95,26 @@ export const coursesApi = {
   },
 
   /**
+   * Repair course progress by recalculating from actual data (authenticated)
+   */
+  repairProgress: async (courseId: string): Promise<{
+    message: string;
+    repaired: boolean;
+    old_progress: number;
+    new_progress: number;
+    is_complete: boolean;
+    certificate_created: boolean;
+    certificate?: {
+      title: string;
+      verification_code: string;
+      issued_at: string;
+    };
+  }> => {
+    const response = await apiClient.post(`/api/v1/courses/progress/${courseId}/repair`);
+    return response.data;
+  },
+
+  /**
    * Get detailed progress for a course (authenticated)
    */
   getProgress: async (courseId: string): Promise<{

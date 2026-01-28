@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   BookOpen,
@@ -34,6 +34,7 @@ import { useToast } from '../../../../components/ui/Toast';
 const CourseDetail: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
   const [course, setCourse] = useState<Course | null>(null);
@@ -99,7 +100,7 @@ const CourseDetail: React.FC = () => {
     };
 
     fetchCourse();
-  }, [courseId]);
+  }, [courseId, location.key]);
 
   // Handle enrollment - shows registration prompt if not authenticated
   const handleEnroll = async () => {
@@ -122,7 +123,7 @@ const CourseDetail: React.FC = () => {
       if (err.response?.status === 401) {
         // Session expired - show registration prompt
         checkAuthAndProceed();
-      } else if (err.response?.status === 400 && err.response?.data?.detail?.includes('Already enrolled')) {
+      } else if (err.response?.status === 400 && err.response?.data?.detail?.toLowerCase().includes('already enrolled')) {
         // Already enrolled - just navigate to the course
         setIsEnrolled(true);
         navigate(`/courses/${courseId}/learn`);

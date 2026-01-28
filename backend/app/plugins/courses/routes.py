@@ -204,36 +204,9 @@ async def get_course_categories(db: Session = Depends(get_db)):
     return [cat[0] for cat in categories if cat[0]]
 
 
-@router.get("/{course_id}", response_model=schemas.CourseDetailResponse)
-async def get_course(
-    course_id: str,
-    db: Session = Depends(get_db)
-):
-    """Get single course by ID with all modules and sections"""
-    course = crud.get_course(db, course_id)
-
-    if not course:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Course not found"
-        )
-
-    # Only allow published courses for public access
-    if course.status != models.CourseStatus.published:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Course not found"
-        )
-
-    # Fix None values
-    if course.related_skills is None:
-        course.related_skills = ["problem-solving"]
-
-    return course
-
-
 # ============================================================================
 # USER ENDPOINTS (Authentication required)
+# These MUST be defined before /{course_id} to avoid the wildcard swallowing them
 # ============================================================================
 
 @router.post("/enroll", response_model=schemas.CourseDetailResponse)
@@ -265,6 +238,35 @@ async def get_my_courses(
             courses.append(course)
 
     return courses
+
+
+# /{course_id} wildcard MUST come after all fixed-path routes
+@router.get("/{course_id}", response_model=schemas.CourseDetailResponse)
+async def get_course(
+    course_id: str,
+    db: Session = Depends(get_db)
+):
+    """Get single course by ID with all modules and sections"""
+    course = crud.get_course(db, course_id)
+
+    if not course:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Course not found"
+        )
+
+    # Only allow published courses for public access
+    if course.status != models.CourseStatus.published:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Course not found"
+        )
+
+    # Fix None values
+    if course.related_skills is None:
+        course.related_skills = ["problem-solving"]
+
+    return course
 
 
 @router.get("/progress/{course_id}")
@@ -384,6 +386,160 @@ async def update_my_module_progress(
                 logger.error(f"Failed to award skill XP for course {course_id}: {e}")
 
     return response
+
+
+@router.post("/progress/{course_id}/repair")
+async def repair_course_progress(
+    course_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Repair enrollment progress for a course by recalculating from actual
+    ModuleProgress records. Fixes corrupted completed_modules data and
+    generates missing certificates for fully completed courses.
+    """
+    enrollment = crud.get_user_course_enrollment(db, current_user.id, course_id)
+    if not enrollment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Not enrolled in this course"
+        )
+
+    course = crud.get_course(db, course_id)
+    if not course:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Course not found"
+        )
+
+    # Get all modules for this course
+    course_modules = crud.get_course_modules(db, course_id)
+    total_modules = len(course_modules)
+
+    if total_modules == 0:
+        return {"message": "Course has no modules", "repaired": False}
+
+    # Check each module's actual completion status from ModuleProgress records
+    completed_module_ids = []
+    module_details = []
+
+    for module in course_modules:
+        module_progress = crud.get_user_module_progress(db, enrollment.id, module.id)
+
+        # Count total sections in module
+        total_sections = len(module.sections) if module.sections else 0
+
+        if module_progress:
+            completed_sections_count = len(module_progress.completed_sections or [])
+
+            # If all sections are completed but module not marked complete, fix it
+            if completed_sections_count >= total_sections and total_sections > 0:
+                if not module_progress.completed:
+                    module_progress.completed = True
+                    module_progress.completed_at = module_progress.last_accessed
+                    logger.info(f"Repair: Marked module {module.id} as completed for enrollment {enrollment.id}")
+
+            if module_progress.completed:
+                completed_module_ids.append(module.id)
+
+            module_details.append({
+                "module_id": module.id,
+                "title": module.title,
+                "total_sections": total_sections,
+                "completed_sections": completed_sections_count,
+                "module_completed": module_progress.completed
+            })
+        else:
+            module_details.append({
+                "module_id": module.id,
+                "title": module.title,
+                "total_sections": total_sections,
+                "completed_sections": 0,
+                "module_completed": False
+            })
+
+    # Update enrollment's completed_modules
+    old_completed = enrollment.completed_modules or []
+    enrollment.completed_modules = completed_module_ids
+    from sqlalchemy.orm.attributes import flag_modified
+    flag_modified(enrollment, "completed_modules")
+
+    # Recalculate progress
+    old_progress = enrollment.progress
+    enrollment.progress = int(
+        (len(completed_module_ids) / total_modules * 100)
+        if total_modules > 0 else 0
+    )
+
+    # Check if course should be marked complete
+    was_complete = enrollment.is_complete
+    certificate_created = False
+
+    if enrollment.progress >= 100 and not enrollment.is_complete:
+        enrollment.is_complete = True
+        enrollment.completed_at = enrollment.last_accessed
+        enrollment.status = models.EnrollmentStatus.COMPLETED
+
+        if course:
+            course.completion_count = (course.completion_count or 0) + 1
+
+        # Create certificate if missing
+        try:
+            certificate = crud.create_certificate(
+                db=db,
+                user_id=current_user.id,
+                course_id=course_id,
+                enrollment_id=enrollment.id
+            )
+            certificate_created = True
+            logger.info(f"Repair: Created certificate {certificate.verification_code} for user {current_user.id}, course {course_id}")
+        except Exception as e:
+            logger.error(f"Repair: Certificate creation failed: {e}")
+
+    # Also check if course is complete but certificate is missing
+    if enrollment.is_complete:
+        existing_cert = crud.get_user_course_certificate(db, current_user.id, course_id)
+        if not existing_cert:
+            try:
+                certificate = crud.create_certificate(
+                    db=db,
+                    user_id=current_user.id,
+                    course_id=course_id,
+                    enrollment_id=enrollment.id
+                )
+                certificate_created = True
+                logger.info(f"Repair: Created missing certificate {certificate.verification_code}")
+            except Exception as e:
+                logger.error(f"Repair: Certificate creation failed: {e}")
+
+    db.commit()
+    db.refresh(enrollment)
+
+    # Get certificate info if available
+    cert_info = None
+    cert = crud.get_user_course_certificate(db, current_user.id, course_id)
+    if cert:
+        cert_info = {
+            "title": cert.title,
+            "verification_code": cert.verification_code,
+            "issued_at": cert.issued_at.isoformat() if cert.issued_at else None
+        }
+
+    return {
+        "message": "Progress repaired",
+        "repaired": True,
+        "old_completed_modules": old_completed,
+        "new_completed_modules": completed_module_ids,
+        "old_progress": old_progress,
+        "new_progress": enrollment.progress,
+        "was_complete": was_complete,
+        "is_complete": enrollment.is_complete,
+        "certificate_created": certificate_created,
+        "certificate": cert_info,
+        "module_details": module_details,
+        "total_modules": total_modules
+    }
 
 
 # ============================================================================
