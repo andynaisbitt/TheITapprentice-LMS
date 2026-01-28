@@ -62,7 +62,8 @@ export const coursesApi = {
    */
   getMyCourses: async (): Promise<Course[]> => {
     const response = await apiClient.get<Course[]>('/api/v1/courses/my-courses');
-    return response.data;
+    // Defensive: ensure array is returned
+    return Array.isArray(response.data) ? response.data : [];
   },
 
   /**

@@ -118,7 +118,8 @@ export async function getMyTutorialProgress(
 ): Promise<TutorialProgress[]> {
   const params = status ? { status } : {};
   const response = await api.get('/progress/my-tutorials', { params });
-  return response.data;
+  // Defensive: ensure array is returned
+  return Array.isArray(response.data) ? response.data : [];
 }
 
 // ============================================================================
