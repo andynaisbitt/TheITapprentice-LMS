@@ -69,9 +69,10 @@ export const UserDashboard = () => {
         progressApi.getMyAchievements().catch(() => []),
       ]);
 
-      setTutorialProgress(progress);
+      // Defensive: ensure arrays
+      setTutorialProgress(Array.isArray(progress) ? progress : []);
       setDashboardData(dashboard);
-      setAchievements(achievementList);
+      setAchievements(Array.isArray(achievementList) ? achievementList : []);
 
       // Fetch enrolled courses with progress
       try {

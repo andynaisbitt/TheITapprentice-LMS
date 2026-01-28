@@ -68,7 +68,8 @@ export const progressApi = {
   async getMyAchievements(category?: AchievementCategory): Promise<AchievementProgress[]> {
     const params = category ? { category } : {};
     const response = await api.get<AchievementProgress[]>(`${BASE_URL}/achievements`, { params });
-    return response.data;
+    // Defensive: ensure array is returned
+    return Array.isArray(response.data) ? response.data : [];
   },
 
   /**
