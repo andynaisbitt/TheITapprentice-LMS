@@ -210,7 +210,7 @@ export const UserDashboard = () => {
 
             {/* Streak Counter (Compact) */}
             <StreakCounter
-              streak={dashboardData?.stats.current_streak || user.current_streak || 0}
+              streak={dashboardData?.stats?.current_streak || user?.current_streak || 0}
               compact
             />
           </div>
@@ -221,7 +221,7 @@ export const UserDashboard = () => {
           {/* Left Column - Profile & Progress */}
           <div className="lg:col-span-2 space-y-6">
             {/* XP Progress Card */}
-            {dashboardData?.stats.level_progress && (
+            {dashboardData?.stats?.level_progress && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
