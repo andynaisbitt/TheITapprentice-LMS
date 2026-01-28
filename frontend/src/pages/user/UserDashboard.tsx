@@ -279,7 +279,7 @@ export const UserDashboard = () => {
                   <span className="text-sm text-gray-500 dark:text-gray-400">Tutorials</span>
                 </div>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {dashboardData?.stats.tutorials_completed || tutorialProgress.filter(p => p.status === 'completed').length}
+                  {dashboardData?.stats?.tutorials_completed || tutorialProgress.filter(p => p.status === 'completed').length}
                 </div>
                 <div className="text-xs text-gray-500">completed</div>
               </div>
@@ -290,7 +290,7 @@ export const UserDashboard = () => {
                   <span className="text-sm text-gray-500 dark:text-gray-400">Games</span>
                 </div>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {dashboardData?.stats.typing_games_played || 0}
+                  {dashboardData?.stats?.typing_games_played || 0}
                 </div>
                 <div className="text-xs text-gray-500">played</div>
               </div>
@@ -301,7 +301,7 @@ export const UserDashboard = () => {
                   <span className="text-sm text-gray-500 dark:text-gray-400">Best WPM</span>
                 </div>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {dashboardData?.stats.best_wpm?.toFixed(0) || '-'}
+                  {dashboardData?.stats?.best_wpm?.toFixed(0) || '-'}
                 </div>
                 <div className="text-xs text-gray-500">words/min</div>
               </div>
@@ -312,7 +312,7 @@ export const UserDashboard = () => {
                   <span className="text-sm text-gray-500 dark:text-gray-400">Accuracy</span>
                 </div>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {dashboardData?.stats.avg_accuracy?.toFixed(1) || '-'}%
+                  {dashboardData?.stats?.avg_accuracy?.toFixed(1) || '-'}%
                 </div>
                 <div className="text-xs text-gray-500">average</div>
               </div>
