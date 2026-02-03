@@ -65,6 +65,7 @@ class TypingWordListResponse(TypingWordListBase):
     avg_accuracy: float
     created_at: datetime
     updated_at: datetime
+    word_count: int = 0  # Number of words in the list
     is_unlocked: bool = True
     user_best_wpm: Optional[int] = None
     user_times_played: int = 0

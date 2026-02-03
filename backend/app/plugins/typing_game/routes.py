@@ -46,15 +46,17 @@ async def get_word_lists(
     # Enrich with user data if authenticated
     response = []
     for wl in word_lists:
-        data = schemas.TypingWordListResponse.model_validate(wl)
-        data.word_count = len(wl.words) if wl.words else 0
+        # Build response dict with all fields
+        word_list_dict = {
+            **wl.__dict__,
+            "word_count": len(wl.words) if wl.words else 0,
+            "is_unlocked": True,  # TODO: Check user level vs wl.unlock_level
+            "user_best_wpm": None,  # TODO: Query user's best WPM for this word list
+            "user_times_played": 0  # TODO: Query user's play count for this word list
+        }
 
-        if current_user:
-            # Check if user meets unlock requirements
-            data.is_unlocked = True  # TODO: Check user level
-            # Get user's best WPM for this word list
-            # data.user_best_wpm = ...
-
+        # Create response object from dict
+        data = schemas.TypingWordListResponse(**word_list_dict)
         response.append(data)
 
     return response
