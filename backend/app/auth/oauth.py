@@ -12,7 +12,11 @@ from app.users.models import User, UserRole
 from app.users.schemas import GoogleOAuthRegister, UserResponse
 from datetime import timedelta
 from app.core.config import settings
+from app.api.v1.services.site_settings.models import SiteSettings
 import secrets
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth/oauth", tags=["OAuth"])
 
@@ -62,6 +66,21 @@ async def google_oauth_login(
 
             db.commit()
         else:
+            # Check if registration is enabled before creating new user
+            site_settings = db.query(SiteSettings).first()
+            if site_settings and not site_settings.registration_enabled:
+                # Get custom message or use default
+                message = site_settings.registration_disabled_message or \
+                         "Registration is currently disabled. We are optimizing our systems and have enough users for this beta release. Thank you for your interest!"
+
+                logger.info(f"Google OAuth registration blocked - feature disabled: {oauth_data.email}")
+                print(f"❌ Registration blocked (disabled in settings): {oauth_data.email}")
+                print("=" * 80)
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=message
+                )
+
             # Create new user
             print(f"✨ Creating new user from Google OAuth: {oauth_data.email}")
             
