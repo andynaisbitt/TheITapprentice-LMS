@@ -299,6 +299,7 @@ export interface CreateCourseRequest {
   is_premium?: boolean;
   price?: number;
   related_skills?: string[];
+  xp_reward?: number;
 }
 
 export interface UpdateCourseRequest extends Partial<CreateCourseRequest> {

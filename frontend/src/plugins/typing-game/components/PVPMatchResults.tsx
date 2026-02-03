@@ -336,7 +336,7 @@ export const PVPMatchResults: React.FC<PVPMatchResultsProps> = ({
           className="mt-6 text-center"
         >
           <Link
-            to="/games/typing/leaderboard"
+            to="/typing-practice/leaderboard"
             className="text-blue-500 hover:text-blue-600 text-sm font-medium flex items-center justify-center gap-1"
           >
             <Award className="w-4 h-4" />

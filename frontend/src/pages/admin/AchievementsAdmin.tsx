@@ -68,7 +68,7 @@ const rarityColors: Record<AchievementRarity, { bg: string; text: string; border
 const categoryLabels: Record<AchievementCategory, string> = {
   tutorials: 'Tutorials',
   courses: 'Courses',
-  typing: 'Typing Games',
+  typing: 'Typing Practice',
   social: 'Social',
   streak: 'Streaks',
   special: 'Special',

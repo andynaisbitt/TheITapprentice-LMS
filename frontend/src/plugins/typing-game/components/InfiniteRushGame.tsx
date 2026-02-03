@@ -34,6 +34,8 @@ import { typingGameApi, type StreakInfo, type DailyChallenge } from '../services
 import { useComboSystem } from '../hooks/useComboSystem';
 import { useSoundEffects } from '../hooks/useSoundEffects';
 import { useAntiCheat } from '../hooks/useAntiCheat';
+import { useTypingEngine, type WordState } from '../hooks/useTypingEngine';
+import { useGameWords } from '../hooks/useGameWords';
 import { WordDisplay } from './WordDisplay';
 import { ComboCounter } from './ComboCounter';
 import { StreakDisplay } from './StreakDisplay';
@@ -42,7 +44,6 @@ import { SoundSettingsPanel } from './SoundSettings';
 import { useAuth } from '../../../state/contexts/AuthContext';
 import { RegistrationPrompt } from '../../../components/auth/RegistrationPrompt';
 import { useRegistrationPrompt } from '../../../hooks/useRegistrationPrompt';
-import type { WordState, CharacterState } from '../hooks/useTypingEngine';
 import type {
   TypingGameStartResponse,
   TypingGameResultsResponse,
@@ -93,35 +94,35 @@ type GameStatus = 'idle' | 'ready' | 'playing' | 'game_complete';
 
 // ==================== HELPERS ====================
 
-const getRandomWords = (count: number): string[] => {
-  const words: string[] = [];
+// Generate random IT-themed words as WordStates for useTypingEngine
+const generateWordStates = (count: number, startIndex: number = 0): WordState[] => {
   const allPools = [...WORD_POOLS.easy, ...WORD_POOLS.medium];
+  const wordStates: WordState[] = [];
 
   // Add some hard words occasionally (20% chance)
   for (let i = 0; i < count; i++) {
+    let word: string;
     if (Math.random() < 0.2 && WORD_POOLS.hard.length > 0) {
-      words.push(WORD_POOLS.hard[Math.floor(Math.random() * WORD_POOLS.hard.length)]);
+      word = WORD_POOLS.hard[Math.floor(Math.random() * WORD_POOLS.hard.length)];
     } else {
-      words.push(allPools[Math.floor(Math.random() * allPools.length)]);
+      word = allPools[Math.floor(Math.random() * allPools.length)];
     }
+
+    wordStates.push({
+      word,
+      index: startIndex + i,
+      status: 'pending',
+      typedValue: '',
+      isCorrect: false,
+      characterStates: word.split('').map(char => ({
+        char,
+        status: 'pending',
+        typedChar: undefined,
+      })),
+    });
   }
 
-  return words;
-};
-
-const initializeWordStates = (words: string[]): WordState[] => {
-  return words.map((word, index) => ({
-    word,
-    index,
-    status: index === 0 ? 'current' : 'pending',
-    typedValue: '',
-    isCorrect: true,
-    characterStates: word.split('').map(char => ({
-      char,
-      status: 'pending',
-      typedChar: undefined,
-    })),
-  }));
+  return wordStates;
 };
 
 // ==================== RUSH COUNTDOWN COMPONENT ====================
@@ -187,20 +188,57 @@ export const InfiniteRushGame: React.FC<InfiniteRushGameProps> = ({
 
   // Game state
   const [gameStatus, setGameStatus] = useState<GameStatus>('idle');
-  const [wordStates, setWordStates] = useState<WordState[]>([]);
-  const [currentWordIndex, setCurrentWordIndex] = useState(0);
-  const [currentInput, setCurrentInput] = useState('');
   const [timeRemaining, setTimeRemaining] = useState(GAME_DURATION);
   const [sessionData, setSessionData] = useState<TypingGameStartResponse | null>(null);
   const [results, setResults] = useState<TypingGameResultsResponse | null>(null);
   const [inputFocused, setInputFocused] = useState(false);
+  const wordIdCounter = useRef(0);
 
-  // Stats
-  const [wordsCompleted, setWordsCompleted] = useState(0);
-  const [correctChars, setCorrectChars] = useState(0);
-  const [incorrectChars, setIncorrectChars] = useState(0);
-  const [wpm, setWpm] = useState(0);
-  const [accuracy, setAccuracy] = useState(100);
+  // Initialize typing engine with dynamic word generation
+  const initialText = useMemo(() => {
+    const initialWords = generateWordStates(WORDS_PER_BATCH, 0);
+    wordIdCounter.current = initialWords.length;
+    return initialWords.map(w => w.word).join(' ');
+  }, []);
+
+  // Typing engine with infinite word support
+  const {
+    status: engineStatus,
+    wordStates,
+    currentWordIndex,
+    currentInput,
+    stats,
+    combo,
+    maxCombo,
+    getCharacterStates,
+    handleKeyDown: engineHandleKeyDown,
+    handlePaste,
+    reset: resetEngine,
+    start: startEngine,
+    inputProps,
+    addWords,
+  } = useTypingEngine(initialText, {
+    onWordComplete: (wordIndex, isCorrect) => {
+      if (isCorrect) {
+        sounds.playMilestone();
+        comboSystem.increment();
+      } else {
+        comboSystem.break();
+      }
+    },
+    onError: () => {
+      sounds.playError();
+    },
+    onLowWordCount: async (currentCount, minCount) => {
+      // Generate more words when running low
+      const newWords = generateWordStates(WORDS_TO_ADD, wordIdCounter.current);
+      wordIdCounter.current += WORDS_TO_ADD;
+      return newWords;
+    },
+    minWordCount: 5,
+    wordRefreshThreshold: 3,
+    inputMethod: 'keydown',
+  });
 
   // Streak and daily challenges state
   const [streakInfo, setStreakInfo] = useState<StreakInfo | null>(null);
@@ -211,10 +249,6 @@ export const InfiniteRushGame: React.FC<InfiniteRushGameProps> = ({
   // Refs
   const inputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const gameStartTime = useRef<number | null>(null);
-  const lastKeystrokeTime = useRef<number | null>(null);
-  const keyDownHandledRef = useRef(false);
-  const wordIdCounter = useRef(0);
 
   // Combo system
   const comboSystem = useComboSystem({
@@ -248,247 +282,18 @@ export const InfiniteRushGame: React.FC<InfiniteRushGameProps> = ({
     }
   }, []);
 
-  // Get character states for WordDisplay
-  const getCharacterStates = useCallback((wordIndex: number): CharacterState[] => {
-    const wordState = wordStates[wordIndex];
-    if (!wordState) return [];
-
-    const { word, typedValue, status } = wordState;
-    const states: CharacterState[] = [];
-
-    // For completed words, use stored character states
-    if (status === 'completed' || status === 'skipped') {
-      return wordState.characterStates;
-    }
-
-    // For current word, calculate states from current input
-    if (status === 'current') {
-      for (let i = 0; i < word.length; i++) {
-        if (i < typedValue.length) {
-          states.push({
-            char: word[i],
-            status: typedValue[i] === word[i] ? 'correct' : 'incorrect',
-            typedChar: typedValue[i],
-          });
-        } else {
-          states.push({
-            char: word[i],
-            status: 'pending',
-          });
-        }
-      }
-      // Extra characters
-      if (typedValue.length > word.length) {
-        for (let i = word.length; i < typedValue.length; i++) {
-          states.push({
-            char: typedValue[i],
-            status: 'extra',
-            typedChar: typedValue[i],
-          });
-        }
-      }
-      return states;
-    }
-
-    // Pending words
-    return word.split('').map(char => ({
-      char,
-      status: 'pending',
-    }));
-  }, [wordStates]);
-
-  // Add more words when running low
-  const addMoreWords = useCallback(() => {
-    const newWords = getRandomWords(WORDS_TO_ADD);
-    const newWordStates = newWords.map((word) => {
-      wordIdCounter.current += 1;
-      return {
-        word,
-        index: wordIdCounter.current,
-        status: 'pending' as const,
-        typedValue: '',
-        isCorrect: true,
-        characterStates: word.split('').map(char => ({
-          char,
-          status: 'pending' as const,
-          typedChar: undefined,
-        })),
-      };
-    });
-
-    setWordStates(prev => [...prev, ...newWordStates]);
-  }, []);
-
-  // Update WPM calculation
-  const updateStats = useCallback(() => {
-    if (!gameStartTime.current) return;
-
-    const elapsed = (Date.now() - gameStartTime.current) / 1000 / 60; // minutes
-    if (elapsed <= 0) return;
-
-    // WPM = (characters / 5) / minutes
-    const calculatedWpm = Math.round((correctChars / 5) / elapsed);
-    setWpm(calculatedWpm);
-
-    // Accuracy
-    const totalChars = correctChars + incorrectChars;
-    const calculatedAccuracy = totalChars > 0 ? Math.round((correctChars / totalChars) * 100) : 100;
-    setAccuracy(calculatedAccuracy);
-  }, [correctChars, incorrectChars]);
-
-  // Complete a word and move to next
-  const completeWord = useCallback((isCorrect: boolean) => {
-    if (currentWordIndex >= wordStates.length) return;
-
-    const currentWord = wordStates[currentWordIndex];
-
-    // Update word state to completed
-    setWordStates(prev => {
-      const updated = [...prev];
-      updated[currentWordIndex] = {
-        ...currentWord,
-        status: 'completed',
-        isCorrect,
-        characterStates: getCharacterStates(currentWordIndex),
-      };
-      // Set next word as current
-      if (updated[currentWordIndex + 1]) {
-        updated[currentWordIndex + 1] = {
-          ...updated[currentWordIndex + 1],
-          status: 'current',
-        };
-      }
-      return updated;
-    });
-
-    // Update stats
-    const wordLength = currentWord.word.length;
-    const typedLength = currentInput.length;
-
-    let correctInWord = 0;
-    let incorrectInWord = 0;
-
-    for (let i = 0; i < Math.max(wordLength, typedLength); i++) {
-      if (i < wordLength && i < typedLength) {
-        if (currentWord.word[i] === currentInput[i]) {
-          correctInWord++;
-        } else {
-          incorrectInWord++;
-        }
-      } else if (i < typedLength) {
-        incorrectInWord++; // Extra characters
-      }
-    }
-
-    setCorrectChars(prev => prev + correctInWord);
-    setIncorrectChars(prev => prev + incorrectInWord);
-    setWordsCompleted(prev => prev + 1);
-
-    // Move to next word
-    setCurrentWordIndex(prev => prev + 1);
-    setCurrentInput('');
-
-    // Sound feedback
-    if (isCorrect) {
-      sounds.playMilestone();
-      comboSystem.increment();
-    } else {
-      sounds.playError();
-      comboSystem.breakCombo();
-    }
-
-    // Add more words if running low
-    const remainingWords = wordStates.length - currentWordIndex - 1;
-    if (remainingWords < WORDS_TO_ADD) {
-      addMoreWords();
-    }
-  }, [currentWordIndex, wordStates, currentInput, getCharacterStates, sounds, comboSystem, addMoreWords]);
-
-  // Handle key press
-  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>, fromOnChange = false) => {
+  // Wrapper for key handling (adds game status check)
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (gameStatus !== 'playing') return;
 
-    // Block paste shortcuts
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
-      e.preventDefault();
-      antiCheat.recordPasteAttempt();
-      return;
-    }
+    // Let anti-cheat track keystrokes
+    antiCheat.recordKeystroke(Date.now());
 
-    // Mark that onKeyDown handled this event
-    if (!fromOnChange) {
-      keyDownHandledRef.current = true;
-    }
+    // Delegate to typing engine
+    engineHandleKeyDown(e);
+  }, [gameStatus, engineHandleKeyDown, antiCheat]);
 
-    const now = Date.now();
-    lastKeystrokeTime.current = now;
-
-    // Record keystroke for anti-cheat
-    antiCheat.recordKeystroke(now);
-
-    // Space = complete word and move to next
-    if (e.key === ' ') {
-      e.preventDefault();
-      if (currentInput.length > 0) {
-        const currentWord = wordStates[currentWordIndex];
-        const isCorrect = currentWord && currentInput === currentWord.word;
-        completeWord(isCorrect);
-      }
-      return;
-    }
-
-    // Backspace
-    if (e.key === 'Backspace') {
-      setCurrentInput(prev => prev.slice(0, -1));
-      setWordStates(prev => {
-        const updated = [...prev];
-        if (updated[currentWordIndex]) {
-          updated[currentWordIndex] = {
-            ...updated[currentWordIndex],
-            typedValue: currentInput.slice(0, -1),
-          };
-        }
-        return updated;
-      });
-      return;
-    }
-
-    // Regular character input
-    if (e.key.length === 1) {
-      const newInput = currentInput + e.key;
-      setCurrentInput(newInput);
-
-      // Update word state
-      setWordStates(prev => {
-        const updated = [...prev];
-        if (updated[currentWordIndex]) {
-          updated[currentWordIndex] = {
-            ...updated[currentWordIndex],
-            typedValue: newInput,
-          };
-        }
-        return updated;
-      });
-
-      // Check if character is correct for combo
-      const currentWord = wordStates[currentWordIndex];
-      if (currentWord) {
-        const charIndex = currentInput.length; // Position of new char
-        const isCorrect = charIndex < currentWord.word.length &&
-                          currentWord.word[charIndex] === e.key;
-
-        if (isCorrect) {
-          comboSystem.increment();
-          sounds.playKeystroke();
-        } else {
-          comboSystem.breakCombo();
-          sounds.playError();
-        }
-      }
-    }
-  }, [gameStatus, currentInput, currentWordIndex, wordStates, completeWord, comboSystem, sounds, antiCheat]);
-
-  // Handle paste (block it)
+  // Handle paste (block it - already handled by useTypingEngine, but keep for consistency)
   const handlePaste = useCallback((e: React.ClipboardEvent) => {
     e.preventDefault();
     antiCheat.recordPasteAttempt();
@@ -507,32 +312,23 @@ export const InfiniteRushGame: React.FC<InfiniteRushGameProps> = ({
       console.error('Failed to start game session:', error);
     }
 
-    // Initialize words
-    const initialWords = getRandomWords(WORDS_PER_BATCH);
-    wordIdCounter.current = initialWords.length;
-    setWordStates(initializeWordStates(initialWords));
-    setCurrentWordIndex(0);
-    setCurrentInput('');
-    setWordsCompleted(0);
-    setCorrectChars(0);
-    setIncorrectChars(0);
-    setWpm(0);
-    setAccuracy(100);
+    // Reset engine and game state
+    resetEngine();
     setTimeRemaining(GAME_DURATION);
     comboSystem.reset();
+    antiCheat.reset();
 
     setGameStatus('ready');
-  }, [comboSystem]);
+  }, [resetEngine, comboSystem, antiCheat]);
 
   // Begin playing
   const beginPlaying = useCallback(() => {
-    gameStartTime.current = Date.now();
-    antiCheat.reset();
     antiCheat.startTracking();
     sounds.playGameStart();
+    startEngine(); // This sets engine status to 'playing' and starts timer
     setGameStatus('playing');
     focusInput();
-  }, [sounds, focusInput, antiCheat]);
+  }, [startEngine, sounds, focusInput, antiCheat]);
 
   // Refresh streak/challenges
   const refreshStreakAndChallenges = useCallback(async () => {
@@ -558,9 +354,9 @@ export const InfiniteRushGame: React.FC<InfiniteRushGameProps> = ({
 
     sounds.playGameEnd();
 
-    // Calculate final stats
-    const finalWpm = wpm;
-    const finalAccuracy = accuracy;
+    // Use stats from typing engine
+    const finalWpm = stats.wpm;
+    const finalAccuracy = stats.accuracy;
 
     // Submit to backend if we have a session
     if (sessionData) {
@@ -607,7 +403,7 @@ export const InfiniteRushGame: React.FC<InfiniteRushGameProps> = ({
     }
 
     setGameStatus('game_complete');
-  }, [wpm, accuracy, sessionData, wordStates, comboSystem.maxCombo, antiCheat, sounds, onComplete, refreshStreakAndChallenges]);
+  }, [stats, sessionData, wordStates, comboSystem.maxCombo, antiCheat, sounds, onComplete, refreshStreakAndChallenges]);
 
   // Timer effect
   useEffect(() => {
@@ -620,14 +416,14 @@ export const InfiniteRushGame: React.FC<InfiniteRushGameProps> = ({
           }
           return prev - 1;
         });
-        updateStats();
+        // Stats are automatically updated by useTypingEngine
       }, 1000);
 
       return () => {
         if (timerRef.current) clearInterval(timerRef.current);
       };
     }
-  }, [gameStatus, endGame, updateStats]);
+  }, [gameStatus, endGame]);
 
   // Auto-focus input when playing starts
   useEffect(() => {

@@ -509,6 +509,29 @@ const CourseEditorPage: React.FC = () => {
             />
           </div>
 
+          {/* XP Reward */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Skill XP Reward
+            </label>
+            <input
+              type="number"
+              min={0}
+              step={50}
+              value={course.xp_reward ?? ''}
+              onChange={(e) => setCourse({ ...course, xp_reward: e.target.value ? parseInt(e.target.value) : undefined })}
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              placeholder="e.g., 500 (leave empty for auto: 200-300 based on level)"
+            />
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Total XP split across selected skills on completion.
+              {(course.related_skills?.length ?? 0) > 1 && course.xp_reward
+                ? ` (${Math.floor(course.xp_reward / (course.related_skills?.length || 1))} XP per skill)`
+                : null}
+              {' '}Auto: 200 (beginner), 250 (intermediate), 300 (advanced).
+            </p>
+          </div>
+
           {/* Premium & Price */}
           <div className="grid grid-cols-2 gap-4">
             <div>

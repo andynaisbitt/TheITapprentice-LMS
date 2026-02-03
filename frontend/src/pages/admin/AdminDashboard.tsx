@@ -248,12 +248,12 @@ export const AdminDashboard: React.FC = () => {
           <p className="text-sm text-gray-500 dark:text-gray-400">Courses</p>
         </div>
         <div
-          onClick={() => navigate('/games/typing/leaderboard')}
+          onClick={() => navigate('/typing-practice/leaderboard')}
           className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm cursor-pointer hover:shadow-md transition-shadow"
         >
           <div className="flex items-center gap-2">
             <Keyboard className="w-5 h-5 text-pink-500" />
-            <p className="text-sm text-gray-500 dark:text-gray-400">Typing Games</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Typing Practice</p>
           </div>
           <p className="text-sm text-primary mt-1">View Leaderboard</p>
         </div>

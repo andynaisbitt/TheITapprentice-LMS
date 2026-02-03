@@ -21,6 +21,44 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+def _resolve_skill_xp(course, db) -> tuple:
+    """
+    Resolve which skills get XP and how much each gets for a course completion.
+    Returns (skill_slugs, xp_amounts) where xp_amounts[i] is XP for skill_slugs[i].
+    Remainder from integer division goes to the first skill so no XP is lost.
+    """
+    from app.plugins.skills.models import Skill as SkillModel
+    valid_slugs = {s.slug for s in db.query(SkillModel.slug).filter(SkillModel.is_active == True).all()}
+
+    skill_slugs = None
+    if course.related_skills:
+        valid_assigned = [s for s in course.related_skills if s in valid_slugs]
+        if valid_assigned:
+            skill_slugs = valid_assigned
+
+    if not skill_slugs:
+        category_slug = course.category.lower() if course.category else "problem-solving"
+        skill_slugs = CATEGORY_TO_SKILLS_MAP.get(category_slug, ["problem-solving"])
+
+    # Calculate total XP pool
+    if course.xp_reward and course.xp_reward > 0:
+        total_xp = course.xp_reward
+    else:
+        total_xp = 200
+        if course.level == "advanced":
+            total_xp = int(total_xp * 1.5)
+        elif course.level == "intermediate":
+            total_xp = int(total_xp * 1.25)
+
+    # Split evenly, give remainder to first skill
+    n = len(skill_slugs)
+    base_per_skill = total_xp // n
+    remainder = total_xp - (base_per_skill * n)
+    xp_amounts = [base_per_skill + (remainder if i == 0 else 0) for i in range(n)]
+
+    return skill_slugs, xp_amounts
+
+
 # ============================================================================
 # PUBLIC ENDPOINTS (No auth required for browsing)
 # ============================================================================
@@ -348,36 +386,24 @@ async def update_my_module_progress(
             response["certificate_id"] = certificate.id
 
         # =========== SKILL XP INTEGRATION ===========
-        # Award skill XP based on course category (if skills plugin enabled)
+        # Award skill XP based on course's related_skills (if skills plugin enabled)
         if settings.PLUGINS_ENABLED.get("skills", False):
             try:
-                # Get the course for category info
+                # Get the course for skill/category info
                 course = crud.get_course(db, course_id)
-                category_slug = course.category.lower() if course and course.category else "problem-solving"
-                skill_slugs = CATEGORY_TO_SKILLS_MAP.get(category_slug, ["problem-solving"])
+                skill_slugs, xp_amounts = _resolve_skill_xp(course, db)
 
-                # Higher XP for course completion (courses are longer than tutorials)
-                skill_xp_base = 200  # Base XP for completing a course
-                # Bonus for level
-                if course and course.level == "advanced":
-                    skill_xp_base = int(skill_xp_base * 1.5)
-                elif course and course.level == "intermediate":
-                    skill_xp_base = int(skill_xp_base * 1.25)
-
-                xp_per_skill = skill_xp_base // len(skill_slugs)
-
-                for skill_slug in skill_slugs:
+                for skill_slug, xp_amount in zip(skill_slugs, xp_amounts):
                     skill_result = await award_skill_xp(
                         db=db,
                         user_id=current_user.id,
                         skill_slug=skill_slug,
-                        xp_amount=xp_per_skill,
+                        xp_amount=xp_amount,
                         source_type="course",
                         source_id=str(course_id),
                         source_metadata={
                             "course_title": course.title if course else "Unknown",
                             "level": course.level if course else None,
-                            "category": category_slug
                         }
                     )
                     if skill_result.level_up:
@@ -516,6 +542,33 @@ async def repair_course_progress(
     db.commit()
     db.refresh(enrollment)
 
+    # Self-heal: Award missing skill XP for completed courses
+    # The idempotency check in award_skill_xp prevents double-awarding
+    skill_xp_awarded = False
+    if enrollment.is_complete and settings.PLUGINS_ENABLED.get("skills", False):
+        try:
+            skill_slugs, xp_amounts = _resolve_skill_xp(course, db)
+
+            for skill_slug, xp_amount in zip(skill_slugs, xp_amounts):
+                result = await award_skill_xp(
+                    db=db,
+                    user_id=current_user.id,
+                    skill_slug=skill_slug,
+                    xp_amount=xp_amount,
+                    source_type="course",
+                    source_id=str(course_id),
+                    source_metadata={
+                        "course_title": course.title,
+                        "level": course.level,
+                        "repair": True
+                    }
+                )
+                if result.xp_gained > 0:
+                    skill_xp_awarded = True
+                    logger.info(f"Repair: Awarded {result.xp_gained} XP for skill {skill_slug} to user {current_user.id}")
+        except Exception as e:
+            logger.error(f"Repair: Failed to award skill XP for course {course_id}: {e}")
+
     # Get certificate info if available
     cert_info = None
     cert = crud.get_user_course_certificate(db, current_user.id, course_id)
@@ -536,6 +589,7 @@ async def repair_course_progress(
         "was_complete": was_complete,
         "is_complete": enrollment.is_complete,
         "certificate_created": certificate_created,
+        "skill_xp_awarded": skill_xp_awarded,
         "certificate": cert_info,
         "module_details": module_details,
         "total_modules": total_modules
@@ -545,6 +599,80 @@ async def repair_course_progress(
 # ============================================================================
 # ADMIN ENDPOINTS (Admin authentication required)
 # ============================================================================
+
+@router.post("/admin/backfill-skill-xp")
+async def admin_backfill_skill_xp(
+    current_admin: User = Depends(get_current_admin_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Backfill skill XP for all users who completed courses but never received
+    skill XP (e.g. before the skills system was connected to related_skills).
+    Safe to run multiple times - idempotency check prevents double awards.
+    """
+    completed_enrollments = db.query(models.CourseEnrollment).filter(
+        models.CourseEnrollment.is_complete == True
+    ).all()
+
+    summary = {
+        "enrollments_processed": 0,
+        "xp_awards_made": 0,
+        "already_had_xp": 0,
+        "errors": 0,
+        "details": []
+    }
+
+    for enrollment in completed_enrollments:
+        summary["enrollments_processed"] += 1
+        course = crud.get_course(db, enrollment.course_id)
+        if not course:
+            summary["errors"] += 1
+            continue
+
+        try:
+            skill_slugs, xp_amounts = _resolve_skill_xp(course, db)
+            awarded_any = False
+
+            for skill_slug, xp_amount in zip(skill_slugs, xp_amounts):
+                result = await award_skill_xp(
+                    db=db,
+                    user_id=enrollment.user_id,
+                    skill_slug=skill_slug,
+                    xp_amount=xp_amount,
+                    source_type="course",
+                    source_id=str(enrollment.course_id),
+                    source_metadata={
+                        "course_title": course.title,
+                        "level": course.level,
+                        "backfill": True
+                    }
+                )
+                if result.xp_gained > 0:
+                    summary["xp_awards_made"] += 1
+                    awarded_any = True
+                else:
+                    summary["already_had_xp"] += 1
+
+            summary["details"].append({
+                "user_id": enrollment.user_id,
+                "course_id": enrollment.course_id,
+                "course_title": course.title,
+                "skills": skill_slugs,
+                "awarded": awarded_any
+            })
+
+        except Exception as e:
+            summary["errors"] += 1
+            logger.error(f"Backfill error for enrollment {enrollment.id}: {e}")
+
+    logger.info(
+        f"Backfill complete: {summary['enrollments_processed']} enrollments, "
+        f"{summary['xp_awards_made']} awards, {summary['already_had_xp']} skipped, "
+        f"{summary['errors']} errors"
+    )
+
+    return summary
+
 
 @router.get("/admin/courses", response_model=schemas.PaginatedCoursesResponse)
 async def admin_list_courses(
@@ -622,6 +750,44 @@ async def admin_update_course(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Course not found"
         )
+
+    # Auto-backfill: if skills or xp_reward changed, award XP to users who
+    # already completed this course but haven't received skill XP yet.
+    # The idempotency check in award_skill_xp prevents double-awarding.
+    if settings.PLUGINS_ENABLED.get("skills", False):
+        update_fields = course_update.model_dump(exclude_unset=True)
+        if "related_skills" in update_fields or "xp_reward" in update_fields:
+            completed_enrollments = db.query(models.CourseEnrollment).filter(
+                models.CourseEnrollment.course_id == course_id,
+                models.CourseEnrollment.is_complete == True
+            ).all()
+
+            if completed_enrollments:
+                skill_slugs, xp_amounts = _resolve_skill_xp(course, db)
+                backfill_count = 0
+                for enrollment in completed_enrollments:
+                    for skill_slug, xp_amount in zip(skill_slugs, xp_amounts):
+                        try:
+                            result = await award_skill_xp(
+                                db=db,
+                                user_id=enrollment.user_id,
+                                skill_slug=skill_slug,
+                                xp_amount=xp_amount,
+                                source_type="course",
+                                source_id=str(course_id),
+                                source_metadata={
+                                    "course_title": course.title,
+                                    "level": course.level,
+                                    "auto_backfill": True
+                                }
+                            )
+                            if result.xp_gained > 0:
+                                backfill_count += 1
+                        except Exception as e:
+                            logger.error(f"Auto-backfill error for user {enrollment.user_id}: {e}")
+
+                if backfill_count > 0:
+                    logger.info(f"Auto-backfill: Awarded {backfill_count} skill XP grants for course {course_id}")
 
     return course
 

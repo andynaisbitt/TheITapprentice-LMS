@@ -69,7 +69,7 @@ export const PVPPage: React.FC = () => {
 
   const handleAuthPromptClose = useCallback(() => {
     // User closed the prompt - redirect to typing games hub
-    navigate('/games/typing');
+    navigate('/typing-practice');
   }, [navigate]);
 
   // WebSocket handlers
@@ -256,7 +256,7 @@ export const PVPPage: React.FC = () => {
 
   // Handle cancel from lobby
   const handleCancel = useCallback(() => {
-    navigate('/games/typing');
+    navigate('/typing-practice');
   }, [navigate]);
 
   // Handle round complete

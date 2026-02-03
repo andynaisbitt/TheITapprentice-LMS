@@ -780,7 +780,7 @@ export const Profile = () => {
                           Play the typing game to see your stats here
                         </p>
                         <Link
-                          to="/games/typing"
+                          to="/typing-practice"
                           className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
                         >
                           <Keyboard className="w-4 h-4" />

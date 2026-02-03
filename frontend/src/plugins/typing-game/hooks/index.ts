@@ -5,6 +5,8 @@
 
 export * from './usePVPWebSocket';
 export * from './useTypingEngine';
+export * from './useTypingStats';
+export * from './useGameWords';
 export * from './useAntiCheat';
 export * from './useComboSystem';
 export * from './useSoundEffects';

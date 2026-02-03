@@ -103,6 +103,8 @@ const TutorialDetailPage: React.FC = () => {
     if (canNavigateToStep(stepIndex)) {
       setCurrentStepIndex(stepIndex);
       setShowHints(false);
+      // Scroll to top of page smoothly
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -144,6 +146,8 @@ const TutorialDetailPage: React.FC = () => {
           // Move to next step
           setCurrentStepIndex(currentStepIndex + 1);
           setShowHints(false);
+          // Scroll to top to show new step
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         }
       }
       return;
@@ -177,6 +181,8 @@ const TutorialDetailPage: React.FC = () => {
         if (nextIndex !== -1) {
           setCurrentStepIndex(nextIndex);
           setShowHints(false);
+          // Scroll to top to show new step
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         }
       }
 
@@ -369,7 +375,16 @@ const TutorialDetailPage: React.FC = () => {
 
                   {/* Content */}
                   {currentStep.content && (
-                    <div className="prose dark:prose-invert max-w-none mb-8">
+                    <div className="prose prose-base sm:prose-lg dark:prose-invert max-w-none mb-8
+                                 prose-headings:font-bold prose-headings:text-gray-900 dark:prose-headings:text-gray-100
+                                 prose-headings:tracking-tight prose-headings:scroll-mt-20
+                                 prose-h2:text-2xl sm:prose-h2:text-3xl prose-h2:mt-12 prose-h2:mb-4
+                                 prose-h3:text-xl sm:prose-h3:text-2xl prose-h3:mt-8 prose-h3:mb-3
+                                 prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-p:leading-relaxed
+                                 prose-a:text-blue-600 dark:prose-a:text-blue-400
+                                 prose-strong:text-gray-900 dark:prose-strong:text-gray-100
+                                 prose-code:text-gray-900 dark:prose-code:text-gray-100 prose-code:bg-gray-100 dark:prose-code:bg-slate-800
+                                 prose-pre:bg-gray-100 dark:prose-pre:bg-slate-800">
                       <ReactMarkdown>{currentStep.content}</ReactMarkdown>
                     </div>
                   )}

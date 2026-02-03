@@ -358,9 +358,9 @@ export const AppRoutes = () => {
           }
         />
 
-        {/* Typing Game Routes - LMS Plugin */}
+        {/* Typing Practice Routes - LMS Plugin */}
         <Route
-          path="/games/typing"
+          path="/typing-practice"
           element={
             <Layout>
               <TypingGamePage />
@@ -368,7 +368,7 @@ export const AppRoutes = () => {
           }
         />
         <Route
-          path="/games/typing/play"
+          path="/typing-practice/play"
           element={
             <Layout>
               <TypingGamePlayPage />
@@ -376,7 +376,7 @@ export const AppRoutes = () => {
           }
         />
         <Route
-          path="/games/typing/infinite-rush"
+          path="/typing-practice/infinite-rush"
           element={
             <Layout>
               <InfiniteRushPage />
@@ -384,7 +384,7 @@ export const AppRoutes = () => {
           }
         />
         <Route
-          path="/games/typing/ghost"
+          path="/typing-practice/ghost"
           element={
             <Layout>
               <GhostModePage />
@@ -392,7 +392,7 @@ export const AppRoutes = () => {
           }
         />
         <Route
-          path="/games/typing/leaderboard"
+          path="/typing-practice/leaderboard"
           element={
             <Layout>
               <TypingLeaderboardPage />
@@ -400,7 +400,7 @@ export const AppRoutes = () => {
           }
         />
         <Route
-          path="/games/typing/pvp"
+          path="/typing-practice/pvp"
           element={
             <ProtectedRoute>
               <Layout>
@@ -410,7 +410,7 @@ export const AppRoutes = () => {
           }
         />
         <Route
-          path="/games/typing/practice"
+          path="/typing-practice/practice"
           element={
             <Layout>
               <PracticeGamePage />
@@ -418,7 +418,7 @@ export const AppRoutes = () => {
           }
         />
         <Route
-          path="/games/typing/analytics"
+          path="/typing-practice/analytics"
           element={
             <ProtectedRoute>
               <Layout>

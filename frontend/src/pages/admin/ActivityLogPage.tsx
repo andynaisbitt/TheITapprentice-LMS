@@ -132,7 +132,7 @@ export const ActivityLogPage: React.FC = () => {
     { value: 'all', label: 'All Activities' },
     { value: 'tutorial_complete', label: 'Tutorials' },
     { value: 'achievement_unlock', label: 'Achievements' },
-    { value: 'typing_game', label: 'Typing Games' },
+    { value: 'typing_game', label: 'Typing Practice' },
     { value: 'login', label: 'Logins' },
   ];
 

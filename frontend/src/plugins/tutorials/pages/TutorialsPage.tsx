@@ -3,7 +3,7 @@
  * Tutorials Browse Page
  * Main page for browsing and searching tutorials
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TutorialCard } from '../components/TutorialCard';
 import { useTutorials, useTutorialCategories, useFeaturedTutorials } from '../hooks/useTutorials';
 import type { TutorialDifficulty } from '../types';
@@ -20,6 +20,11 @@ const TutorialsPage: React.FC = () => {
     category_id: selectedCategory || undefined,
     difficulty: selectedDifficulty || undefined,
   });
+
+  // Scroll to top when page loads
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">

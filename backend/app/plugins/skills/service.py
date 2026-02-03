@@ -347,6 +347,26 @@ async def award_skill_xp(
         db.add(user_skill)
         db.flush()
 
+    # Idempotency: skip if already awarded for this exact source
+    if source_id:
+        existing = db.query(SkillXPLog).filter(
+            SkillXPLog.user_id == user_id,
+            SkillXPLog.skill_id == skill.id,
+            SkillXPLog.source_type == source_type,
+            SkillXPLog.source_id == source_id
+        ).first()
+        if existing:
+            logger.debug(f"Skill XP already awarded for {source_type}:{source_id} to user {user_id}, skill {skill_slug}")
+            return SkillXPGainResponse(
+                skill_slug=skill.slug,
+                skill_name=skill.name,
+                xp_gained=0,
+                total_xp=user_skill.current_xp,
+                old_level=user_skill.current_level,
+                new_level=user_skill.current_level,
+                level_up=False
+            )
+
     # Store old values
     old_level = user_skill.current_level
     old_tier, _ = get_skill_tier(old_level)

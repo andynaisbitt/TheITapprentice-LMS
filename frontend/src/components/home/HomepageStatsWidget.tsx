@@ -126,7 +126,7 @@ const HomepageStatsWidget: React.FC = () => {
     {
       icon: <Keyboard className="w-5 h-5 text-pink-600" />,
       value: formatNumber(stats.typing_games_played),
-      label: 'Typing Games',
+      label: 'Typing Practice',
       color: 'bg-pink-100 dark:bg-pink-900/30',
     },
     {

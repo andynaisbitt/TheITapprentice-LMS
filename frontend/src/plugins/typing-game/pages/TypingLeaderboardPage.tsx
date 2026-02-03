@@ -72,11 +72,11 @@ export const TypingLeaderboardPage: React.FC = () => {
       <div className="max-w-4xl mx-auto px-4">
         {/* Back button */}
         <Link
-          to="/games/typing"
+          to="/typing-practice"
           className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Typing Games
+          Back to Typing Practice
         </Link>
 
         {/* Header */}

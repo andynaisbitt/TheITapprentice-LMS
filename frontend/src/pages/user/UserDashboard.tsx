@@ -115,8 +115,8 @@ export const UserDashboard = () => {
 
     actions.push({
       icon: Play,
-      label: 'Typing Game',
-      href: '/games/typing',
+      label: 'Typing Practice',
+      href: '/typing-practice',
       color: 'from-blue-500 to-purple-600',
       description: 'Practice typing',
     });

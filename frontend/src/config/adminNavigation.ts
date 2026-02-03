@@ -123,7 +123,7 @@ export const adminNavigationConfig: NavSection[] = [
         ],
       },
       {
-        label: 'Typing Games',
+        label: 'Typing Practice',
         icon: Keyboard,
         requiresPlugin: 'typing_game',
         children: [

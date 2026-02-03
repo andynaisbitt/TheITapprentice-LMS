@@ -101,9 +101,25 @@ async def get_featured_tutorials(
     current_user: Optional[User] = Depends(get_optional_user),
     db: Session = Depends(get_db)
 ):
-    """Get featured tutorials"""
+    """Get featured tutorials with user progress"""
     tutorials = crud.get_featured_tutorials(db, limit=limit)
-    return tutorials
+
+    # Enrich with user progress if authenticated
+    result = []
+    for tutorial in tutorials:
+        tutorial_dict = schemas.TutorialListResponse.from_orm(tutorial).model_dump()
+
+        if current_user:
+            progress = crud.get_tutorial_progress(db, current_user.id, tutorial.id)
+            if progress:
+                total_steps = len(tutorial.steps)
+                completed_steps = len(progress.completed_step_ids)
+                tutorial_dict["user_progress_percentage"] = int((completed_steps / total_steps * 100)) if total_steps > 0 else 0
+                tutorial_dict["user_completed"] = progress.status == "completed"
+
+        result.append(schemas.TutorialListResponse(**tutorial_dict))
+
+    return result
 
 
 @router.get("/popular", response_model=List[schemas.TutorialListResponse])

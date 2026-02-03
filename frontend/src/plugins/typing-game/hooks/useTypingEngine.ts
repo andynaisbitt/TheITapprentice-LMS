@@ -11,6 +11,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { useTypingStats, type TypingStats } from './useTypingStats';
 
 // ==================== TYPES ====================
 
@@ -36,21 +37,17 @@ export interface TypingEngineConfig {
   onGameComplete?: (stats: TypingStats) => void;
   onError?: (wordIndex: number, charIndex: number, expected: string, actual: string) => void;
   onKeystroke?: (keystrokeData: KeystrokeData) => void;
+
+  // Dynamic word generation (for InfiniteRush)
+  onLowWordCount?: (currentCount: number, minCount: number) => Promise<WordState[]> | WordState[];
+  minWordCount?: number; // Trigger onLowWordCount when remaining words <= this
+  wordRefreshThreshold?: number; // How many words ahead to check
+
+  // Input method (for mobile compatibility)
+  inputMethod?: 'keydown' | 'change'; // keydown = desktop, change = mobile
 }
 
-export interface TypingStats {
-  wpm: number;
-  rawWpm: number;
-  accuracy: number;
-  correctChars: number;
-  incorrectChars: number;
-  totalChars: number;
-  correctWords: number;
-  incorrectWords: number;
-  totalWords: number;
-  timeElapsed: number;
-  maxCombo: number;
-}
+// TypingStats now imported from useTypingStats hook
 
 export interface KeystrokeData {
   key: string;
@@ -75,7 +72,16 @@ export interface TypingEngineState {
 // ==================== HOOK ====================
 
 export function useTypingEngine(text: string, config: TypingEngineConfig = {}) {
-  const { onWordComplete, onGameComplete, onError, onKeystroke } = config;
+  const {
+    onWordComplete,
+    onGameComplete,
+    onError,
+    onKeystroke,
+    onLowWordCount,
+    minWordCount = 10,
+    wordRefreshThreshold = 5,
+    inputMethod = 'keydown',
+  } = config;
 
   // Parse text into words
   const words = useMemo(() => text.trim().split(/\s+/), [text]);
@@ -127,43 +133,16 @@ export function useTypingEngine(text: string, config: TypingEngineConfig = {}) {
     setStatus('ready');
   }, [words]);
 
-  // Calculate current stats
-  const stats = useMemo((): TypingStats => {
-    const timeElapsed = gameStartTime.current
-      ? (Date.now() - gameStartTime.current) / 1000
-      : 0;
-
-    const completedWords = wordStates.filter(w => w.status === 'completed' || w.status === 'skipped');
-    const correctWords = completedWords.filter(w => w.isCorrect).length;
-    const incorrectWords = completedWords.filter(w => !w.isCorrect).length;
-
-    // Standard WPM: (correct characters / 5) / minutes
-    const minutes = timeElapsed / 60;
-    const wpm = minutes > 0 ? Math.round((correctChars.current / 5) / minutes) : 0;
-
-    // Raw WPM: all typed characters / 5 / minutes
-    const rawWpm = minutes > 0 ? Math.round((totalTypedChars.current / 5) / minutes) : 0;
-
-    // Accuracy: correct / total * 100
-    const totalChars = correctChars.current + incorrectChars.current;
-    const accuracy = totalChars > 0
-      ? Math.round((correctChars.current / totalChars) * 100)
-      : 100;
-
-    return {
-      wpm,
-      rawWpm,
-      accuracy,
-      correctChars: correctChars.current,
-      incorrectChars: incorrectChars.current,
-      totalChars,
-      correctWords,
-      incorrectWords,
-      totalWords: words.length,
-      timeElapsed,
-      maxCombo,
-    };
-  }, [wordStates, maxCombo, words.length]);
+  // Calculate current stats using centralized hook
+  const stats = useTypingStats({
+    gameStartTime: gameStartTime.current,
+    wordStates,
+    totalWords: words.length,
+    correctChars: correctChars.current,
+    incorrectChars: incorrectChars.current,
+    totalTypedChars: totalTypedChars.current,
+    maxCombo,
+  });
 
   // Get character states for current word display
   const getCharacterStates = useCallback((wordIndex: number): CharacterState[] => {
@@ -331,11 +310,80 @@ export function useTypingEngine(text: string, config: TypingEngineConfig = {}) {
       onGameComplete?.(stats);
     } else {
       // Advance to next word
-      setCurrentWordIndex(prev => prev + 1);
+      const nextIndex = currentWordIndex + 1;
+      setCurrentWordIndex(nextIndex);
       setCurrentInput('');
       wordStartTime.current = Date.now();
+
+      // Check if we need more words (for infinite mode)
+      if (onLowWordCount) {
+        const remainingWords = words.length - nextIndex;
+        if (remainingWords <= minWordCount + wordRefreshThreshold) {
+          // Asynchronously fetch more words
+          Promise.resolve(onLowWordCount(remainingWords, minWordCount)).then(newWordStates => {
+            if (newWordStates && newWordStates.length > 0) {
+              setWordStates(prev => [...prev, ...newWordStates]);
+            }
+          }).catch(err => {
+            console.error('Failed to load more words:', err);
+          });
+        }
+      }
     }
-  }, [currentWordIndex, currentInput, words, stats, onWordComplete, onGameComplete]);
+  }, [currentWordIndex, currentInput, words, stats, onWordComplete, onGameComplete, onLowWordCount, minWordCount, wordRefreshThreshold]);
+
+  // Handle input change (for mobile/onChange method)
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (inputMethod !== 'change') return;
+
+    // Start game on first input
+    if (status === 'ready') {
+      gameStartTime.current = Date.now();
+      wordStartTime.current = Date.now();
+      setStatus('playing');
+    }
+
+    if (status !== 'playing' && status !== 'ready') return;
+
+    const newValue = e.target.value;
+    const currentWord = words[currentWordIndex];
+    if (!currentWord) return;
+
+    // Check if space was added (word completion)
+    if (newValue.endsWith(' ') && currentInput.length > 0) {
+      // Finalize current word
+      finalizeCurrentWord();
+      // Clear the input (remove the space)
+      e.target.value = '';
+      return;
+    }
+
+    // Update current input
+    setCurrentInput(newValue);
+
+    // Track characters for stats
+    if (newValue.length > currentInput.length) {
+      // Character added
+      const addedChar = newValue[newValue.length - 1];
+      const expectedChar = currentWord[newValue.length - 1];
+      const isCorrect = addedChar === expectedChar;
+
+      totalTypedChars.current++;
+
+      if (isCorrect) {
+        correctChars.current++;
+        setCombo(prev => {
+          const newCombo = prev + 1;
+          setMaxCombo(max => Math.max(max, newCombo));
+          return newCombo;
+        });
+      } else {
+        incorrectChars.current++;
+        setCombo(0);
+        onError?.(currentWordIndex, newValue.length - 1, expectedChar || '', addedChar);
+      }
+    }
+  }, [inputMethod, status, currentWordIndex, currentInput, words, onError, finalizeCurrentWord]);
 
   // Prevent paste
   const handlePaste = useCallback((e: React.ClipboardEvent) => {
@@ -395,6 +443,13 @@ export function useTypingEngine(text: string, config: TypingEngineConfig = {}) {
     }
   }, [status]);
 
+  // Add new words to the pool (for dynamic/infinite mode)
+  const addWords = useCallback((newWordStates: WordState[]) => {
+    if (newWordStates && newWordStates.length > 0) {
+      setWordStates(prev => [...prev, ...newWordStates]);
+    }
+  }, []);
+
   return {
     // State
     status,
@@ -414,18 +469,20 @@ export function useTypingEngine(text: string, config: TypingEngineConfig = {}) {
     // Methods
     getCharacterStates,
     handleKeyDown,
+    handleChange,
     handlePaste,
     reset,
     start,
     pause,
     resume,
+    addWords,
 
     // For input component
     inputProps: {
       value: currentInput,
-      onKeyDown: handleKeyDown,
+      onKeyDown: inputMethod === 'keydown' ? handleKeyDown : undefined,
+      onChange: inputMethod === 'change' ? handleChange : () => {},
       onPaste: handlePaste,
-      onChange: () => {}, // Controlled by onKeyDown
       autoComplete: 'off',
       autoCorrect: 'off',
       autoCapitalize: 'off',

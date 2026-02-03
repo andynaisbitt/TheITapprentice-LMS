@@ -37,7 +37,7 @@ const challengeTypes: { value: ChallengeType; label: string; description: string
   { value: 'quiz', label: 'Complete Quizzes', description: 'User must complete N quizzes' },
   { value: 'tutorial', label: 'Complete Tutorials', description: 'User must complete N tutorials' },
   { value: 'course_section', label: 'Course Sections', description: 'User must complete N course sections' },
-  { value: 'typing_game', label: 'Typing Games', description: 'User must play N typing games' },
+  { value: 'typing_game', label: 'Typing Practice', description: 'User must play N typing practice sessions' },
   { value: 'typing_wpm', label: 'Typing WPM', description: 'User must achieve N WPM in a game' },
   { value: 'xp_earn', label: 'Earn XP', description: 'User must earn N XP' },
 ];

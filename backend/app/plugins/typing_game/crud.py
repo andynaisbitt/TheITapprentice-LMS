@@ -2028,15 +2028,18 @@ def get_user_streak_info(
 
     # Check if streak is at risk
     streak_at_risk = False
-    if streak.last_play_date and streak.last_play_date < today:
-        if streak.last_play_date < today - timedelta(days=1):
-            streak_at_risk = True
+    if streak.last_play_date:
+        last_play_date = streak.last_play_date.date() if isinstance(streak.last_play_date, datetime) else streak.last_play_date
+        if last_play_date < today:
+            if last_play_date < today - timedelta(days=1):
+                streak_at_risk = True
 
     # Check if freeze would auto-apply
+    last_play_date = streak.last_play_date.date() if streak.last_play_date and isinstance(streak.last_play_date, datetime) else streak.last_play_date
     freeze_will_auto_apply = (
         streak_at_risk and
         streak.freeze_available and
-        streak.last_play_date == today - timedelta(days=2)
+        last_play_date == today - timedelta(days=2)
     )
 
     return {

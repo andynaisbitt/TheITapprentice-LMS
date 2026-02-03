@@ -13,7 +13,7 @@ import { usePlugins } from '../../state/contexts/PluginsContext';
 const PLUGIN_TEMPLATES = [
   { id: 'tutorials', label: 'Tutorials', url: '/tutorials', icon: '📚', plugin: 'tutorials' },
   { id: 'courses', label: 'Courses', url: '/courses', icon: '🎓', plugin: 'courses' },
-  { id: 'games', label: 'Practice', url: '/games/typing', icon: '⌨️', plugin: 'typing_game', altLabels: ['Games', 'Practice', 'Typing Practice'] },
+  { id: 'games', label: 'Practice', url: '/typing-practice', icon: '⌨️', plugin: 'typing_game', altLabels: ['Games', 'Practice', 'Typing Practice'] },
   { id: 'quizzes', label: 'Quizzes', url: '/quizzes', icon: '❓', plugin: 'quizzes' },
 ];
 

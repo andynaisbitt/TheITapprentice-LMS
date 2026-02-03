@@ -626,7 +626,7 @@ const QuizPlayerPage: React.FC = () => {
 
               {/* Typing Game Card */}
               <Link
-                to="/games/typing"
+                to="/typing-practice"
                 className="group flex flex-col p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-emerald-400 dark:hover:border-emerald-500 hover:shadow-md transition-all"
               >
                 <div className="flex items-center gap-2 mb-2">

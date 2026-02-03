@@ -14,7 +14,7 @@ export const TypingGamePlayPage: React.FC = () => {
 
   const handleExit = () => {
     // Navigate with state indicating game was completed (for stats refresh)
-    navigate('/games/typing', { state: { gameCompleted } });
+    navigate('/typing-practice', { state: { gameCompleted } });
   };
 
   const handleGameComplete = () => {
@@ -24,7 +24,7 @@ export const TypingGamePlayPage: React.FC = () => {
   // Navigate back with state on link click
   const handleBackClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    navigate('/games/typing', { state: { gameCompleted } });
+    navigate('/typing-practice', { state: { gameCompleted } });
   };
 
   return (
@@ -32,12 +32,12 @@ export const TypingGamePlayPage: React.FC = () => {
       <div className="max-w-4xl mx-auto px-2 sm:px-4">
         {/* Back button - visible when game is in idle state */}
         <Link
-          to="/games/typing"
+          to="/typing-practice"
           onClick={handleBackClick}
           className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4 sm:mb-6 text-sm sm:text-base"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span className="hidden sm:inline">Back to Typing Games</span>
+          <span className="hidden sm:inline">Back to Typing Practice</span>
           <span className="sm:hidden">Back</span>
         </Link>
 

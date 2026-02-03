@@ -96,6 +96,13 @@ export const PracticeGamePage: React.FC = () => {
     fetchWordLists();
   }, []);
 
+  // Scroll to top when game starts
+  useEffect(() => {
+    if (isPlaying) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [isPlaying]);
+
   // Filter word lists
   const filteredWordLists = wordLists.filter(wl => {
     // Search filter
@@ -121,18 +128,18 @@ export const PracticeGamePage: React.FC = () => {
   }, []);
 
   // If playing, show the game
+  // TODO: Fix WordListPracticeGame space bar detection issue
+  // For now, using QuickBrownFoxGame which works but uses hardcoded text
   if (isPlaying && selectedWordList) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <QuickBrownFoxGame
-          wordListId={selectedWordList.id}
-          onComplete={handleGameComplete}
-          onExit={() => {
-            setIsPlaying(false);
-            setSelectedWordList(null);
-          }}
-        />
-      </div>
+      <QuickBrownFoxGame
+        wordListId={selectedWordList.id}
+        onComplete={handleGameComplete}
+        onExit={() => {
+          setIsPlaying(false);
+          setSelectedWordList(null);
+        }}
+      />
     );
   }
 
@@ -146,11 +153,11 @@ export const PracticeGamePage: React.FC = () => {
           className="mb-8"
         >
           <button
-            onClick={() => navigate('/games/typing')}
+            onClick={() => navigate('/typing-practice')}
             className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4"
           >
             <ArrowLeft className="w-4 h-4" />
-            Back to Typing Games
+            Back to Typing Practice
           </button>
 
           <div className="flex items-center gap-4 mb-2">

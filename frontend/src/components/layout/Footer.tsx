@@ -59,7 +59,7 @@ const linkHoverVariants = {
 const siteLinks = [
   { label: 'Courses', url: '/courses', icon: GraduationCap },
   { label: 'Tutorials', url: '/tutorials', icon: BookOpen },
-  { label: 'Typing Games', url: '/games/typing', icon: Keyboard },
+  { label: 'Typing Practice', url: '/typing-practice', icon: Keyboard },
   { label: 'Quizzes', url: '/quizzes', icon: Brain },
   { label: 'Leaderboard', url: '/leaderboard', icon: Trophy },
   { label: 'Blog', url: '/blog', icon: FileText },

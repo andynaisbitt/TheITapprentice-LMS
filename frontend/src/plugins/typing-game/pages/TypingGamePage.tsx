@@ -123,7 +123,7 @@ export const TypingGamePage: React.FC = () => {
       description: '3-round progressive challenge',
       icon: Zap,
       color: 'from-blue-500 to-purple-600',
-      link: '/games/typing/play'
+      link: '/typing-practice/play'
     },
     {
       id: 'infinite-rush',
@@ -131,7 +131,7 @@ export const TypingGamePage: React.FC = () => {
       description: '60 seconds of pure speed typing',
       icon: Infinity,
       color: 'from-orange-500 to-red-600',
-      link: '/games/typing/infinite-rush',
+      link: '/typing-practice/infinite-rush',
       badge: 'New'
     },
     {
@@ -140,7 +140,7 @@ export const TypingGamePage: React.FC = () => {
       description: 'Race against your personal best',
       icon: Ghost,
       color: 'from-purple-500 to-indigo-600',
-      link: '/games/typing/ghost',
+      link: '/typing-practice/ghost',
       badge: 'New'
     },
     {
@@ -149,7 +149,7 @@ export const TypingGamePage: React.FC = () => {
       description: 'Train with custom word lists',
       icon: Target,
       color: 'from-green-500 to-teal-600',
-      link: '/games/typing/practice'
+      link: '/typing-practice/practice'
     },
     {
       id: 'pvp',
@@ -157,7 +157,7 @@ export const TypingGamePage: React.FC = () => {
       description: pvpEnabled ? 'Challenge other players' : 'PVP mode is currently disabled',
       icon: Swords,
       color: 'from-red-500 to-orange-600',
-      link: '/games/typing/pvp',
+      link: '/typing-practice/pvp',
       badge: pvpEnabled ? undefined : 'Disabled'
     }
   ];
@@ -175,7 +175,7 @@ export const TypingGamePage: React.FC = () => {
             <Keyboard className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-            Typing Games
+            Typing Practice
           </h1>
           <p className="text-gray-600 dark:text-gray-400 text-lg">
             Improve your typing speed and accuracy with fun challenges
@@ -301,7 +301,7 @@ export const TypingGamePage: React.FC = () => {
               Top Players
             </h2>
             <Link
-              to="/games/typing/leaderboard"
+              to="/typing-practice/leaderboard"
               className="text-blue-500 hover:text-blue-600 text-sm font-medium"
             >
               View All

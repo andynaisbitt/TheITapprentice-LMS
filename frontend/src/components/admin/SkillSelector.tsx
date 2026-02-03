@@ -99,7 +99,26 @@ export const SkillSelector: React.FC<SkillSelectorProps> = ({
       <div className="flex flex-wrap gap-2">
         {selectedSlugs.map((slug) => {
           const skill = getSkillBySlug(slug);
-          if (!skill) return null;
+
+          // Show unrecognised slugs with a warning style so admins can remove them
+          if (!skill) {
+            return (
+              <span
+                key={slug}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                title="This skill slug does not match any active skill"
+              >
+                {slug}
+                <button
+                  type="button"
+                  onClick={() => handleRemove(slug)}
+                  className="ml-1 hover:bg-black/10 dark:hover:bg-white/10 rounded-full p-0.5"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            );
+          }
 
           return (
             <span

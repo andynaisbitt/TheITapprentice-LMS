@@ -39,7 +39,7 @@ export const featureSlides: FeatureSlide[] = [
     headline: 'Speed Up Your Typing',
     subtext: 'Fun games, real-time PvP battles, and detailed stats to track your WPM',
     cta: 'Start Typing',
-    ctaLink: '/games/typing',
+    ctaLink: '/typing-practice',
     gradient: 'from-orange-500 via-amber-500 to-yellow-500',
     iconGradient: 'from-orange-400 to-amber-500',
     accentColor: 'amber',

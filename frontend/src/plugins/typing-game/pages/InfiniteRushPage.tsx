@@ -18,7 +18,7 @@ export const InfiniteRushPage: React.FC = () => {
   };
 
   const handleExit = () => {
-    navigate('/games/typing', { state: { gameCompleted } });
+    navigate('/typing-practice', { state: { gameCompleted } });
   };
 
   return (
