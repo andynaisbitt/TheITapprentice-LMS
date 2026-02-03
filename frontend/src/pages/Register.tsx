@@ -9,10 +9,17 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../state/contexts/AuthContext';
 import { GoogleOAuthButton } from '../components/auth/GoogleOAuthButton';
 import { Eye, EyeOff, CheckCircle, XCircle, Loader } from 'lucide-react';
+import { useSiteSettingsStore } from '../store/useSiteSettingsStore';
 
 export const Register: React.FC = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
+
+  // Get registration settings from site settings store
+  const registrationEnabled = useSiteSettingsStore((state) => state.settings.registrationEnabled);
+  const registrationDisabledMessage = useSiteSettingsStore((state) => state.settings.registrationDisabledMessage);
+  const loadSettings = useSiteSettingsStore((state) => state.loadSettings);
+  const settingsLoading = useSiteSettingsStore((state) => state.isLoading);
 
   const [formData, setFormData] = useState({
     email: '',
@@ -34,6 +41,27 @@ export const Register: React.FC = () => {
     hasLowercase: false,
     hasNumber: false,
   });
+
+  // Load site settings on mount and check registration status
+  React.useEffect(() => {
+    loadSettings();
+  }, [loadSettings]);
+
+  // Redirect to login if registration is disabled
+  React.useEffect(() => {
+    if (!settingsLoading && !registrationEnabled) {
+      // Show message for 2 seconds before redirect
+      const timer = setTimeout(() => {
+        navigate('/login', {
+          state: {
+            message: registrationDisabledMessage || 'Registration is currently disabled. Please check back later.'
+          }
+        });
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [settingsLoading, registrationEnabled, registrationDisabledMessage, navigate]);
 
   // Real-time password validation
   const validatePassword = (password: string) => {
@@ -140,6 +168,54 @@ export const Register: React.FC = () => {
       setIsSubmitting(false);
     }
   };
+
+  // Show loading state while checking registration status
+  if (settingsLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show registration disabled message and redirect
+  if (!registrationEnabled) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4 py-12">
+        <div className="max-w-md w-full">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
+            <div className="text-center mb-6">
+              <div className="text-5xl mb-4">ℹ️</div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                Registration Currently Unavailable
+              </h2>
+            </div>
+
+            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mb-6">
+              <p className="text-sm text-amber-800 dark:text-amber-400 leading-relaxed">
+                {registrationDisabledMessage || 'Registration is currently disabled. Please check back later.'}
+              </p>
+            </div>
+
+            <div className="text-center">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Redirecting to login page...
+              </p>
+              <Link
+                to="/login"
+                className="inline-block px-6 py-3 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition font-medium"
+              >
+                Go to Login
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4 py-12">

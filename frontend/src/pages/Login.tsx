@@ -8,11 +8,17 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../state/contexts/AuthContext';
 import { GoogleOAuthButton } from '../components/auth/GoogleOAuthButton';
+import { useSiteSettingsStore } from '../store/useSiteSettingsStore';
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, isLoading, user } = useAuth();
+
+  // Get registration settings from site settings store
+  const registrationEnabled = useSiteSettingsStore((state) => state.settings.registrationEnabled);
+  const registrationDisabledMessage = useSiteSettingsStore((state) => state.settings.registrationDisabledMessage);
+  const loadSettings = useSiteSettingsStore((state) => state.loadSettings);
 
   const [formData, setFormData] = useState({
     email: '',
@@ -26,6 +32,11 @@ export const Login: React.FC = () => {
   // Get success message from registration redirect
   const successMessage = location.state?.message;
   const prefilledEmail = location.state?.email;
+
+  // Load site settings (includes registration status) on mount
+  React.useEffect(() => {
+    loadSettings();
+  }, [loadSettings]);
 
   // Prefill email if coming from registration
   React.useEffect(() => {
@@ -196,17 +207,35 @@ export const Login: React.FC = () => {
             </button>
           </form>
 
-          {/* Registration Link */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Don't have an account?{' '}
-              <Link
-                to="/register"
-                className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
-              >
-                Sign up
-              </Link>
-            </p>
+          {/* Registration Status */}
+          <div className="mt-6">
+            {registrationEnabled ? (
+              <div className="text-center">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Don't have an account?{' '}
+                  <Link
+                    to="/register"
+                    className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
+                  >
+                    Sign up
+                  </Link>
+                </p>
+              </div>
+            ) : (
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 text-xl mt-0.5">ℹ️</div>
+                  <div className="flex-1">
+                    <h4 className="font-medium text-amber-900 dark:text-amber-300 mb-1 text-sm">
+                      Registration Currently Unavailable
+                    </h4>
+                    <p className="text-sm text-amber-800 dark:text-amber-400 leading-relaxed">
+                      {registrationDisabledMessage || 'Registration is currently disabled. Please check back later.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Divider */}

@@ -12,6 +12,7 @@ from slowapi.util import get_remote_address
 from app.auth.email_verification import EmailVerification, generate_verification_tokens
 from app.services.email_service import email_service
 from app.core.config import settings
+from app.api.v1.services.site_settings.models import SiteSettings
 import logging
 
 logger = logging.getLogger(__name__)
@@ -31,12 +32,25 @@ async def register_user(
 ):
     """
     Register a new user account.
-    
+
     - Creates user with 'student' role by default
     - Sends verification email (optional - can login without verification)
     - Returns user profile data
     """
-    
+
+    # Check if registration is enabled in site settings
+    site_settings = db.query(SiteSettings).first()
+    if site_settings and not site_settings.registration_enabled:
+        # Get custom message or use default
+        message = site_settings.registration_disabled_message or \
+                 "Registration is currently disabled. We are optimizing our systems and have enough users for this beta release. Thank you for your interest!"
+
+        logger.info(f"Registration blocked - feature disabled in site settings")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=message
+        )
+
     print("=" * 80)
     print("📝 USER REGISTRATION ATTEMPT")
     print(f"Email: {user_data.email}")
@@ -223,14 +237,39 @@ async def check_email_availability(
 ):
     """
     Check if email is available.
-    
+
     - Used for real-time validation during registration
     - Returns availability status
     """
-    
+
     existing = db.query(User).filter(User.email == email).first()
-    
+
     return {
         "email": email,
         "available": existing is None
+    }
+
+
+@router.get("/registration-status")
+async def get_registration_status(db: Session = Depends(get_db)):
+    """
+    Check if user registration is currently enabled.
+
+    - Public endpoint (no authentication required)
+    - Returns registration status and optional custom message
+    - Used by login/register pages to show appropriate messaging
+    """
+
+    site_settings = db.query(SiteSettings).first()
+
+    # Default to enabled if no settings found
+    if not site_settings:
+        return {
+            "enabled": True,
+            "message": None
+        }
+
+    return {
+        "enabled": site_settings.registration_enabled,
+        "message": site_settings.registration_disabled_message if not site_settings.registration_enabled else None
     }

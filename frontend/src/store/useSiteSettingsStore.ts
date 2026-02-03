@@ -143,6 +143,10 @@ export interface SiteSettings {
 
   // Homepage Section Order (array of section IDs)
   homepageSectionOrder: string[] | null;
+
+  // Registration Control
+  registrationEnabled: boolean;
+  registrationDisabledMessage: string;
 }
 
 const defaultSettings: SiteSettings = {
@@ -260,6 +264,10 @@ const defaultSettings: SiteSettings = {
 
   // Homepage Section Order (null = default order)
   homepageSectionOrder: null,
+
+  // Registration Control
+  registrationEnabled: true,
+  registrationDisabledMessage: '',
 };
 
 /**

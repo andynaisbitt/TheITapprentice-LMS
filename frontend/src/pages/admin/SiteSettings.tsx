@@ -129,6 +129,10 @@ interface SiteSettings {
 
   // Homepage Section Order
   homepageSectionOrder: string[] | null;
+
+  // Registration Control
+  registrationEnabled: boolean;
+  registrationDisabledMessage: string;
 }
 
 const defaultSettings: SiteSettings = {
@@ -237,6 +241,10 @@ const defaultSettings: SiteSettings = {
 
   // Homepage Section Order
   homepageSectionOrder: null,
+
+  // Registration Control
+  registrationEnabled: true,
+  registrationDisabledMessage: 'Registration is currently disabled. We are optimizing our systems and have enough users for this beta release. Thank you for your interest!',
 };
 
 export const SiteSettings: React.FC = () => {
@@ -245,7 +253,7 @@ export const SiteSettings: React.FC = () => {
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'analytics' | 'seo' | 'homepage' | 'layout' | 'lms' | 'social' | 'contact' | 'branding' | 'email'>('homepage');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'seo' | 'homepage' | 'layout' | 'lms' | 'social' | 'contact' | 'branding' | 'email' | 'registration'>('homepage');
   const [uploadingLogo, setUploadingLogo] = useState<'light' | 'dark' | null>(null);
   const [uploadingFavicon, setUploadingFavicon] = useState<'light' | 'dark' | null>(null);
 
@@ -442,6 +450,7 @@ export const SiteSettings: React.FC = () => {
     { id: 'social', label: 'Social Media', icon: '🌐' },
     { id: 'contact', label: 'Contact Info', icon: '📧' },
     { id: 'email', label: 'Email & Newsletter', icon: '✉️' },
+    { id: 'registration', label: 'User Registration', icon: '👥' },
   ] as const;
 
   if (loading && !settings.siteTitle) {
@@ -2170,6 +2179,145 @@ export const SiteSettings: React.FC = () => {
                     <li>Username: <code className="bg-green-100 dark:bg-green-900 px-1 rounded">apikey</code></li>
                     <li>Password: Your SendGrid API Key</li>
                     <li>Use TLS: Enabled</li>
+                  </ul>
+                </div>
+              </motion.div>
+            )}
+
+            {/* User Registration Tab */}
+            {activeTab === 'registration' && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="space-y-6"
+              >
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+                  <h3 className="font-medium text-blue-900 dark:text-blue-300 mb-2">
+                    👥 Registration Control
+                  </h3>
+                  <p className="text-sm text-blue-800 dark:text-blue-400">
+                    Control whether new users can register for accounts. Useful during beta periods or when limiting user growth.
+                  </p>
+                </div>
+
+                {/* Registration Toggle */}
+                <div className="border-b border-gray-200 dark:border-slate-700 pb-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Allow User Registration
+                      </label>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        When disabled, the registration page will show a custom message
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleChange('registrationEnabled', !settings.registrationEnabled)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        settings.registrationEnabled
+                          ? 'bg-blue-600 dark:bg-blue-700'
+                          : 'bg-red-600 dark:bg-red-700'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          settings.registrationEnabled ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Status Indicator */}
+                  <div className={`mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${
+                    settings.registrationEnabled
+                      ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                      : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+                  }`}>
+                    <span className="relative flex h-2 w-2">
+                      <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                        settings.registrationEnabled ? 'bg-green-600' : 'bg-red-600'
+                      }`}></span>
+                      <span className={`relative inline-flex rounded-full h-2 w-2 ${
+                        settings.registrationEnabled ? 'bg-green-600' : 'bg-red-600'
+                      }`}></span>
+                    </span>
+                    {settings.registrationEnabled ? 'Registration is ENABLED' : 'Registration is DISABLED'}
+                  </div>
+                </div>
+
+                {/* Custom Disabled Message */}
+                <div className="border-t border-gray-200 dark:border-slate-700 pt-6">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Custom Disabled Message
+                    <span className="ml-2 text-xs text-gray-500 dark:text-gray-400 font-normal">
+                      (Shown when registration is disabled)
+                    </span>
+                  </label>
+                  <textarea
+                    value={settings.registrationDisabledMessage}
+                    onChange={(e) => handleChange('registrationDisabledMessage', e.target.value)}
+                    placeholder="Registration is currently disabled. We are optimizing our systems and have enough users for this beta release. Thank you for your interest!"
+                    rows={4}
+                    maxLength={500}
+                    className="w-full px-4 py-3 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  />
+                  <div className="mt-2 flex items-center justify-between">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      This message will appear on the login page when users try to register
+                    </p>
+                    <span className={`text-xs ${
+                      settings.registrationDisabledMessage.length > 450
+                        ? 'text-red-600 dark:text-red-400'
+                        : 'text-gray-500 dark:text-gray-400'
+                    }`}>
+                      {settings.registrationDisabledMessage.length}/500
+                    </span>
+                  </div>
+                </div>
+
+                {/* Preview Section */}
+                <div className="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-6">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                    Preview: How users will see it
+                  </h3>
+                  <div className="bg-white dark:bg-slate-900 rounded-lg p-6 border-2 border-dashed border-gray-300 dark:border-slate-600">
+                    {settings.registrationEnabled ? (
+                      <div className="text-center text-green-600 dark:text-green-400">
+                        <p className="font-medium">✓ Registration is enabled</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                          Users can create new accounts
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0 text-2xl">ℹ️</div>
+                          <div>
+                            <h4 className="font-medium text-amber-900 dark:text-amber-300 mb-1">
+                              Registration Currently Unavailable
+                            </h4>
+                            <p className="text-sm text-amber-800 dark:text-amber-400">
+                              {settings.registrationDisabledMessage || 'Registration is currently disabled.'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Use Cases */}
+                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                  <h3 className="font-medium text-green-900 dark:text-green-300 mb-2">
+                    💡 When to Disable Registration
+                  </h3>
+                  <ul className="text-sm text-green-800 dark:text-green-400 space-y-1 list-disc list-inside">
+                    <li>During private beta testing with limited users</li>
+                    <li>While optimizing backend systems and databases</li>
+                    <li>Before legal compliance (Terms, Privacy Policy) is finalized</li>
+                    <li>During security audits or hardening processes</li>
+                    <li>When managing server capacity and costs</li>
                   </ul>
                 </div>
               </motion.div>

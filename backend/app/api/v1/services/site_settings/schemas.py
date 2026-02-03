@@ -149,6 +149,10 @@ class SiteSettingsBase(BaseModel):
     # Homepage Section Order
     homepage_section_order: Optional[list] = Field(default=None)
 
+    # Registration Control
+    registration_enabled: bool = Field(default=True)
+    registration_disabled_message: Optional[str] = Field(None, max_length=500)
+
 
 class SiteSettingsUpdate(BaseModel):
     """Schema for updating site settings (all fields optional)"""
@@ -294,6 +298,10 @@ class SiteSettingsUpdate(BaseModel):
 
     # Homepage Section Order
     homepage_section_order: Optional[list] = Field(None)
+
+    # Registration Control
+    registration_enabled: Optional[bool] = Field(None)
+    registration_disabled_message: Optional[str] = Field(None, max_length=500)
 
 
 class SiteSettingsResponse(SiteSettingsBase):

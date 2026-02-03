@@ -138,6 +138,10 @@ class SiteSettings(Base):
     homepage_stats_title = Column(String(200), default="Community Progress", nullable=False)
     homepage_stats_show_active_today = Column(Boolean, default=True, nullable=False)
 
+    # Registration Control
+    registration_enabled = Column(Boolean, default=True, nullable=False)
+    registration_disabled_message = Column(String(500), nullable=True)
+
     # Homepage Section Titles (for carousel, categories, recent posts)
     carousel_title = Column(String(200), default="Featured Articles", nullable=False)
     carousel_subtitle = Column(String(500), default="Hand-picked posts showcasing our best content", nullable=True)
