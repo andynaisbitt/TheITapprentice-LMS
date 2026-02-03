@@ -203,7 +203,7 @@ export const TypingChallengeCTA: React.FC = () => {
                 className="flex flex-col sm:flex-row gap-3"
               >
                 <Link
-                  to="/typing"
+                  to="/typing-practice"
                   className="group inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 bg-white text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition-all shadow-lg text-sm sm:text-base"
                 >
                   <Timer className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -213,7 +213,7 @@ export const TypingChallengeCTA: React.FC = () => {
 
                 {isAuthenticated && (
                   <Link
-                    to="/typing/pvp"
+                    to="/typing-practice/pvp"
                     className="group inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 bg-white/10 backdrop-blur-sm text-white border-2 border-white/30 rounded-lg font-semibold hover:bg-white/20 transition-all text-sm sm:text-base"
                   >
                     <Users className="w-4 h-4 sm:w-5 sm:h-5" />

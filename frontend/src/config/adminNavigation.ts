@@ -127,9 +127,9 @@ export const adminNavigationConfig: NavSection[] = [
         icon: Keyboard,
         requiresPlugin: 'typing_game',
         children: [
-          { label: 'Word Lists', path: '/admin/games/word-lists' },
-          { label: 'Challenges', path: '/admin/games/challenges' },
-          { label: 'Leaderboard', path: '/admin/games/leaderboard' },
+          { label: 'Word Lists', path: '/admin/typing-practice/word-lists' },
+          { label: 'Challenges', path: '/admin/typing-practice/challenges' },
+          { label: 'Leaderboard', path: '/admin/typing-practice/leaderboard' },
         ],
       },
       {

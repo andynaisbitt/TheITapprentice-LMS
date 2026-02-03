@@ -900,9 +900,9 @@ export const AppRoutes = () => {
           }
         />
 
-        {/* Admin Game Routes - v2.2 */}
+        {/* Admin Typing Practice Routes - v2.2 */}
         <Route
-          path="/admin/games/word-lists"
+          path="/admin/typing-practice/word-lists"
           element={
             <AdminRoute>
               <AdminLayout>
@@ -912,7 +912,7 @@ export const AppRoutes = () => {
           }
         />
         <Route
-          path="/admin/games/challenges"
+          path="/admin/typing-practice/challenges"
           element={
             <AdminRoute>
               <AdminLayout>
@@ -922,7 +922,7 @@ export const AppRoutes = () => {
           }
         />
         <Route
-          path="/admin/games/leaderboard"
+          path="/admin/typing-practice/leaderboard"
           element={
             <AdminRoute>
               <AdminLayout>
@@ -932,7 +932,7 @@ export const AppRoutes = () => {
           }
         />
         <Route
-          path="/admin/games/sentence-pools"
+          path="/admin/typing-practice/sentence-pools"
           element={
             <AdminRoute>
               <AdminLayout>

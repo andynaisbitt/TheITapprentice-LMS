@@ -90,7 +90,7 @@ export const getGradientForUrl = (url: string): string => {
 // URL categorization for tabs
 export const tabUrlMappings = {
   learn: ['/courses', '/tutorials', '/quizzes', '/skills'],
-  practice: ['/typing', '/games', '/challenges', '/practice'],
+  practice: ['/typing-practice', '/challenges', '/practice'],
 };
 
 export const categorizeNavItem = (url: string): 'learn' | 'practice' | 'overview' => {

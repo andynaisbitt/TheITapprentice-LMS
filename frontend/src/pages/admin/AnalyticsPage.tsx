@@ -182,11 +182,11 @@ export const AnalyticsPage: React.FC = () => {
       link: '/admin/courses/enrollments',
     },
     {
-      label: 'Games Played',
+      label: 'Typing Sessions',
       value: stats?.typing_games_played?.toLocaleString() || '0',
       icon: Keyboard,
       color: 'orange',
-      link: '/admin/games/leaderboard',
+      link: '/admin/typing-practice/leaderboard',
     },
   ];
 
