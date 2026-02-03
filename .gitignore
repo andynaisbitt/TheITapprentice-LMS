@@ -76,6 +76,10 @@ PERSONAL_*.md
 *_PRIVATE.md
 STRATEGY_*.md
 
+# Planning and implementation documentation (local only)
+docs/planning/
+IMPLEMENTATION_PLAN.md
+
 # Security test outputs and reports (local only)
 tests/security/reports/
 *_output.txt
