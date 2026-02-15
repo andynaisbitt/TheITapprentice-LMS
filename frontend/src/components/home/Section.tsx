@@ -19,6 +19,7 @@ interface SectionProps {
   icon?: LucideIcon;
   viewAllLink?: string;
   viewAllText?: string;
+  action?: React.ReactNode; // Custom action element (overrides viewAllLink)
   // Styling
   background?: 'default' | 'muted' | 'gradient' | 'accent';
   size?: 'md' | 'lg' | 'xl'; // max-w-5xl | max-w-6xl | max-w-7xl
@@ -33,13 +34,13 @@ interface SectionProps {
 }
 
 const sectionVariants = {
-  hidden: { opacity: 0, y: 30 },
+  hidden: { opacity: 0, y: 40 },
   visible: {
     opacity: 1,
     y: 0,
     transition: {
-      duration: 0.6,
-      ease: 'easeOut' as const,
+      duration: 0.7,
+      ease: [0.25, 0.1, 0.25, 1] as const, // Custom easing for smoother feel
     },
   },
 };
@@ -49,20 +50,21 @@ const staggerContainerVariants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.2,
+      staggerChildren: 0.08,
+      delayChildren: 0.15,
     },
   },
 };
 
 const staggerItemVariants = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 0, y: 25, scale: 0.98 },
   visible: {
     opacity: 1,
     y: 0,
+    scale: 1,
     transition: {
       duration: 0.5,
-      ease: 'easeOut' as const,
+      ease: [0.25, 0.1, 0.25, 1] as const,
     },
   },
 };
@@ -76,6 +78,7 @@ export const Section: React.FC<SectionProps> = ({
   icon: Icon,
   viewAllLink,
   viewAllText = 'View all',
+  action,
   background = 'default',
   size = 'lg',
   noPadding = false,
@@ -144,8 +147,12 @@ export const Section: React.FC<SectionProps> = ({
             )}
           </div>
 
-          {/* View All Link - only show when not centered or on its own row when centered */}
-          {viewAllLink && (
+          {/* Custom action or View All Link */}
+          {action ? (
+            <div className={`shrink-0 ${centerHeader ? 'mt-4' : ''}`}>
+              {action}
+            </div>
+          ) : viewAllLink ? (
             <Link
               to={viewAllLink}
               className={`group inline-flex items-center gap-2 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors shrink-0 ${
@@ -155,7 +162,7 @@ export const Section: React.FC<SectionProps> = ({
               {viewAllText}
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
-          )}
+          ) : null}
         </div>
       )}
 
@@ -165,7 +172,7 @@ export const Section: React.FC<SectionProps> = ({
           variants={staggerContainerVariants}
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, amount: 0.2 }}
+          viewport={{ once: true, amount: 0.25 }}
         >
           {children}
         </motion.div>
@@ -185,7 +192,7 @@ export const Section: React.FC<SectionProps> = ({
         variants={sectionVariants}
         initial="hidden"
         whileInView="visible"
-        viewport={{ once: true, amount: 0.15 }}
+        viewport={{ once: true, amount: 0.25 }}
         transition={{ delay }}
         className={`${bgClasses[background]} ${borderClass}`}
       >

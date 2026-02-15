@@ -376,6 +376,8 @@ const CoursePlayer: React.FC = () => {
   const [courseWasAlreadyComplete, setCourseWasAlreadyComplete] = useState(false);
   const [courseJustCompleted, setCourseJustCompleted] = useState(false);
   const [earnedCertificate, setEarnedCertificate] = useState<any>(null);
+  const [guestMode, setGuestMode] = useState(false);
+  const [guestWarningShown, setGuestWarningShown] = useState(false);
   // Quiz state - tracks which quizzes have been passed in current section
   const [quizResults, setQuizResults] = useState<Record<string, { passed: boolean; score: number; maxScore: number }>>({});
 
@@ -671,14 +673,28 @@ const CoursePlayer: React.FC = () => {
       }
     } catch (err: any) {
       console.error('Error marking section complete:', err);
-      toast.error('Failed to save progress. Please try again.');
 
-      // Rollback optimistic update on error
-      setCompletedSections(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(currentSection.id);
-        return newSet;
-      });
+      if (err.response?.status === 401) {
+        // Guest user - enable guest mode and keep optimistic update
+        setGuestMode(true);
+        if (!guestWarningShown) {
+          toast.info('You\'re browsing as a guest. Sign up to save your progress and earn XP!');
+          setGuestWarningShown(true);
+        }
+        // Keep the optimistic update so guest can continue navigating
+        setModuleProgress(prev => ({
+          ...prev,
+          [currentModule.id]: [...(prev[currentModule.id] || []), currentSection.id]
+        }));
+      } else {
+        toast.error('Failed to save progress. Please try again.');
+        // Only rollback on non-auth errors
+        setCompletedSections(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(currentSection.id);
+          return newSet;
+        });
+      }
     }
   };
 
@@ -1405,35 +1421,64 @@ const CoursePlayer: React.FC = () => {
 
               {/* Show completion message if at end and complete */}
               {isLastSection && isCurrentComplete && (
-                <div className="mt-8 p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-500/10 dark:to-emerald-500/10 border border-green-200 dark:border-green-500 rounded-xl">
-                  <div className="flex items-center gap-3 mb-3">
-                    <Award size={28} className="text-green-600 dark:text-green-400" />
-                    <h3 className="text-green-700 dark:text-green-400 font-bold text-lg">Course Complete!</h3>
-                  </div>
-                  <p className="text-gray-600 dark:text-gray-300 mb-2">
-                    You've completed all sections of this course.
-                  </p>
-                  {(earnedCertificate || courseJustCompleted) && (
-                    <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">
-                      Your certificate has been generated. You can view it anytime from your Dashboard.
+                guestMode ? (
+                  <div className="mt-8 p-6 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-500/10 dark:to-orange-500/10 border border-amber-200 dark:border-amber-500 rounded-xl">
+                    <div className="flex items-center gap-3 mb-3">
+                      <BookOpen size={28} className="text-amber-600 dark:text-amber-400" />
+                      <h3 className="text-amber-700 dark:text-amber-400 font-bold text-lg">You've reached the end!</h3>
+                    </div>
+                    <p className="text-gray-600 dark:text-gray-300 mb-2">
+                      You've browsed through all sections of this course as a guest.
                     </p>
-                  )}
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => navigate('/certifications')}
-                      className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors flex items-center gap-2"
-                    >
-                      <Award size={16} />
-                      View Certificate
-                    </button>
-                    <button
-                      onClick={() => navigate('/dashboard')}
-                      className="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg font-semibold transition-colors"
-                    >
-                      Go to Dashboard
-                    </button>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">
+                      No progress has been saved. To earn XP, receive a certificate, and track your learning, create a free account.
+                    </p>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => navigate('/register')}
+                        className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg font-semibold transition-colors"
+                      >
+                        Sign Up Free
+                      </button>
+                      <button
+                        onClick={() => navigate('/courses')}
+                        className="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg font-semibold transition-colors"
+                      >
+                        Browse More Courses
+                      </button>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="mt-8 p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-500/10 dark:to-emerald-500/10 border border-green-200 dark:border-green-500 rounded-xl">
+                    <div className="flex items-center gap-3 mb-3">
+                      <Award size={28} className="text-green-600 dark:text-green-400" />
+                      <h3 className="text-green-700 dark:text-green-400 font-bold text-lg">Course Complete!</h3>
+                    </div>
+                    <p className="text-gray-600 dark:text-gray-300 mb-2">
+                      You've completed all sections of this course.
+                    </p>
+                    {(earnedCertificate || courseJustCompleted) && (
+                      <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">
+                        Your certificate has been generated. You can view it anytime from your Dashboard.
+                      </p>
+                    )}
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => navigate('/certifications')}
+                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors flex items-center gap-2"
+                      >
+                        <Award size={16} />
+                        View Certificate
+                      </button>
+                      <button
+                        onClick={() => navigate('/dashboard')}
+                        className="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg font-semibold transition-colors"
+                      >
+                        Go to Dashboard
+                      </button>
+                    </div>
+                  </div>
+                )
               )}
             </motion.div>
           ) : (

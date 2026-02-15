@@ -1,7 +1,7 @@
 // src/components/layout/Footer.tsx
 /**
- * TheITApprentice Footer - Modern 3-Tier Design
- * Mobile-first, Framer Motion animations, consistent branding
+ * TheITApprentice Footer - Compact Mobile-First Design
+ * Condensed layout on mobile, expands on desktop
  */
 
 import React from 'react';
@@ -22,44 +22,14 @@ import {
   Twitter,
   Linkedin,
   Youtube,
-  ExternalLink,
 } from 'lucide-react';
 import { useSiteSettings } from '../../store/useSiteSettingsStore';
-
-// Animation variants
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.1,
-    },
-  },
-};
-
-const columnVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.5,
-      ease: [0.25, 0.46, 0.45, 0.94] as const,
-    },
-  },
-};
-
-const linkHoverVariants = {
-  rest: { x: 0 },
-  hover: { x: 4 },
-};
 
 // Site links (LMS features)
 const siteLinks = [
   { label: 'Courses', url: '/courses', icon: GraduationCap },
   { label: 'Tutorials', url: '/tutorials', icon: BookOpen },
-  { label: 'Typing Practice', url: '/typing-practice', icon: Keyboard },
+  { label: 'Typing', url: '/typing-practice', icon: Keyboard },
   { label: 'Quizzes', url: '/quizzes', icon: Brain },
   { label: 'Leaderboard', url: '/leaderboard', icon: Trophy },
   { label: 'Blog', url: '/blog', icon: FileText },
@@ -69,8 +39,8 @@ const siteLinks = [
 const companyLinks = [
   { label: 'About', url: '/about', icon: Users },
   { label: 'Contact', url: '/contact', icon: Mail },
-  { label: 'Privacy Policy', url: '/privacy', icon: Shield },
-  { label: 'Terms of Service', url: '/terms', icon: ScrollText },
+  { label: 'Privacy', url: '/privacy', icon: Shield },
+  { label: 'Terms', url: '/terms', icon: ScrollText },
 ];
 
 export const Footer: React.FC = () => {
@@ -86,193 +56,212 @@ export const Footer: React.FC = () => {
   ].filter(Boolean) as { label: string; url: string; icon: typeof Github }[];
 
   return (
-    <footer className="bg-slate-900 dark:bg-slate-950 text-slate-300 pt-10 pb-20">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+    <footer className="bg-gray-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 pt-6 sm:pt-10 pb-20">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* ==================== */}
         {/* TIER 1: Brand Block */}
         {/* ==================== */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 10 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center"
+          transition={{ duration: 0.4 }}
+          className="text-center mb-6 sm:mb-8"
         >
-          {/* Logo */}
-          <Link to="/" className="inline-flex items-center justify-center gap-3 mb-4">
+          {/* Logo - smaller on mobile */}
+          <Link to="/" className="inline-flex items-center justify-center gap-2 sm:gap-3 mb-2 sm:mb-3">
             {settings.logoUrl ? (
               <img
                 src={settings.logoUrl}
                 alt={settings.siteTitle}
-                className="h-12 w-auto"
+                className="h-8 sm:h-12 w-auto"
               />
             ) : (
               <>
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
-                  <GraduationCap className="w-7 h-7 text-white" />
+                <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg sm:rounded-xl flex items-center justify-center">
+                  <GraduationCap className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
                 </div>
-                <span className="text-2xl font-bold text-white">
+                <span className="text-lg sm:text-2xl font-bold text-slate-900 dark:text-white">
                   {settings.siteTitle || 'TheITApprentice'}
                 </span>
               </>
             )}
           </Link>
 
-          {/* Tagline */}
-          <p className="text-slate-400 text-base max-w-md mx-auto leading-relaxed">
-            {settings.siteTagline || 'Rebuilding, Reskilling, and Shipping for 2026'}
+          {/* Tagline - hidden on very small screens */}
+          <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-base max-w-md mx-auto leading-relaxed hidden xs:block">
+            {settings.siteTagline || 'A modern, SEO-optimized blog platform'}
           </p>
         </motion.div>
 
         {/* Divider */}
-        <div className="h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent" />
+        <div className="h-px bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-700 to-transparent mb-5 sm:mb-8" />
 
-        {/* ========================= */}
-        {/* TIER 2: 3-Column Grid    */}
-        {/* ========================= */}
+        {/* ========================================= */}
+        {/* TIER 2: Links Grid - Compact on Mobile  */}
+        {/* ========================================= */}
         <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          className="grid grid-cols-1 sm:grid-cols-3 gap-10 sm:gap-8"
+          transition={{ duration: 0.4, delay: 0.1 }}
+          className="mb-5 sm:mb-8"
         >
-          {/* Column 1: Site Links */}
-          <motion.div variants={columnVariants} className="text-center sm:text-left">
-            <h4 className="text-white font-semibold text-sm uppercase tracking-wider mb-5">
-              Explore
-            </h4>
-            <ul className="space-y-3">
-              {siteLinks.map((link) => (
-                <li key={link.url}>
-                  <motion.div
-                    initial="rest"
-                    whileHover="hover"
-                    animate="rest"
-                  >
+          {/* Mobile: 2-column grid with proper touch targets */}
+          <div className="sm:hidden">
+            <div className="grid grid-cols-2 gap-x-2">
+              {/* Left column: Explore */}
+              <div>
+                <h4 className="text-slate-900 dark:text-white font-semibold text-xs uppercase tracking-wider mb-1 px-2">
+                  Explore
+                </h4>
+                <div className="flex flex-col">
+                  {siteLinks.map((link) => (
                     <Link
+                      key={link.url}
                       to={link.url}
-                      className="group inline-flex items-center gap-2.5 text-slate-400 hover:text-white transition-colors duration-200"
+                      className="flex items-center gap-2 text-slate-500 dark:text-slate-400 active:text-slate-900 dark:active:text-white active:bg-slate-200 dark:active:bg-slate-800 text-sm py-2.5 px-2 rounded-lg transition-colors"
                     >
-                      <link.icon className="w-4 h-4 text-slate-500 group-hover:text-blue-400 transition-colors duration-200" />
-                      <motion.span
-                        variants={linkHoverVariants}
-                        transition={{ duration: 0.2 }}
-                        className="text-sm"
-                      >
-                        {link.label}
-                      </motion.span>
+                      <link.icon className="w-4 h-4 text-slate-400 dark:text-slate-500" />
+                      <span>{link.label}</span>
                     </Link>
-                  </motion.div>
-                </li>
-              ))}
-            </ul>
-          </motion.div>
+                  ))}
+                </div>
+              </div>
 
-          {/* Column 2: Company Links */}
-          <motion.div variants={columnVariants} className="text-center sm:text-left">
-            <h4 className="text-white font-semibold text-sm uppercase tracking-wider mb-5">
-              Company
-            </h4>
-            <ul className="space-y-3">
-              {companyLinks.map((link) => (
-                <li key={link.url}>
-                  <motion.div
-                    initial="rest"
-                    whileHover="hover"
-                    animate="rest"
-                  >
+              {/* Right column: Company + Social */}
+              <div>
+                <h4 className="text-slate-900 dark:text-white font-semibold text-xs uppercase tracking-wider mb-1 px-2">
+                  Company
+                </h4>
+                <div className="flex flex-col">
+                  {companyLinks.map((link) => (
                     <Link
+                      key={link.url}
                       to={link.url}
-                      className="group inline-flex items-center gap-2.5 text-slate-400 hover:text-white transition-colors duration-200"
+                      className="flex items-center gap-2 text-slate-500 dark:text-slate-400 active:text-slate-900 dark:active:text-white active:bg-slate-200 dark:active:bg-slate-800 text-sm py-2.5 px-2 rounded-lg transition-colors"
                     >
-                      <link.icon className="w-4 h-4 text-slate-500 group-hover:text-blue-400 transition-colors duration-200" />
-                      <motion.span
-                        variants={linkHoverVariants}
-                        transition={{ duration: 0.2 }}
-                        className="text-sm"
-                      >
-                        {link.label}
-                      </motion.span>
+                      <link.icon className="w-4 h-4 text-slate-400 dark:text-slate-500" />
+                      <span>{link.label}</span>
                     </Link>
-                  </motion.div>
-                </li>
-              ))}
-            </ul>
-          </motion.div>
+                  ))}
+                </div>
 
-          {/* Column 3: Socials */}
-          <motion.div variants={columnVariants} className="text-center sm:text-left">
-            <h4 className="text-white font-semibold text-sm uppercase tracking-wider mb-5">
-              Connect
-            </h4>
-            {socialLinks.length > 0 ? (
-              <ul className="space-y-3">
-                {socialLinks.map((link) => (
-                  <li key={link.url}>
-                    <motion.div
-                      initial="rest"
-                      whileHover="hover"
-                      animate="rest"
-                    >
+                {/* Social icons - larger touch targets */}
+                <div className="flex items-center gap-1 mt-2 px-1">
+                  {socialLinks.length > 0 ? (
+                    socialLinks.map((link) => (
                       <a
+                        key={link.url}
                         href={link.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="group inline-flex items-center gap-2.5 text-slate-400 hover:text-white transition-colors duration-200"
+                        className="w-11 h-11 rounded-lg bg-slate-200 dark:bg-slate-800 active:bg-slate-300 dark:active:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 active:text-slate-900 dark:active:text-white transition-all"
+                        aria-label={link.label}
                       >
-                        <link.icon className="w-4 h-4 text-slate-500 group-hover:text-blue-400 transition-colors duration-200" />
-                        <motion.span
-                          variants={linkHoverVariants}
-                          transition={{ duration: 0.2 }}
-                          className="text-sm"
-                        >
-                          {link.label}
-                        </motion.span>
-                        <ExternalLink className="w-3 h-3 text-slate-600 group-hover:text-slate-400 transition-colors duration-200" />
+                        <link.icon className="w-5 h-5" />
                       </a>
-                    </motion.div>
+                    ))
+                  ) : (
+                    <>
+                      <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="w-11 h-11 rounded-lg bg-slate-200 dark:bg-slate-800 active:bg-slate-300 dark:active:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 active:text-slate-900 dark:active:text-white transition-all" aria-label="GitHub">
+                        <Github className="w-5 h-5" />
+                      </a>
+                      <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="w-11 h-11 rounded-lg bg-slate-200 dark:bg-slate-800 active:bg-slate-300 dark:active:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 active:text-slate-900 dark:active:text-white transition-all" aria-label="Twitter">
+                        <Twitter className="w-5 h-5" />
+                      </a>
+                      <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="w-11 h-11 rounded-lg bg-slate-200 dark:bg-slate-800 active:bg-slate-300 dark:active:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 active:text-slate-900 dark:active:text-white transition-all" aria-label="LinkedIn">
+                        <Linkedin className="w-5 h-5" />
+                      </a>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Desktop: 3-column grid */}
+          <div className="hidden sm:grid sm:grid-cols-3 gap-8">
+            {/* Column 1: Site Links */}
+            <div>
+              <h4 className="text-slate-900 dark:text-white font-semibold text-sm uppercase tracking-wider mb-4">
+                Explore
+              </h4>
+              <ul className="space-y-2.5">
+                {siteLinks.map((link) => (
+                  <li key={link.url}>
+                    <Link
+                      to={link.url}
+                      className="group inline-flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors duration-200"
+                    >
+                      <link.icon className="w-4 h-4 text-slate-400 dark:text-slate-500 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors" />
+                      <span className="text-sm">{link.label}</span>
+                    </Link>
                   </li>
                 ))}
               </ul>
-            ) : (
-              <div className="flex justify-center sm:justify-start gap-3">
-                {/* Placeholder social buttons */}
-                <a
-                  href="https://github.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-all duration-200"
-                  aria-label="GitHub"
-                >
-                  <Github className="w-5 h-5" />
-                </a>
-                <a
-                  href="https://twitter.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-all duration-200"
-                  aria-label="Twitter"
-                >
-                  <Twitter className="w-5 h-5" />
-                </a>
-                <a
-                  href="https://linkedin.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-all duration-200"
-                  aria-label="LinkedIn"
-                >
-                  <Linkedin className="w-5 h-5" />
-                </a>
+            </div>
+
+            {/* Column 2: Company Links */}
+            <div>
+              <h4 className="text-slate-900 dark:text-white font-semibold text-sm uppercase tracking-wider mb-4">
+                Company
+              </h4>
+              <ul className="space-y-2.5">
+                {companyLinks.map((link) => (
+                  <li key={link.url}>
+                    <Link
+                      to={link.url}
+                      className="group inline-flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors duration-200"
+                    >
+                      <link.icon className="w-4 h-4 text-slate-400 dark:text-slate-500 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors" />
+                      <span className="text-sm">{link.label}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Column 3: Socials */}
+            <div>
+              <h4 className="text-slate-900 dark:text-white font-semibold text-sm uppercase tracking-wider mb-4">
+                Connect
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                {socialLinks.length > 0 ? (
+                  socialLinks.map((link) => (
+                    <a
+                      key={link.url}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-10 h-10 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all duration-200"
+                      aria-label={link.label}
+                    >
+                      <link.icon className="w-5 h-5" />
+                    </a>
+                  ))
+                ) : (
+                  <>
+                    <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all duration-200" aria-label="GitHub">
+                      <Github className="w-5 h-5" />
+                    </a>
+                    <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all duration-200" aria-label="Twitter">
+                      <Twitter className="w-5 h-5" />
+                    </a>
+                    <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all duration-200" aria-label="LinkedIn">
+                      <Linkedin className="w-5 h-5" />
+                    </a>
+                  </>
+                )}
               </div>
-            )}
-          </motion.div>
+            </div>
+          </div>
         </motion.div>
 
         {/* Divider */}
-        <div className="h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent" />
+        <div className="h-px bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-700 to-transparent mb-4 sm:mb-6" />
 
         {/* ============================= */}
         {/* TIER 3: Copyright / Version  */}
@@ -281,38 +270,27 @@ export const Footer: React.FC = () => {
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm"
+          transition={{ duration: 0.4, delay: 0.2 }}
+          className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-4 text-xs sm:text-sm"
         >
           {/* Copyright */}
-          <div className="text-slate-500 text-center sm:text-left">
-            <span>© {currentYear} {settings.siteTitle || 'TheITApprentice'}.</span>
-            <span className="hidden sm:inline"> All rights reserved.</span>
+          <div className="text-slate-400 dark:text-slate-500 text-center sm:text-left">
+            <span>© {currentYear} {settings.siteTitle || 'TheITApprentice'}</span>
+            <span className="hidden sm:inline">. All rights reserved.</span>
           </div>
 
           {/* Version / Links */}
-          <div className="flex items-center gap-4 sm:gap-6 text-slate-500">
-            <Link
-              to="/privacy"
-              className="hover:text-slate-300 transition-colors duration-200"
-            >
+          <div className="flex items-center gap-3 sm:gap-6 text-slate-400 dark:text-slate-500">
+            <Link to="/privacy" className="hover:text-slate-700 dark:hover:text-slate-300 transition-colors">
               Privacy
             </Link>
-            <Link
-              to="/terms"
-              className="hover:text-slate-300 transition-colors duration-200"
-            >
+            <Link to="/terms" className="hover:text-slate-700 dark:hover:text-slate-300 transition-colors">
               Terms
             </Link>
-            <a
-              href="/sitemap.xml"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-slate-300 transition-colors duration-200"
-            >
+            <a href="/sitemap.xml" target="_blank" rel="noopener noreferrer" className="hover:text-slate-700 dark:hover:text-slate-300 transition-colors">
               Sitemap
             </a>
-            <span className="text-slate-600">v2.0</span>
+            <span className="text-slate-300 dark:text-slate-600">v2.0</span>
           </div>
         </motion.div>
 
@@ -322,16 +300,16 @@ export const Footer: React.FC = () => {
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="text-center"
+            transition={{ duration: 0.4, delay: 0.3 }}
+            className="text-center mt-3 sm:mt-4"
           >
-            <p className="text-xs text-slate-600">
+            <p className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-600">
               Powered by{' '}
               <a
                 href="https://github.com/andynaisbitt/TheITapprentice-LMS"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-blue-400 transition-colors duration-200"
+                className="hover:text-blue-400 transition-colors"
               >
                 The IT Apprentice LMS
               </a>

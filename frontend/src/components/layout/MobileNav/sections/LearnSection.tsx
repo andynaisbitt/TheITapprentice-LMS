@@ -2,60 +2,51 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { MenuCard } from '../components/MenuCard';
-import { GraduationCap, BookOpen, ClipboardCheck, Award } from 'lucide-react';
-import type { MenuItem } from '../../../../services/api/navigation.api';
-import { getGradientForUrl, getSubtitleForUrl } from '../../../../utils/navUtils';
+import { getGradientForUrl } from '../../../../utils/navUtils';
+import { usePublicNavigation } from '../../../../hooks/usePublicNavigation';
 
 interface LearnSectionProps {
   onNavigate: (path: string) => void;
-  navItems?: MenuItem[];
 }
 
-// Default learn items if no API items available
-const defaultLearnItems = [
-  {
-    icon: GraduationCap,
-    title: 'Courses',
-    subtitle: 'Structured Learning Paths',
-    description: 'Comprehensive courses with interactive content and real-world projects.',
-    path: '/courses',
-    isPopular: true,
-  },
-  {
-    icon: BookOpen,
-    title: 'Tutorials',
-    subtitle: 'Quick Learning Guides',
-    description: 'Step-by-step tutorials covering specific topics and technologies.',
-    path: '/tutorials',
-  },
-  {
-    icon: ClipboardCheck,
-    title: 'Quizzes',
-    subtitle: 'Test Your Knowledge',
-    description: 'Practice quizzes to reinforce learning and track your understanding.',
-    path: '/quizzes',
-  },
-  {
-    icon: Award,
-    title: 'Skills',
-    subtitle: 'Track Your Progress',
-    description: 'Monitor your skill development across different areas.',
-    path: '/skills',
-    isNew: true,
-  },
-];
+export const LearnSection: React.FC<LearnSectionProps> = ({ onNavigate }) => {
+  const { learnItems, loading } = usePublicNavigation();
 
-export const LearnSection: React.FC<LearnSectionProps> = ({ onNavigate, navItems }) => {
-  // Use API items if available, otherwise use defaults
-  const items = navItems && navItems.length > 0
-    ? navItems.map(item => ({
-        icon: GraduationCap, // Will be overridden by getIconForUrl in MenuCard
-        title: item.label,
-        subtitle: getSubtitleForUrl(item.url),
-        description: '',
-        path: item.url,
-      }))
-    : defaultLearnItems;
+  // Show loading state or empty state
+  if (loading) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="space-y-4"
+      >
+        <div className="animate-pulse space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-20 bg-slate-200 dark:bg-slate-700 rounded-xl" />
+          ))}
+        </div>
+      </motion.div>
+    );
+  }
+
+  // Show empty state if no items
+  if (learnItems.length === 0) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="space-y-4"
+      >
+        <div className="text-center py-8">
+          <p className="text-slate-500 dark:text-slate-400">
+            No learning content available yet.
+          </p>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
@@ -76,15 +67,15 @@ export const LearnSection: React.FC<LearnSectionProps> = ({ onNavigate, navItems
         </div>
       </div>
 
-      {/* Menu Items */}
+      {/* Menu Items - Using filtered items from hook */}
       <div className="space-y-3">
-        {defaultLearnItems.map((item, index) => (
+        {learnItems.map((item, index) => (
           <MenuCard
-            key={item.path}
+            key={item.id}
             icon={item.icon}
-            title={item.title}
-            subtitle={item.subtitle}
-            description={item.description}
+            title={item.label}
+            subtitle={item.subtitle || ''}
+            description={item.description || ''}
             bgGradient={getGradientForUrl(item.path)}
             onClick={() => onNavigate(item.path)}
             index={index}

@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.config import settings
-from app.auth.dependencies import get_current_user, get_current_admin_user
+from app.auth.dependencies import get_current_user, get_current_admin_user, get_optional_user
 from app.users.models import User
 from app.plugins.shared.xp_service import xp_service
 from app.plugins.shared.achievement_service import achievement_service
@@ -190,15 +190,34 @@ async def get_quiz_leaderboard(
 async def start_quiz_attempt(
     quiz_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_optional_user)
 ):
-    """Start a quiz attempt"""
+    """Start a quiz attempt. Guests can start without persisting."""
     quiz = crud.get_quiz(db, quiz_id)
     if not quiz:
         raise HTTPException(status_code=404, detail="Quiz not found")
 
     if quiz.status != QuizStatus.PUBLISHED:
         raise HTTPException(status_code=400, detail="Quiz is not available")
+
+    # Guest mode - return a dummy attempt response without persisting
+    if current_user is None:
+        from datetime import datetime, timezone
+        return QuizAttemptResponse(
+            id=0,
+            quiz_id=quiz_id,
+            user_id=0,
+            attempt_number=1,
+            score=0,
+            max_score=0,
+            percentage=0.0,
+            passed=False,
+            time_taken_seconds=None,
+            started_at=datetime.now(timezone.utc),
+            completed_at=None,
+            is_complete=False,
+            xp_awarded=0,
+        )
 
     # Check max attempts
     if quiz.max_attempts > 0:
@@ -218,13 +237,73 @@ async def submit_quiz_attempt(
     quiz_id: str,
     submission: QuizAttemptSubmit,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_optional_user)
 ):
-    """Submit quiz answers"""
+    """Submit quiz answers. Guests get scored without persisting."""
     quiz = crud.get_quiz(db, quiz_id)
     if not quiz:
         raise HTTPException(status_code=404, detail="Quiz not found")
 
+    # Guest mode - score without persisting
+    if current_user is None:
+        from datetime import datetime, timezone
+        # Grade the answers in-memory
+        total_score = 0
+        max_score = 0
+        question_results = []
+        for question in quiz.questions:
+            q_id = str(question.id)
+            user_answer = submission.answers.get(q_id)
+            max_score += question.points
+
+            # Check correctness
+            correct = False
+            if user_answer is not None and question.correct_answer is not None:
+                if isinstance(question.correct_answer, list):
+                    if isinstance(user_answer, list):
+                        correct = set(str(a).lower().strip() for a in user_answer) == set(str(a).lower().strip() for a in question.correct_answer)
+                    else:
+                        correct = False
+                else:
+                    correct = str(user_answer).lower().strip() == str(question.correct_answer).lower().strip()
+
+            points_earned = question.points if correct else 0
+            total_score += points_earned
+
+            question_results.append(
+                QuestionResult(
+                    question_id=question.id,
+                    correct=correct,
+                    points_earned=points_earned,
+                    user_answer=user_answer,
+                    correct_answer=question.correct_answer if quiz.show_answers_after else None,
+                    explanation=question.explanation if quiz.show_answers_after else None,
+                )
+            )
+
+        percentage = (total_score / max_score * 100) if max_score > 0 else 0
+        passed = percentage >= quiz.passing_score
+
+        return QuizAttemptResult(
+            id=0,
+            quiz_id=quiz_id,
+            user_id=0,
+            attempt_number=1,
+            score=total_score,
+            max_score=max_score,
+            percentage=percentage,
+            passed=passed,
+            time_taken_seconds=None,
+            started_at=datetime.now(timezone.utc),
+            completed_at=datetime.now(timezone.utc),
+            is_complete=True,
+            xp_awarded=0,
+            question_results=question_results,
+            quiz_title=quiz.title,
+            show_answers=quiz.show_answers_after,
+        )
+
+    # Authenticated user - normal flow
     # Get user's current incomplete attempt
     attempts = crud.get_user_attempts(db, current_user.id, quiz_id, limit=1)
     if not attempts or attempts[0].is_complete:

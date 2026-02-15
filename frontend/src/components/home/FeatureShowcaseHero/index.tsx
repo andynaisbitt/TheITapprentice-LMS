@@ -1,118 +1,56 @@
 // src/components/home/FeatureShowcaseHero/index.tsx
 /**
  * Feature Showcase Hero - Premium auto-cycling hero section
- * Highlights LMS features: Courses, Typing, Quizzes, Tutorials, Leaderboards, Progress
- * Mobile-first with touch swipe support
+ * Mobile-first with proper viewport sizing and visual polish
  */
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, ChevronDown, Pause, Play } from 'lucide-react';
 import { featureSlides, FeatureSlide } from './slideData';
+import { slideVisuals } from './SlideVisuals';
 import { useAuth } from '../../../state/contexts/AuthContext';
 
-const AUTO_ADVANCE_INTERVAL = 6000; // 6 seconds per slide
-const SWIPE_THRESHOLD = 50; // Minimum swipe distance
-
-// Animation variants for slide transitions
-const slideVariants = {
-  enter: (direction: number) => ({
-    x: direction > 0 ? '100%' : '-100%',
-    opacity: 0,
-    scale: 0.95,
-  }),
-  center: {
-    x: 0,
-    opacity: 1,
-    scale: 1,
-    transition: {
-      duration: 0.5,
-      ease: [0.32, 0.72, 0, 1] as const,
-    },
-  },
-  exit: (direction: number) => ({
-    x: direction < 0 ? '100%' : '-100%',
-    opacity: 0,
-    scale: 0.95,
-    transition: {
-      duration: 0.4,
-      ease: [0.32, 0.72, 0, 1] as const,
-    },
-  }),
-};
-
-// Icon animation variants
-const iconVariants = {
-  initial: { scale: 0.8, opacity: 0, rotate: -10 },
-  animate: {
-    scale: 1,
-    opacity: 1,
-    rotate: 0,
-    transition: {
-      duration: 0.6,
-      delay: 0.2,
-      ease: 'easeOut' as const,
-    },
-  },
-};
-
-// Text stagger animation
-const textContainerVariants = {
-  initial: { opacity: 0 },
-  animate: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.3,
-    },
-  },
-};
-
-const textItemVariants = {
-  initial: { opacity: 0, y: 20 },
-  animate: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.5, ease: 'easeOut' as const },
-  },
-};
+const AUTO_ADVANCE_INTERVAL = 6000;
+const SWIPE_THRESHOLD = 50;
 
 export const FeatureShowcaseHero: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [direction, setDirection] = useState(1);
   const [isPaused, setIsPaused] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [showSwipeHint, setShowSwipeHint] = useState(true);
 
   const currentSlide = featureSlides[currentIndex];
 
-  // Navigate to specific slide
   const goToSlide = useCallback((index: number) => {
-    setDirection(index > currentIndex ? 1 : -1);
     setCurrentIndex(index);
-  }, [currentIndex]);
+    setShowSwipeHint(false);
+  }, []);
 
-  // Navigate to next slide
   const nextSlide = useCallback(() => {
-    setDirection(1);
     setCurrentIndex((prev) => (prev + 1) % featureSlides.length);
+    setShowSwipeHint(false);
   }, []);
 
-  // Navigate to previous slide
   const prevSlide = useCallback(() => {
-    setDirection(-1);
     setCurrentIndex((prev) => (prev - 1 + featureSlides.length) % featureSlides.length);
+    setShowSwipeHint(false);
   }, []);
 
-  // Auto-advance timer
+  // Auto-advance
   useEffect(() => {
     if (isPaused || isHovering) return;
-
     const timer = setInterval(nextSlide, AUTO_ADVANCE_INTERVAL);
     return () => clearInterval(timer);
   }, [isPaused, isHovering, nextSlide]);
+
+  // Hide swipe hint after 5 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => setShowSwipeHint(false), 5000);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Keyboard navigation
   useEffect(() => {
@@ -124,42 +62,35 @@ export const FeatureShowcaseHero: React.FC = () => {
         setIsPaused((p) => !p);
       }
     };
-
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [nextSlide, prevSlide]);
 
-  // Handle swipe gestures
-  const handleDragEnd = (_: any, info: PanInfo) => {
-    const { offset, velocity } = info;
-
-    if (Math.abs(offset.x) > SWIPE_THRESHOLD || Math.abs(velocity.x) > 500) {
-      if (offset.x > 0) {
-        prevSlide();
-      } else {
-        nextSlide();
-      }
+  // Swipe handling
+  const handleDragEnd = (_: unknown, info: PanInfo) => {
+    if (Math.abs(info.offset.x) > SWIPE_THRESHOLD || Math.abs(info.velocity.x) > 500) {
+      if (info.offset.x > 0) prevSlide();
+      else nextSlide();
     }
   };
 
-  // Get CTA link - redirect to login if not authenticated for dashboard
   const getCtaLink = (slide: FeatureSlide) => {
-    if (slide.id === 'progress' && !isAuthenticated) {
-      return '/login';
-    }
+    if (slide.id === 'progress' && !isAuthenticated) return '/login';
     return slide.ctaLink;
+  };
+
+  const scrollToContent = () => {
+    window.scrollBy({ top: window.innerHeight * 0.85, behavior: 'smooth' });
   };
 
   return (
     <section
-      ref={containerRef}
-      className="relative overflow-hidden"
+      className="relative h-[100dvh] flex flex-col overflow-hidden"
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
       aria-label="Feature showcase"
-      role="region"
     >
-      {/* Background with animated gradient */}
+      {/* Background gradient with crossfade */}
       <AnimatePresence mode="wait">
         <motion.div
           key={currentSlide.id}
@@ -171,195 +102,210 @@ export const FeatureShowcaseHero: React.FC = () => {
         />
       </AnimatePresence>
 
-      {/* Animated background pattern */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48Y2lyY2xlIGN4PSIzMCIgY3k9IjMwIiByPSIyIi8+PC9nPjwvZz48L3N2Zz4=')]" />
-      </div>
+      {/* Subtle dot pattern */}
+      <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(circle_at_1px_1px,white_1px,transparent_0)] bg-[length:20px_20px]" />
 
-      {/* Floating orbs decoration */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {/* Floating orbs - hidden on mobile for cleaner look */}
+      <div className="hidden sm:block absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
-          animate={{
-            x: [0, 30, 0],
-            y: [0, -20, 0],
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
-          className="absolute top-20 left-[10%] w-64 h-64 bg-white/10 rounded-full blur-3xl"
+          animate={{ x: [0, 30, 0], y: [0, -20, 0] }}
+          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute top-1/4 left-[10%] w-48 h-48 lg:w-64 lg:h-64 bg-white/10 rounded-full blur-3xl"
         />
         <motion.div
-          animate={{
-            x: [0, -20, 0],
-            y: [0, 30, 0],
-          }}
-          transition={{
-            duration: 10,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
-          className="absolute bottom-20 right-[10%] w-80 h-80 bg-white/10 rounded-full blur-3xl"
+          animate={{ x: [0, -20, 0], y: [0, 30, 0] }}
+          transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute bottom-1/4 right-[10%] w-56 h-56 lg:w-80 lg:h-80 bg-white/10 rounded-full blur-3xl"
         />
       </div>
 
-      {/* Main content - fixed height container to prevent layout shift */}
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:py-28">
-        <div className="min-h-[280px] sm:min-h-[260px] lg:min-h-[240px]">
-          <AnimatePresence mode="wait" custom={direction}>
+      {/* Main content area - uses flex to ensure controls stay in view */}
+      <div className="relative flex-1 flex flex-col pt-4 sm:pt-8">
+        {/* Slide content - takes available space */}
+        <div className="flex-1 flex items-center">
+          <AnimatePresence mode="wait">
             <motion.div
               key={currentSlide.id}
-              custom={direction}
-              variants={slideVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.4 }}
               drag="x"
               dragConstraints={{ left: 0, right: 0 }}
               dragElastic={0.1}
               onDragEnd={handleDragEnd}
-              className="flex flex-col lg:flex-row items-center gap-8 lg:gap-16 cursor-grab active:cursor-grabbing"
+              className="w-full cursor-grab active:cursor-grabbing"
             >
-            {/* Icon Section */}
-            <motion.div
-              variants={iconVariants}
-              initial="initial"
-              animate="animate"
-              className="flex-shrink-0"
-            >
-              <div className={`relative w-32 h-32 sm:w-40 sm:h-40 lg:w-48 lg:h-48 rounded-3xl bg-gradient-to-br ${currentSlide.iconGradient} shadow-2xl flex items-center justify-center`}>
-                {/* Glow effect */}
-                <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${currentSlide.iconGradient} blur-2xl opacity-50`} />
+              <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
+                <div className="flex flex-col lg:grid lg:grid-cols-2 lg:gap-12 lg:items-center">
+                  {/* Visual */}
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5, delay: 0.1 }}
+                    className="flex justify-center lg:justify-start mb-4 sm:mb-6 lg:mb-0"
+                  >
+                    <div className="w-full max-w-[260px] sm:max-w-[300px] lg:max-w-[380px]">
+                      {slideVisuals[currentSlide.id] ? (
+                        React.createElement(slideVisuals[currentSlide.id])
+                      ) : (
+                        <div className="aspect-square flex items-center justify-center">
+                          <motion.div
+                            animate={{ rotate: [0, 5, -5, 0] }}
+                            transition={{ duration: 4, repeat: Infinity }}
+                            className={`w-20 h-20 sm:w-28 sm:h-28 rounded-2xl bg-gradient-to-br ${currentSlide.iconGradient} shadow-2xl flex items-center justify-center`}
+                          >
+                            <currentSlide.icon className="w-10 h-10 sm:w-14 sm:h-14 text-white" strokeWidth={1.5} />
+                          </motion.div>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
 
-                {/* Icon */}
-                <currentSlide.icon className="relative w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 text-white" strokeWidth={1.5} />
+                  {/* Text content */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.2 }}
+                    className="text-center lg:text-left"
+                  >
+                    {/* Feature badge */}
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/15 backdrop-blur-sm rounded-full text-white/90 text-xs sm:text-sm font-medium mb-3"
+                    >
+                      <motion.span
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                        className="w-1.5 h-1.5 rounded-full bg-white"
+                      />
+                      Feature {currentIndex + 1} of {featureSlides.length}
+                    </motion.div>
 
-                {/* Animated ring */}
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-                  className="absolute inset-0 rounded-3xl border-2 border-white/20 border-dashed"
-                />
+                    {/* Headline */}
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-white mb-2 sm:mb-3 leading-tight">
+                      {currentSlide.headline}
+                    </h1>
+
+                    {/* Subtext */}
+                    <p className="text-sm sm:text-base lg:text-lg text-white/80 mb-4 sm:mb-5 max-w-md mx-auto lg:mx-0">
+                      {currentSlide.subtext}
+                    </p>
+
+                    {/* CTA Button */}
+                    <Link
+                      to={getCtaLink(currentSlide)}
+                      className="group inline-flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 bg-white text-gray-900 rounded-xl font-semibold text-sm sm:text-base shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300"
+                    >
+                      {currentSlide.cta}
+                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </Link>
+                  </motion.div>
+                </div>
               </div>
             </motion.div>
-
-            {/* Text Content */}
-            <motion.div
-              variants={textContainerVariants}
-              initial="initial"
-              animate="animate"
-              className="flex-1 text-center lg:text-left"
-            >
-              {/* Badge */}
-              <motion.div variants={textItemVariants} className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/15 backdrop-blur-sm rounded-full text-white/90 text-sm font-medium mb-4">
-                <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                Feature {currentIndex + 1} of {featureSlides.length}
-              </motion.div>
-
-              {/* Headline */}
-              <motion.h1
-                variants={textItemVariants}
-                className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-white mb-4 leading-tight"
-              >
-                {currentSlide.headline}
-              </motion.h1>
-
-              {/* Subtext */}
-              <motion.p
-                variants={textItemVariants}
-                className="text-lg sm:text-xl text-white/80 mb-8 max-w-xl mx-auto lg:mx-0"
-              >
-                {currentSlide.subtext}
-              </motion.p>
-
-              {/* CTA Button */}
-              <motion.div variants={textItemVariants}>
-                <Link
-                  to={getCtaLink(currentSlide)}
-                  className="group inline-flex items-center gap-3 px-8 py-4 bg-white text-gray-900 rounded-xl font-semibold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300"
-                >
-                  {currentSlide.cta}
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </Link>
-              </motion.div>
-            </motion.div>
-          </motion.div>
-        </AnimatePresence>
+          </AnimatePresence>
         </div>
 
-        {/* Navigation Controls */}
-        <div className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-6">
-          {/* Slide Indicators */}
-          <div className="flex items-center gap-2">
-            {featureSlides.map((slide, index) => (
-              <button
-                key={slide.id}
-                onClick={() => goToSlide(index)}
-                className={`group relative h-2 rounded-full transition-all duration-300 ${
-                  index === currentIndex
-                    ? 'w-8 bg-white'
-                    : 'w-2 bg-white/40 hover:bg-white/60'
-                }`}
-                aria-label={`Go to ${slide.headline}`}
-                aria-current={index === currentIndex ? 'true' : 'false'}
+        {/* Bottom section - controls + scroll hint */}
+        <div className="relative z-10 px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20">
+          {/* Swipe hint - mobile only */}
+          <AnimatePresence>
+            {showSwipeHint && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="sm:hidden flex justify-center mb-4"
               >
-                {/* Progress indicator for current slide */}
-                {index === currentIndex && !isPaused && !isHovering && (
-                  <motion.div
-                    initial={{ width: '0%' }}
-                    animate={{ width: '100%' }}
-                    transition={{ duration: AUTO_ADVANCE_INTERVAL / 1000, ease: 'linear' }}
-                    className="absolute inset-0 bg-white/50 rounded-full"
-                  />
-                )}
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-white/10 backdrop-blur-sm rounded-full text-white/70 text-xs">
+                  <ChevronLeft className="w-3 h-3" />
+                  <span>Swipe to explore</span>
+                  <ChevronRight className="w-3 h-3" />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Controls bar */}
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            {/* Progress dots */}
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              {featureSlides.map((slide, index) => (
+                <button
+                  key={slide.id}
+                  onClick={() => goToSlide(index)}
+                  className={`relative h-2 rounded-full transition-all duration-300 ${
+                    index === currentIndex
+                      ? 'w-6 sm:w-8 bg-white'
+                      : 'w-2 bg-white/40 hover:bg-white/60'
+                  }`}
+                  aria-label={`Go to ${slide.headline}`}
+                >
+                  {index === currentIndex && !isPaused && !isHovering && (
+                    <motion.div
+                      key={`progress-${currentIndex}`}
+                      initial={{ width: '0%' }}
+                      animate={{ width: '100%' }}
+                      transition={{ duration: AUTO_ADVANCE_INTERVAL / 1000, ease: 'linear' }}
+                      className="absolute inset-0 bg-white/50 rounded-full"
+                    />
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {/* Navigation controls */}
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <button
+                onClick={() => setIsPaused((p) => !p)}
+                className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+                aria-label={isPaused ? 'Play' : 'Pause'}
+              >
+                {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
               </button>
-            ))}
+              <button
+                onClick={prevSlide}
+                className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+                aria-label="Previous"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <button
+                onClick={nextSlide}
+                className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+                aria-label="Next"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
-          {/* Arrow Navigation + Pause */}
-          <div className="flex items-center gap-3">
-            {/* Pause/Play Button */}
-            <button
-              onClick={() => setIsPaused((p) => !p)}
-              className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
-              aria-label={isPaused ? 'Play slideshow' : 'Pause slideshow'}
-            >
-              {isPaused ? <Play className="w-5 h-5" /> : <Pause className="w-5 h-5" />}
-            </button>
-
-            {/* Previous */}
-            <button
-              onClick={prevSlide}
-              className="p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
-              aria-label="Previous slide"
-            >
-              <ChevronLeft className="w-6 h-6" />
-            </button>
-
-            {/* Next */}
-            <button
-              onClick={nextSlide}
-              className="p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
-              aria-label="Next slide"
-            >
-              <ChevronRight className="w-6 h-6" />
-            </button>
-          </div>
+          {/* Scroll indicator */}
+          <motion.button
+            onClick={scrollToContent}
+            animate={{ y: [0, 6, 0] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+            className="absolute left-1/2 -translate-x-1/2 bottom-4 flex flex-col items-center gap-1 text-white/60 hover:text-white/80 transition-colors cursor-pointer"
+          >
+            <span className="text-[10px] sm:text-xs font-medium tracking-wider uppercase">Scroll</span>
+            <ChevronDown className="w-5 h-5" />
+          </motion.button>
         </div>
       </div>
 
       {/* Wave divider */}
-      <div className="absolute bottom-0 left-0 right-0">
+      <div className="absolute bottom-0 left-0 right-0 pointer-events-none">
         <svg
-          viewBox="0 0 1440 120"
+          viewBox="0 0 1440 60"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          className="w-full h-12 sm:h-16"
+          className="w-full h-6 sm:h-10"
           preserveAspectRatio="none"
         >
           <path
-            d="M0 120L60 105C120 90 240 60 360 45C480 30 600 30 720 37.5C840 45 960 60 1080 67.5C1200 75 1320 75 1380 75L1440 75V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z"
+            d="M0 60L48 55C96 50 192 40 288 35C384 30 480 30 576 32.5C672 35 768 40 864 42.5C960 45 1056 45 1152 42.5C1248 40 1344 35 1392 32.5L1440 30V60H0Z"
             fill="currentColor"
             className="text-gray-50 dark:text-slate-900"
           />

@@ -2,47 +2,52 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { MenuCard } from '../components/MenuCard';
-import { Keyboard, Gamepad2, Brain, Target } from 'lucide-react';
 import { getGradientForUrl } from '../../../../utils/navUtils';
+import { usePublicNavigation } from '../../../../hooks/usePublicNavigation';
 
 interface PracticeSectionProps {
   onNavigate: (path: string) => void;
 }
 
-const practiceItems = [
-  {
-    icon: Keyboard,
-    title: 'Typing Practice',
-    subtitle: 'Build Speed & Accuracy',
-    description: 'Master typing with IT terminology. Build muscle memory with real-world commands!',
-    path: '/typing',
-    isPopular: true,
-  },
-  {
-    icon: Gamepad2,
-    title: 'Learning Games',
-    subtitle: 'Learn Through Play',
-    description: 'Fun interactive games to reinforce your knowledge.',
-    path: '/games',
-  },
-  {
-    icon: Brain,
-    title: 'Daily Challenges',
-    subtitle: 'Earn Streak Bonuses',
-    description: 'Complete daily tasks to earn XP with up to 100% bonus from consecutive day streaks!',
-    path: '/challenges',
-    isNew: true,
-  },
-  {
-    icon: Target,
-    title: 'Practice Mode',
-    subtitle: 'Skill-Building Exercises',
-    description: 'Focused exercises to improve specific skills.',
-    path: '/practice',
-  },
-];
-
 export const PracticeSection: React.FC<PracticeSectionProps> = ({ onNavigate }) => {
+  const { practiceItems, loading } = usePublicNavigation();
+
+  // Show loading state
+  if (loading) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="space-y-4"
+      >
+        <div className="animate-pulse space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-20 bg-slate-200 dark:bg-slate-700 rounded-xl" />
+          ))}
+        </div>
+      </motion.div>
+    );
+  }
+
+  // Show empty state if no items
+  if (practiceItems.length === 0) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="space-y-4"
+      >
+        <div className="text-center py-8">
+          <p className="text-slate-500 dark:text-slate-400">
+            No practice content available yet.
+          </p>
+        </div>
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -62,15 +67,15 @@ export const PracticeSection: React.FC<PracticeSectionProps> = ({ onNavigate }) 
         </div>
       </div>
 
-      {/* Menu Items */}
+      {/* Menu Items - Using filtered items from hook */}
       <div className="space-y-3">
         {practiceItems.map((item, index) => (
           <MenuCard
-            key={item.path}
+            key={item.id}
             icon={item.icon}
-            title={item.title}
-            subtitle={item.subtitle}
-            description={item.description}
+            title={item.label}
+            subtitle={item.subtitle || ''}
+            description={item.description || ''}
             bgGradient={getGradientForUrl(item.path)}
             onClick={() => onNavigate(item.path)}
             index={index}

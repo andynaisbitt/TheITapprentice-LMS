@@ -134,14 +134,14 @@ const TutorialDetailPage: React.FC = () => {
     if (guestMode || !isAuthenticated) {
       const currentStep = tutorial.steps[currentStepIndex];
       if (currentStep) {
-        setCompletedSteps((prev) => new Set([...prev, currentStep.id]));
+        const newCompleted = new Set([...completedSteps, currentStep.id]);
+        setCompletedSteps(newCompleted);
 
-        // Check if this was the last step
-        if (currentStepIndex === tutorial.steps.length - 1) {
-          // Show prompt to encourage registration for XP
-          if (!isAuthenticated) {
-            checkAuthAndProceed();
-          }
+        // Check if this was the last step (all steps now completed)
+        if (newCompleted.size >= tutorial.steps.length) {
+          // Show guest completion modal
+          setXpAwarded(tutorial.xp_reward || 0);
+          setShowCompletionModal(true);
         } else {
           // Move to next step
           setCurrentStepIndex(currentStepIndex + 1);
@@ -291,10 +291,10 @@ const TutorialDetailPage: React.FC = () => {
                         isCurrentStep
                           ? 'bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100'
                           : isCompleted
-                          ? 'bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30'
+                          ? 'bg-green-50 dark:bg-green-900/20 text-gray-800 dark:text-gray-200 hover:bg-green-100 dark:hover:bg-green-900/30'
                           : isLocked
-                          ? 'opacity-50 cursor-not-allowed bg-gray-50 dark:bg-gray-800'
-                          : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                          ? 'opacity-50 cursor-not-allowed bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                       }`}
                     >
                       <div className="flex items-center gap-2">
@@ -311,7 +311,7 @@ const TutorialDetailPage: React.FC = () => {
                         ) : (
                           <span className="w-5 h-5 flex items-center justify-center text-gray-400 text-sm">{idx + 1}</span>
                         )}
-                        <span className={`text-sm truncate ${isLocked ? 'text-gray-400 dark:text-gray-500' : ''}`}>
+                        <span className={`text-sm truncate ${isLocked ? 'text-gray-400 dark:text-gray-500' : 'text-gray-800 dark:text-gray-200'}`}>
                           {step.title}
                         </span>
                       </div>
@@ -502,23 +502,45 @@ const TutorialDetailPage: React.FC = () => {
               You've successfully completed <span className="font-semibold text-gray-900 dark:text-white">{tutorial?.title}</span>
             </p>
 
-            {/* XP Reward */}
-            <div className="bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4 mb-6">
-              <div className="flex items-center justify-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-sm text-yellow-700 dark:text-yellow-300 font-medium">XP Earned</p>
-                  <p className="text-2xl font-bold text-yellow-800 dark:text-yellow-200">+{xpAwarded} XP</p>
+            {/* XP Reward or Guest CTA */}
+            {isAuthenticated ? (
+              <div className="bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4 mb-6">
+                <div className="flex items-center justify-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm text-yellow-700 dark:text-yellow-300 font-medium">XP Earned</p>
+                    <p className="text-2xl font-bold text-yellow-800 dark:text-yellow-200">+{xpAwarded} XP</p>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-6">
+                <div className="text-center">
+                  <p className="text-sm text-blue-700 dark:text-blue-300 font-medium mb-1">
+                    You could have earned
+                  </p>
+                  <p className="text-2xl font-bold text-blue-800 dark:text-blue-200 mb-2">+{xpAwarded} XP</p>
+                  <p className="text-sm text-blue-600 dark:text-blue-400">
+                    Sign up to save your progress and earn XP rewards!
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Actions */}
             <div className="flex flex-col gap-3">
+              {!isAuthenticated && (
+                <button
+                  onClick={() => navigate('/register')}
+                  className="w-full px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold hover:from-green-600 hover:to-emerald-700 transition-all shadow-md hover:shadow-lg"
+                >
+                  Sign Up to Earn XP
+                </button>
+              )}
               <button
                 onClick={() => navigate('/tutorials')}
                 className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-semibold hover:from-blue-600 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg"

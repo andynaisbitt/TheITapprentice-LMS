@@ -12,6 +12,12 @@ import logging
 
 from app.core.config import settings
 from app.core.database import engine, Base
+
+# Import all models to ensure SQLAlchemy relationships are properly configured
+# This prevents "failed to locate a name" errors when models reference each other
+# IMPORTANT: This MUST come BEFORE scheduler import (which imports User via challenge_service)
+from app.auth.email_verification import EmailVerification  # noqa: F401 - needed for User relationship
+
 from app.core.scheduler import init_scheduler, start_scheduler, shutdown_scheduler
 
 logger = logging.getLogger(__name__)

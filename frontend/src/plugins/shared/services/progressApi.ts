@@ -19,7 +19,7 @@ import type {
   HomepageStats,
 } from '../types';
 
-const BASE_URL = '/progress';
+const BASE_URL = '/api/v1/progress';
 
 export const progressApi = {
   // ============== Homepage Stats Endpoints ==============

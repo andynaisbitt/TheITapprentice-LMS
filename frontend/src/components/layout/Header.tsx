@@ -3,25 +3,33 @@
  * Main Navigation Header
  * Includes logo, menu with dropdown support, search, and user actions
  * Mobile navigation uses the new MobileDrawer component
+ * Desktop sidebar toggle for the public navigation drawer
  */
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
+import { Menu, Flame } from 'lucide-react';
 import { useAuth } from '../../state/contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { navigationApi, MenuItem } from '../../services/api/navigation.api';
 import { useSiteSettings } from '../../store/useSiteSettingsStore';
 import { MobileDrawer } from './MobileNav';
 import { DesktopDropdown } from './DesktopDropdown';
+import { ChallengeDrawer } from './ChallengeDrawer';
 
-export const Header: React.FC = () => {
+interface HeaderProps {
+  onToggleDesktopSidebar?: () => void;
+}
+
+export const Header: React.FC<HeaderProps> = ({ onToggleDesktopSidebar }) => {
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuth();
   const { refreshTheme } = useTheme();
   const { settings } = useSiteSettings();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isChallengeDrawerOpen, setIsChallengeDrawerOpen] = useState(false);
   const [headerItems, setHeaderItems] = useState<MenuItem[]>([]);
   const [openDropdown, setOpenDropdown] = useState<number | null>(null);
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -150,29 +158,44 @@ export const Header: React.FC = () => {
     <header className="bg-white dark:bg-slate-900 shadow-sm sticky top-0 z-50 border-b border-gray-200 dark:border-slate-800">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
-            {settings.logoUrl ? (
-              /* Image Logo */
-              <img
-                src={settings.logoUrl}
-                alt={settings.siteTitle}
-                className="h-8 sm:h-10 w-auto"
-              />
-            ) : (
-              /* Text Logo */
-              <>
-                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <span className="text-white font-bold text-lg sm:text-xl">
-                    {settings.siteTitle.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-                <span className="text-base sm:text-xl font-bold text-gray-900 dark:text-white whitespace-nowrap">
-                  {settings.siteTitle}
-                </span>
-              </>
+          {/* Left Side - Desktop Sidebar Toggle & Logo */}
+          <div className="flex items-center space-x-3">
+            {/* Desktop Sidebar Toggle - Only visible on md+ screens */}
+            {onToggleDesktopSidebar && (
+              <button
+                onClick={onToggleDesktopSidebar}
+                className="hidden md:flex p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 transition"
+                aria-label="Toggle navigation sidebar"
+                title="Open navigation (ESC to close)"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
             )}
-          </Link>
+
+            {/* Logo */}
+            <Link to="/" className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
+              {settings.logoUrl ? (
+                /* Image Logo */
+                <img
+                  src={settings.logoUrl}
+                  alt={settings.siteTitle}
+                  className="h-8 sm:h-10 w-auto"
+                />
+              ) : (
+                /* Text Logo */
+                <>
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <span className="text-white font-bold text-lg sm:text-xl">
+                      {settings.siteTitle.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <span className="text-base sm:text-xl font-bold text-gray-900 dark:text-white whitespace-nowrap">
+                    {settings.siteTitle}
+                  </span>
+                </>
+              )}
+            </Link>
+          </div>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
@@ -180,7 +203,19 @@ export const Header: React.FC = () => {
           </div>
 
           {/* Right Side - Auth & Theme Toggle */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            {/* Challenge Button */}
+            <button
+              onClick={() => setIsChallengeDrawerOpen(true)}
+              className="relative p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-500 dark:hover:text-orange-400 transition"
+              aria-label="Daily Challenges"
+              title="Daily Challenges"
+            >
+              <Flame className="w-5 h-5" />
+              {/* Notification dot - always show as a subtle indicator */}
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-orange-500 rounded-full" />
+            </button>
+
             {/* Theme Toggle */}
             <button
               onClick={() => {
@@ -402,6 +437,12 @@ export const Header: React.FC = () => {
       isAuthenticated={isAuthenticated}
       onLogout={handleLogout}
       navItems={headerItems}
+    />
+
+    {/* Challenge Drawer - daily challenges slide-out panel */}
+    <ChallengeDrawer
+      isOpen={isChallengeDrawerOpen}
+      onClose={() => setIsChallengeDrawerOpen(false)}
     />
     </>
   );

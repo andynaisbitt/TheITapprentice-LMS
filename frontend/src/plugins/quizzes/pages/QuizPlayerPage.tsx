@@ -92,11 +92,6 @@ const QuizPlayerPage: React.FC = () => {
   const startQuiz = useCallback(async () => {
     if (!quiz) return;
 
-    // Check if user is authenticated - if not, show registration prompt
-    if (!checkAuthAndProceed()) {
-      return; // Prompt is now showing
-    }
-
     try {
       await startQuizAttempt(quiz.id);
       setPhase('playing');
@@ -108,7 +103,7 @@ const QuizPlayerPage: React.FC = () => {
     } catch (err: any) {
       alert(err.response?.data?.detail || 'Failed to start quiz');
     }
-  }, [quiz, checkAuthAndProceed]);
+  }, [quiz]);
 
   const handleAnswerChange = useCallback((questionId: number, value: any) => {
     setAnswers(prev => ({
@@ -520,6 +515,32 @@ const QuizPlayerPage: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* Guest Sign-up CTA */}
+          {!isAuthenticated && (
+            <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-6 mb-8 text-center">
+              <h3 className="text-lg font-semibold text-purple-900 dark:text-purple-100 mb-2">
+                Want to save your score?
+              </h3>
+              <p className="text-purple-700 dark:text-purple-300 mb-4 text-sm">
+                Sign up to save your results, earn {quiz.xp_reward} XP, track your progress, and compete on the leaderboard.
+              </p>
+              <div className="flex items-center justify-center gap-3">
+                <Link
+                  to="/register"
+                  className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg font-medium hover:from-purple-700 hover:to-indigo-700 transition-all"
+                >
+                  Create Free Account
+                </Link>
+                <Link
+                  to="/login"
+                  className="px-5 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-all"
+                >
+                  Sign In
+                </Link>
+              </div>
+            </div>
+          )}
 
           {/* Question Review */}
           {result.show_answers && (

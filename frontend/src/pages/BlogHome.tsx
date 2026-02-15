@@ -1,30 +1,29 @@
 // src/pages/BlogHome.tsx
 /**
- * Enhanced Blog Homepage V3
- * Features: Feature Showcase Hero, LMS Widgets, then Blog Content
+ * Homepage V4 - Streamlined Learning Platform
+ * 5 focused sections with clear narrative flow
+ *
+ * Structure:
+ * 1. FeatureShowcaseHero - Full viewport hero slider (8 features)
+ * 2. ThePulse - Trending content + compact leaderboard
+ * 3. BlogPreviewGrid - 3 latest articles (controlled by showCarousel)
+ * 4. CategoryShowcase - Topics with 3+ articles (controlled by showCategories)
+ * 5. FinalCTA - Bottom call to action with wave transition
  */
 
 import { Helmet } from 'react-helmet-async';
 import FeatureShowcaseHero from '../components/home/FeatureShowcaseHero';
-import FeaturedCarousel from '../components/home/FeaturedCarousel';
-import RecentPostsGrid from '../components/home/RecentPostsGrid';
 import CategoryShowcase from '../components/home/CategoryShowcase';
-import DailyChallengeBanner from '../components/home/DailyChallengeBanner';
-import FeaturedCoursesCarousel from '../components/home/FeaturedCoursesCarousel';
-import TypingChallengeCTA from '../components/home/TypingChallengeCTA';
-import QuickQuizWidget from '../components/home/QuickQuizWidget';
-import LearningPathsShowcase from '../components/home/LearningPathsShowcase';
-import LeaderboardPreview from '../components/home/LeaderboardPreview';
-import HomepageStatsWidget from '../components/home/HomepageStatsWidget';
-import MoreToExplore from '../components/home/MoreToExplore';
+import ThePulse from '../components/home/ThePulse';
+// LearningPathsShowcase removed - shows static placeholder content, not real data
+import BlogPreviewGrid from '../components/home/BlogPreviewGrid';
+import FinalCTA from '../components/home/FinalCTA';
 import Section from '../components/home/Section';
-import { Sparkles, Newspaper, FolderOpen } from 'lucide-react';
+import { FolderOpen } from 'lucide-react';
 import { useSiteSettings } from '../store/useSiteSettingsStore';
-import { useAuth } from '../state/contexts/AuthContext';
 
 export const BlogHome: React.FC = () => {
   const { settings } = useSiteSettings();
-  const { user } = useAuth();
 
   // Build full page title with tagline if available
   const pageTitle = settings.siteTagline
@@ -33,9 +32,6 @@ export const BlogHome: React.FC = () => {
 
   // Use OG image from settings, fallback to /og-image.jpg
   const ogImage = settings.ogImage || `${settings.siteUrl}/og-image.jpg`;
-
-  // Check if any blog sections are enabled
-  const hasBlogContent = settings.showCarousel || settings.showCategories || settings.showRecentPosts;
 
   return (
     <>
@@ -76,122 +72,41 @@ export const BlogHome: React.FC = () => {
         <FeatureShowcaseHero />
 
         {/* ============================================ */}
-        {/* SECTION 2: Daily Challenge Banner           */}
-        {/* Only shows for logged-in users              */}
+        {/* SECTION 2: The Pulse                        */}
+        {/* Trending content + Leaderboard sidebar      */}
         {/* ============================================ */}
-        {user && settings.showDailyChallengeBanner && <DailyChallengeBanner />}
+        <ThePulse />
+
+        {/* LearningPaths section removed - was showing static placeholder content */}
 
         {/* ============================================ */}
-        {/* SECTION 3: Featured Courses                 */}
-        {/* LMS courses carousel                        */}
+        {/* SECTION 4: Blog Preview                     */}
+        {/* Compact 3-post grid for SEO                 */}
         {/* ============================================ */}
-        {settings.showFeaturedCourses && <FeaturedCoursesCarousel />}
+        {settings.showCarousel && <BlogPreviewGrid />}
 
         {/* ============================================ */}
-        {/* SECTION 4: Learning Paths                   */}
-        {/* Courses, Tutorials, and Quizzes             */}
+        {/* SECTION 5: Explore by Category              */}
+        {/* Navigation / Table of Contents              */}
         {/* ============================================ */}
-        {settings.showTutorialPaths && <LearningPathsShowcase />}
-
-        {/* ============================================ */}
-        {/* SECTION 5: Typing Challenge CTA             */}
-        {/* Typing game promotion                       */}
-        {/* ============================================ */}
-        {settings.showTypingChallenge && <TypingChallengeCTA />}
-
-        {/* ============================================ */}
-        {/* SECTION 5b: More to Explore                 */}
-        {/* Compact LMS feature showcase                */}
-        {/* ============================================ */}
-        <MoreToExplore exclude={['typing']} limit={6} />
-
-        {/* ============================================ */}
-        {/* SECTION 6: Quick Quiz Widget                */}
-        {/* Quiz promotion section                      */}
-        {/* ============================================ */}
-        {settings.showQuickQuiz && <QuickQuizWidget />}
-
-        {/* ============================================ */}
-        {/* SECTION 7: Leaderboard Preview              */}
-        {/* Top learners showcase                       */}
-        {/* ============================================ */}
-        {settings.showLeaderboardPreview && <LeaderboardPreview />}
-
-        {/* ============================================ */}
-        {/* SECTION 8: Community Stats                  */}
-        {/* Platform statistics                         */}
-        {/* ============================================ */}
-        {settings.showHomepageStats && (
-          <section className="bg-gradient-to-b from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-800 py-8">
-            <HomepageStatsWidget />
-          </section>
+        {settings.showCategories && (
+          <Section
+            icon={FolderOpen}
+            eyebrow="Explore"
+            title={settings.categoriesTitle || 'Explore by Topic'}
+            subtitle={settings.categoriesSubtitle || 'Pick a topic and start learning'}
+            background="default"
+            paddingY="md"
+          >
+            <CategoryShowcase />
+          </Section>
         )}
 
         {/* ============================================ */}
-        {/* BLOG CONTENT SECTION                        */}
-        {/* Blog articles and categories below LMS      */}
+        {/* SECTION 6: Final CTA                        */}
+        {/* Clear next action                           */}
         {/* ============================================ */}
-        {hasBlogContent && (
-          <div className="border-t border-slate-200 dark:border-slate-800">
-            {/* Blog Section Header */}
-            <Section
-              icon={Newspaper}
-              eyebrow="Blog"
-              title="Latest from the Blog"
-              subtitle="Articles, tutorials, and insights from our community"
-              centerHeader
-              paddingY="lg"
-              noPadding={false}
-            >
-              {/* Empty content - header only */}
-              <div className="hidden" />
-            </Section>
-
-            {/* Featured Posts Carousel */}
-            {settings.showCarousel && (
-              <Section
-                icon={Sparkles}
-                eyebrow="Featured"
-                title={settings.carouselTitle || 'Featured Articles'}
-                subtitle={settings.carouselSubtitle || 'Hand-picked posts showcasing our best content'}
-                paddingY="md"
-              >
-                <FeaturedCarousel />
-              </Section>
-            )}
-
-            {/* Categories Showcase */}
-            {settings.showCategories && (
-              <Section
-                icon={FolderOpen}
-                eyebrow="Categories"
-                title={settings.categoriesTitle || 'Explore by Category'}
-                subtitle={settings.categoriesSubtitle || 'Dive into topics that interest you'}
-                background="muted"
-                centerHeader
-                viewAllLink="/blog"
-                viewAllText="Browse all categories"
-                paddingY="md"
-              >
-                <CategoryShowcase />
-              </Section>
-            )}
-
-            {/* Recent Posts Grid */}
-            {settings.showRecentPosts && (
-              <Section
-                eyebrow="Latest"
-                title={settings.recentPostsTitle || 'Latest Posts'}
-                subtitle={settings.recentPostsSubtitle || 'Fresh content from our writers'}
-                viewAllLink="/blog"
-                viewAllText="View all posts"
-                paddingY="lg"
-              >
-                <RecentPostsGrid limit={6} />
-              </Section>
-            )}
-          </div>
-        )}
+        <FinalCTA />
       </div>
     </>
   );

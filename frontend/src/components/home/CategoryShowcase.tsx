@@ -96,30 +96,35 @@ export const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({ limit }) => 
   const { settings } = useSiteSettings();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
+  const effectiveLimit = limit ?? settings.categoriesLimit ?? 8;
+
+  // Load categories on mount
   useEffect(() => {
-    loadCategories();
-  }, [limit, settings.categoriesLimit]);
+    const fetchCategories = async () => {
+      setLoading(true);
+      setError(false);
+      try {
+        const data = await blogApi.getCategories();
 
-  const loadCategories = async () => {
-    try {
-      const data = await blogApi.getCategories();
-      const effectiveLimit = limit ?? settings.categoriesLimit ?? 8;
+        // Filter out categories with less than 3 posts (1-2 articles looks weak)
+        const safeData = Array.isArray(data) ? data : [];
+        const validCategories = safeData
+          .filter((cat) => (cat.post_count || 0) >= 3)
+          .sort((a, b) => (b.post_count || 0) - (a.post_count || 0))
+          .slice(0, effectiveLimit);
 
-      // Filter out categories with 0 posts, sort by post count, limit
-      const safeData = Array.isArray(data) ? data : [];
-      const validCategories = safeData
-        .filter((cat) => (cat.post_count || 0) > 0)
-        .sort((a, b) => (b.post_count || 0) - (a.post_count || 0))
-        .slice(0, effectiveLimit);
-
-      setCategories(validCategories);
-    } catch (error) {
-      console.error('Failed to load categories:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+        setCategories(validCategories);
+      } catch (err) {
+        console.error('Failed to load categories:', err);
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCategories();
+  }, [effectiveLimit]);
 
   if (loading) {
     return (
@@ -131,6 +136,10 @@ export const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({ limit }) => 
     );
   }
 
+  if (error) {
+    return null; // Silently fail for categories - not critical
+  }
+
   if (categories.length === 0) {
     return null;
   }
@@ -139,16 +148,17 @@ export const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({ limit }) => 
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: { staggerChildren: 0.05 },
+      transition: { staggerChildren: 0.06, delayChildren: 0.1 },
     },
   };
 
   const cardVariants = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: { opacity: 0, y: 24, scale: 0.95 },
     visible: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] as const },
+      scale: 1,
+      transition: { duration: 0.5, ease: [0.25, 0.1, 0.25, 1] as const },
     },
   };
 
@@ -157,8 +167,12 @@ export const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({ limit }) => 
       variants={containerVariants}
       initial="hidden"
       whileInView="visible"
-      viewport={{ once: true, amount: 0.2 }}
-      className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4"
+      viewport={{ once: true, amount: 0.15 }}
+      className="
+        flex gap-3 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide
+        sm:grid sm:grid-cols-3 sm:overflow-visible sm:pb-0 sm:snap-none
+        lg:grid-cols-4 sm:gap-4
+      "
     >
       {categories.map((category, idx) => {
         const Icon = getCategoryIcon(category.name, category.slug);
@@ -166,43 +180,105 @@ export const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({ limit }) => 
         const name = sanitizeName(category.name);
 
         return (
-          <motion.div key={category.id} variants={cardVariants}>
+          <motion.div
+            key={category.id}
+            variants={cardVariants}
+            whileHover={{
+              y: -8,
+              scale: 1.02,
+              transition: { duration: 0.2 }
+            }}
+            whileTap={{ scale: 0.97 }}
+            className="flex-shrink-0 w-[160px] snap-start sm:w-auto sm:flex-shrink"
+          >
             <Link
               to={`/blog?category=${category.slug}`}
-              className="group block relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 transition-all"
+              className="group block relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 hover:border-transparent transition-all duration-300 shadow-sm hover:shadow-xl"
+              style={{
+                // Add colored border on hover
+                boxShadow: 'none',
+              }}
             >
-              <motion.div
-                whileHover={{ y: -4 }}
-                whileTap={{ scale: 0.98 }}
-                className="p-4 sm:p-5"
-              >
-                {/* Icon */}
+              {/* Animated gradient background on hover */}
+              <div
+                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                style={{
+                  background: `linear-gradient(135deg, ${color}08 0%, ${color}15 100%)`,
+                }}
+              />
+
+              {/* Floating particles effect */}
+              <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 <div
-                  className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center mb-3 transition-transform group-hover:scale-110"
-                  style={{ backgroundColor: `${color}15` }}
-                >
-                  <Icon className="w-5 h-5 sm:w-6 sm:h-6" style={{ color }} />
-                </div>
-
-                {/* Name */}
-                <h3
-                  className="font-semibold text-sm sm:text-base text-slate-900 dark:text-white mb-1 truncate"
-                  title={category.name}
-                >
-                  {name}
-                </h3>
-
-                {/* Post Count */}
-                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-                  {category.post_count} {category.post_count === 1 ? 'article' : 'articles'}
-                </p>
-
-                {/* Hover accent */}
-                <div
-                  className="absolute bottom-0 left-0 right-0 h-1 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"
+                  className="absolute w-20 h-20 rounded-full blur-2xl opacity-0 group-hover:opacity-30 transition-all duration-500 -top-10 -right-10 group-hover:top-0 group-hover:right-0"
                   style={{ backgroundColor: color }}
                 />
-              </motion.div>
+              </div>
+
+              <div className="relative p-4 sm:p-5">
+                {/* Icon with animated ring */}
+                <div className="relative mb-3">
+                  <div
+                    className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-3"
+                    style={{ backgroundColor: `${color}15` }}
+                  >
+                    <Icon
+                      className="w-6 h-6 sm:w-7 sm:h-7 transition-transform duration-300 group-hover:scale-110"
+                      style={{ color }}
+                    />
+                  </div>
+                  {/* Pulse ring on hover */}
+                  <div
+                    className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 animate-ping pointer-events-none"
+                    style={{ backgroundColor: `${color}20`, animationDuration: '1.5s' }}
+                  />
+                </div>
+
+                {/* Name with color change on hover */}
+                <h3
+                  className="font-bold text-sm sm:text-base text-slate-900 dark:text-white mb-1.5 truncate transition-colors duration-300"
+                  style={{ color: undefined }}
+                  title={category.name}
+                >
+                  <span className="group-hover:hidden">{name}</span>
+                  <span className="hidden group-hover:inline" style={{ color }}>{name}</span>
+                </h3>
+
+                {/* Post Count with badge style */}
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium transition-colors duration-300"
+                    style={{
+                      backgroundColor: `${color}15`,
+                      color: color,
+                    }}
+                  >
+                    {category.post_count} {category.post_count === 1 ? 'article' : 'articles'}
+                  </span>
+                </div>
+
+                {/* Animated arrow indicator */}
+                <div
+                  className="absolute bottom-4 right-4 w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-300"
+                  style={{ backgroundColor: `${color}15` }}
+                >
+                  <svg
+                    className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5"
+                    style={{ color }}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+
+                {/* Bottom accent bar */}
+                <div
+                  className="absolute bottom-0 left-0 right-0 h-1 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"
+                  style={{ backgroundColor: color }}
+                />
+              </div>
             </Link>
           </motion.div>
         );

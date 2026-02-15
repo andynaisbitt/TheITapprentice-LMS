@@ -16,7 +16,7 @@ import type {
   ChallengeType,
 } from '../types';
 
-const BASE_URL = '/progress/challenges';
+const BASE_URL = '/api/v1/progress/challenges';
 
 export interface ChallengeHistoryEntry {
   challenge_id: string;

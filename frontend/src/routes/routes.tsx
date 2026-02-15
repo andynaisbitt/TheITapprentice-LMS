@@ -35,7 +35,9 @@ const UserDashboard = lazy(() => import('../pages/user/UserDashboard'));
 const Profile = lazy(() => import('../pages/user/Profile'));
 const XPLeaderboardPage = lazy(() => import('../pages/user/XPLeaderboardPage'));
 const ChallengeHistoryPage = lazy(() => import('../pages/user/ChallengeHistoryPage'));
+const DailyChallengesPage = lazy(() => import('../pages/DailyChallengesPage'));
 const MyCertificatesPage = lazy(() => import('../pages/user/MyCertificatesPage'));
+const HelpPage = lazy(() => import('../pages/HelpPage'));
 
 // Tutorial plugin pages
 const TutorialsPage = lazy(() => import('../plugins/tutorials/pages/TutorialsPage'));
@@ -270,6 +272,16 @@ export const AppRoutes = () => {
           }
         />
 
+        {/* Daily Challenges - Public */}
+        <Route
+          path="/challenges"
+          element={
+            <Layout>
+              <DailyChallengesPage />
+            </Layout>
+          }
+        />
+
         {/* Challenge History - Protected */}
         <Route
           path="/challenges/history"
@@ -471,6 +483,12 @@ export const AppRoutes = () => {
             <Layout>
               <SkillsLeaderboard />
             </Layout>
+          }
+        />
+        <Route
+          path="/skills/history"
+          element={
+            <Navigate to="/skills" replace />
           }
         />
         <Route
@@ -961,6 +979,16 @@ export const AppRoutes = () => {
                 <SkillsLeaderboardAdmin />
               </AdminLayout>
             </AdminRoute>
+          }
+        />
+
+        {/* Help Page - Public */}
+        <Route
+          path="/help"
+          element={
+            <Layout>
+              <HelpPage />
+            </Layout>
           }
         />
 

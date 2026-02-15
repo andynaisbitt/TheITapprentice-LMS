@@ -20,6 +20,7 @@ interface FeaturedPost {
   excerpt: string;
   featured_image?: string | null;
   published_at: string | null;
+  read_time_minutes?: number;
   categories: Array<{ id: number; name: string; color?: string | null; icon?: string | null }>;
   view_count?: number;
 }
@@ -38,9 +39,22 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({ limit }) => 
   const [direction, setDirection] = useState(0);
   const [reducedMotion, setReducedMotion] = useState(false);
 
+  const effectiveLimit = limit || settings.carouselLimit || 5;
+
+  // Load featured posts on mount
   useEffect(() => {
-    loadFeaturedPosts();
-  }, []);
+    const fetchFeaturedPosts = async () => {
+      try {
+        const data = await blogApi.getFeatured(effectiveLimit);
+        setPosts(data);
+      } catch (error) {
+        console.error('Failed to load featured posts:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchFeaturedPosts();
+  }, [effectiveLimit]);
 
   // Check for reduced motion preference
   useEffect(() => {
@@ -51,18 +65,6 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({ limit }) => 
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
-
-  const loadFeaturedPosts = async () => {
-    try {
-      const effectiveLimit = limit || settings.carouselLimit || 5;
-      const data = await blogApi.getFeatured(effectiveLimit);
-      setPosts(data);
-    } catch (error) {
-      console.error('Failed to load featured posts:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const nextSlide = useCallback(() => {
     setDirection(1);
@@ -214,7 +216,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({ limit }) => 
                     </div>
                     <div className="flex items-center gap-1">
                       <Clock size={14} />
-                      <span>5 min</span>
+                      <span>{currentPost.read_time_minutes || 5} min</span>
                     </div>
                   </div>
 
@@ -363,7 +365,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({ limit }) => 
                       </div>
                       <div className="flex items-center gap-2">
                         <Clock size={18} />
-                        <span>5 min read</span>
+                        <span>{currentPost.read_time_minutes || 5} min read</span>
                       </div>
                     </motion.div>
 

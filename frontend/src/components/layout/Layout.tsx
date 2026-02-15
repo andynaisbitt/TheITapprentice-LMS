@@ -1,15 +1,17 @@
 // src/components/layout/Layout.tsx
 /**
  * Main Layout Wrapper
- * Wraps all pages with Header and Footer
+ * Wraps all pages with Header, Footer, and Public Sidebar
  */
 
 import { useEffect } from 'react';
 import { Header } from './Header';
 import { Footer } from './Footer';
+import { PublicSidebar } from './PublicSidebar';
 import { NewsletterModal } from '../NewsletterModal';
 import { useNewsletterModal } from '../../hooks/useNewsletterModal';
 import { useSiteSettings } from '../../store/useSiteSettingsStore';
+import { usePublicSidebar } from '../../hooks/usePublicSidebar';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -33,8 +35,16 @@ export const Layout: React.FC<LayoutProps> = ({
   hideFooter = false,
   fullWidth = false,
 }) => {
-  const { isOpen, closeModal } = useNewsletterModal();
+  const { isOpen: isNewsletterOpen, closeModal } = useNewsletterModal();
   const { settings } = useSiteSettings();
+  const {
+    isOpen: isSidebarOpen,
+    openSidebar,
+    closeSidebar,
+    toggleSection,
+    isSectionExpanded,
+    expandedSections,
+  } = usePublicSidebar();
 
   // Initialize dark mode from localStorage on mount
   useEffect(() => {
@@ -55,7 +65,16 @@ export const Layout: React.FC<LayoutProps> = ({
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-slate-900">
-      {!hideHeader && <Header />}
+      {!hideHeader && <Header onToggleDesktopSidebar={openSidebar} />}
+
+      {/* Desktop Sidebar Drawer - only shown on md+ screens */}
+      <PublicSidebar
+        isOpen={isSidebarOpen}
+        onClose={closeSidebar}
+        expandedSections={expandedSections}
+        onToggleSection={toggleSection}
+        isSectionExpanded={isSectionExpanded}
+      />
 
       <main className={`flex-1 ${fullWidth ? '' : 'max-w-7xl mx-auto w-full'}`}>
         {children}
@@ -65,7 +84,7 @@ export const Layout: React.FC<LayoutProps> = ({
 
       {/* Newsletter Modal - Only render if newsletter is enabled */}
       {settings.newsletterEnabled && (
-        <NewsletterModal isOpen={isOpen} onClose={closeModal} />
+        <NewsletterModal isOpen={isNewsletterOpen} onClose={closeModal} />
       )}
     </div>
   );

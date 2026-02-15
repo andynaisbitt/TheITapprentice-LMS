@@ -7,8 +7,6 @@ import {
   Target,
   User,
   X,
-  Wifi,
-  WifiOff,
   Crown,
   Settings,
   Bell,
@@ -61,7 +59,6 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
     const saved = localStorage.getItem('mobileNavActiveTab');
     return (saved as TabType) || 'overview';
   });
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number | null>(null);
   const prevPathRef = useRef(location.pathname);
@@ -75,18 +72,6 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
       }
     }
   }, [location.pathname, isOpen, onClose]);
-
-  // Online/offline detection
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
 
   // Body scroll lock
   useEffect(() => {
@@ -274,11 +259,6 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
               >
                 <Settings className="w-4 h-4" />
               </button>
-              <div className="flex-1" />
-              <div className="flex items-center space-x-1 text-xs">
-                {isOnline ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
-                <span>{isOnline ? 'Online' : 'Offline'}</span>
-              </div>
             </div>
           </div>
         )}
@@ -311,19 +291,6 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
         {/* ─── Content Area ─── */}
         <div className="flex-1 overflow-y-auto p-4">
           {renderTabContent()}
-        </div>
-
-        {/* ─── Status Bar ─── */}
-        <div className="p-3 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex-shrink-0">
-          <div className="flex items-center justify-between text-xs">
-            <div className="flex items-center space-x-2">
-              <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'}`} />
-              <span className="text-slate-600 dark:text-slate-400">
-                {isOnline ? 'Connected' : 'Offline'}
-              </span>
-            </div>
-            <span className="text-slate-400">LMS v2.0</span>
-          </div>
         </div>
       </div>
     </>
