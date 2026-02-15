@@ -38,6 +38,7 @@ const ChallengeHistoryPage = lazy(() => import('../pages/user/ChallengeHistoryPa
 const DailyChallengesPage = lazy(() => import('../pages/DailyChallengesPage'));
 const MyCertificatesPage = lazy(() => import('../pages/user/MyCertificatesPage'));
 const HelpPage = lazy(() => import('../pages/HelpPage'));
+const UserSettingsPage = lazy(() => import('../pages/user/UserSettingsPage'));
 
 // Tutorial plugin pages
 const TutorialsPage = lazy(() => import('../plugins/tutorials/pages/TutorialsPage'));
@@ -235,6 +236,18 @@ export const AppRoutes = () => {
             <ProtectedRoute>
               <Layout>
                 <UserDashboard />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* User Settings (protected) */}
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <UserSettingsPage />
               </Layout>
             </ProtectedRoute>
           }
