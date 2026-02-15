@@ -29,10 +29,10 @@ const TutorialsPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-16">
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-8 sm:py-16">
         <div className="container mx-auto px-4">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Learn & Grow</h1>
-          <p className="text-xl text-blue-100 mb-8">
+          <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold mb-2 sm:mb-4">Learn & Grow</h1>
+          <p className="text-sm sm:text-xl text-blue-100 mb-4 sm:mb-8">
             Interactive step-by-step tutorials to master new skills
           </p>
 
@@ -44,10 +44,10 @@ const TutorialsPage: React.FC = () => {
                 placeholder="Search tutorials..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-3 pl-12 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50"
+                className="w-full px-4 py-2.5 sm:py-3 pl-10 sm:pl-12 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 text-sm sm:text-base"
               />
               <svg
-                className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/60"
+                className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-white/60"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -64,14 +64,14 @@ const TutorialsPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-6 sm:py-8">
         {/* Featured Tutorials */}
         {featuredTutorials.length > 0 && !searchTerm && !selectedCategory && !selectedDifficulty && (
-          <div className="mb-12">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-              ⭐ Featured Tutorials
+          <div className="mb-8 sm:mb-12">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4 sm:mb-6">
+              Featured Tutorials
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {featuredTutorials.map((tutorial) => (
                 <TutorialCard key={tutorial.id} tutorial={tutorial} />
               ))}
@@ -79,9 +79,45 @@ const TutorialsPage: React.FC = () => {
           </div>
         )}
 
+        {/* Mobile Inline Filters */}
+        <div className="lg:hidden mb-6">
+          <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+            <select
+              value={selectedCategory || ''}
+              onChange={(e) => setSelectedCategory(e.target.value ? parseInt(e.target.value) : null)}
+              className="flex-shrink-0 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">All Categories</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.icon} {cat.name}
+                </option>
+              ))}
+            </select>
+            <select
+              value={selectedDifficulty || ''}
+              onChange={(e) => setSelectedDifficulty((e.target.value as TutorialDifficulty) || null)}
+              className="flex-shrink-0 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">All Levels</option>
+              <option value="beginner">Beginner</option>
+              <option value="intermediate">Intermediate</option>
+              <option value="advanced">Advanced</option>
+            </select>
+            {(searchTerm || selectedCategory || selectedDifficulty) && (
+              <button
+                onClick={() => { setSearchTerm(''); setSelectedCategory(null); setSelectedDifficulty(null); }}
+                className="flex-shrink-0 px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
+
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Filters Sidebar */}
-          <aside className="lg:w-64 flex-shrink-0">
+          {/* Filters Sidebar - hidden on mobile, shown on desktop */}
+          <aside className="hidden lg:block lg:w-64 flex-shrink-0">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 sticky top-4">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
                 Filters
@@ -142,13 +178,13 @@ const TutorialsPage: React.FC = () => {
           {/* Main Content */}
           <main className="flex-1">
             {/* Results Header */}
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                 {searchTerm || selectedCategory || selectedDifficulty
                   ? 'Search Results'
                   : 'All Tutorials'}
               </h2>
-              <span className="text-gray-600 dark:text-gray-400">
+              <span className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
                 {tutorials.length} tutorial{tutorials.length !== 1 ? 's' : ''}
               </span>
             </div>
@@ -172,7 +208,7 @@ const TutorialsPage: React.FC = () => {
             {!loading && !error && (
               <>
                 {tutorials.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
                     {tutorials.map((tutorial) => (
                       <TutorialCard key={tutorial.id} tutorial={tutorial} />
                     ))}

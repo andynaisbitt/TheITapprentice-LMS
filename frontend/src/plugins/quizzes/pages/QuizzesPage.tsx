@@ -27,41 +27,41 @@ const QuizzesPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-16">
+      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-8 sm:py-16">
         <div className="container mx-auto px-4">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Quizzes</h1>
-          <p className="text-xl text-purple-100 mb-8">
+          <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold mb-2 sm:mb-4">Quizzes</h1>
+          <p className="text-sm sm:text-xl text-purple-100 mb-4 sm:mb-8">
             Test your knowledge and earn XP with interactive quizzes
           </p>
 
           {/* User Stats (if logged in) */}
           {isAuthenticated && stats && (
-            <div className="flex flex-wrap gap-6 mt-6">
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg px-4 py-3">
-                <div className="text-2xl font-bold">{stats.quizzes_passed}</div>
-                <div className="text-sm text-purple-200">Passed</div>
+            <div className="flex flex-wrap gap-3 sm:gap-6 mt-4 sm:mt-6">
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg px-3 sm:px-4 py-2 sm:py-3">
+                <div className="text-lg sm:text-2xl font-bold">{stats.quizzes_passed}</div>
+                <div className="text-xs sm:text-sm text-purple-200">Passed</div>
               </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg px-4 py-3">
-                <div className="text-2xl font-bold">{stats.average_score.toFixed(0)}%</div>
-                <div className="text-sm text-purple-200">Avg Score</div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg px-3 sm:px-4 py-2 sm:py-3">
+                <div className="text-lg sm:text-2xl font-bold">{stats.average_score.toFixed(0)}%</div>
+                <div className="text-xs sm:text-sm text-purple-200">Avg Score</div>
               </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg px-4 py-3">
-                <div className="text-2xl font-bold">{stats.total_xp_earned}</div>
-                <div className="text-sm text-purple-200">XP Earned</div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg px-3 sm:px-4 py-2 sm:py-3">
+                <div className="text-lg sm:text-2xl font-bold">{stats.total_xp_earned}</div>
+                <div className="text-xs sm:text-sm text-purple-200">XP Earned</div>
               </div>
             </div>
           )}
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-6 sm:py-8">
         {/* Featured Quizzes */}
         {featuredQuizzes.length > 0 && !selectedCategory && !selectedDifficulty && (
-          <div className="mb-12">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+          <div className="mb-8 sm:mb-12">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4 sm:mb-6">
               Featured Quizzes
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {featuredQuizzes.map((quiz) => (
                 <QuizCard key={quiz.id} quiz={quiz} />
               ))}
@@ -69,9 +69,44 @@ const QuizzesPage: React.FC = () => {
           </div>
         )}
 
+        {/* Mobile Inline Filters */}
+        <div className="lg:hidden mb-6">
+          <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="flex-shrink-0 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
+            >
+              <option value="">All Categories</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+            <select
+              value={selectedDifficulty}
+              onChange={(e) => setSelectedDifficulty(e.target.value as QuizDifficulty | '')}
+              className="flex-shrink-0 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
+            >
+              <option value="">All Levels</option>
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+              <option value="expert">Expert</option>
+            </select>
+            {(selectedCategory || selectedDifficulty) && (
+              <button
+                onClick={() => { setSelectedCategory(''); setSelectedDifficulty(''); }}
+                className="flex-shrink-0 px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
+
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Filters Sidebar */}
-          <aside className="lg:w-64 flex-shrink-0">
+          {/* Filters Sidebar - hidden on mobile */}
+          <aside className="hidden lg:block lg:w-64 flex-shrink-0">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 sticky top-4">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
                 Filters
@@ -132,11 +167,11 @@ const QuizzesPage: React.FC = () => {
           {/* Main Content */}
           <main className="flex-1">
             {/* Results Header */}
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                 {selectedCategory || selectedDifficulty ? 'Filtered Quizzes' : 'All Quizzes'}
               </h2>
-              <span className="text-gray-600 dark:text-gray-400">
+              <span className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
                 {quizzes.length} quiz{quizzes.length !== 1 ? 'zes' : ''}
               </span>
             </div>
@@ -160,7 +195,7 @@ const QuizzesPage: React.FC = () => {
             {!loading && !error && (
               <>
                 {quizzes.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
                     {quizzes.map((quiz) => (
                       <QuizCard key={quiz.id} quiz={quiz} />
                     ))}
