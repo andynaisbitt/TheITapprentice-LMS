@@ -21,6 +21,11 @@ import {
   Zap,
   CheckCircle,
   Target,
+  Keyboard,
+  BookOpen,
+  Infinity,
+  Ghost,
+  Swords,
 } from 'lucide-react';
 import { useAuth } from '../state/contexts/AuthContext';
 import { challengesApi } from '../plugins/shared/services/challengesApi';
@@ -404,8 +409,66 @@ const DailyChallengesPage: React.FC = () => {
           </div>
         )}
 
+        {/* Typing Challenges */}
+        <div className="mt-8">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <Keyboard className="w-5 h-5 text-blue-500" />
+            Typing Challenges
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { title: 'Quick Brown Fox', desc: '3-round challenge', icon: Zap, color: 'from-blue-500 to-purple-600', link: '/typing-practice/play' },
+              { title: 'Infinite Rush', desc: '60s speed run', icon: Infinity, color: 'from-orange-500 to-red-600', link: '/typing-practice/infinite-rush' },
+              { title: 'Ghost Mode', desc: 'Beat your best', icon: Ghost, color: 'from-purple-500 to-indigo-600', link: '/typing-practice/ghost' },
+              { title: 'Practice', desc: 'Custom words', icon: Target, color: 'from-green-500 to-teal-600', link: '/typing-practice/practice' },
+            ].map((mode, i) => (
+              <Link
+                key={mode.title}
+                to={mode.link}
+                className={`group relative block overflow-hidden rounded-xl bg-gradient-to-br ${mode.color} p-3 shadow-md hover:shadow-lg transition-shadow`}
+              >
+                <mode.icon className="w-5 h-5 text-white/80 mb-1.5" />
+                <div className="text-sm font-semibold text-white">{mode.title}</div>
+                <div className="text-xs text-white/70">{mode.desc}</div>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Quiz Challenges */}
+        <div className="mt-6">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-purple-500" />
+            Quiz Challenges
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Link
+              to="/quizzes"
+              className="flex items-center gap-3 p-4 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl text-white hover:shadow-lg transition-shadow"
+            >
+              <Brain className="w-6 h-6" />
+              <div>
+                <div className="font-semibold">Browse Quizzes</div>
+                <div className="text-sm text-white/80">Test your IT knowledge</div>
+              </div>
+              <ChevronRight className="w-4 h-4 ml-auto" />
+            </Link>
+            <Link
+              to="/tutorials"
+              className="flex items-center gap-3 p-4 bg-gradient-to-r from-blue-500 to-cyan-600 rounded-xl text-white hover:shadow-lg transition-shadow"
+            >
+              <BookOpen className="w-6 h-6" />
+              <div>
+                <div className="font-semibold">Tutorials</div>
+                <div className="text-sm text-white/80">Learn step by step</div>
+              </div>
+              <ChevronRight className="w-4 h-4 ml-auto" />
+            </Link>
+          </div>
+        </div>
+
         {/* Quick Links */}
-        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Link
             to="/leaderboard"
             className="flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-amber-300 dark:hover:border-amber-700 transition-colors"
