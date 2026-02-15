@@ -72,7 +72,7 @@ const exploreItems: ExploreItem[] = [
     label: 'Typing Practice',
     description: 'Improve your speed',
     icon: Keyboard,
-    href: '/typing',
+    href: '/typing-practice',
     iconColor: 'text-cyan-600 dark:text-cyan-400',
     iconBg: 'bg-cyan-100 dark:bg-cyan-500/20',
   },

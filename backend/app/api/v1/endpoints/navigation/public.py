@@ -19,19 +19,20 @@ def get_lms_plugin_links() -> list[MenuItemResponse]:
     # Check if any LMS plugin is enabled
     tutorials_enabled = settings.PLUGINS_ENABLED.get("tutorials", False)
     courses_enabled = settings.PLUGINS_ENABLED.get("courses", False)
+    quizzes_enabled = settings.PLUGINS_ENABLED.get("quizzes", False)
     typing_game_enabled = settings.PLUGINS_ENABLED.get("typing_game", False)
 
-    if not (tutorials_enabled or courses_enabled or typing_game_enabled):
+    if not (tutorials_enabled or courses_enabled or quizzes_enabled or typing_game_enabled):
         return []
 
     # Create parent "Learn" menu item
     learn_children = []
 
-    if tutorials_enabled:
+    if courses_enabled:
         learn_children.append(MenuItemResponse(
             id=base_id + 1,
-            label="Tutorials",
-            url="/tutorials",
+            label="Courses",
+            url="/courses",
             order=1,
             parent_id=base_id,
             visible=True,
@@ -43,12 +44,28 @@ def get_lms_plugin_links() -> list[MenuItemResponse]:
             children=[]
         ))
 
-    if courses_enabled:
+    if tutorials_enabled:
         learn_children.append(MenuItemResponse(
             id=base_id + 2,
-            label="Courses",
-            url="/courses",
+            label="Tutorials",
+            url="/tutorials",
             order=2,
+            parent_id=base_id,
+            visible=True,
+            show_in_header=True,
+            show_in_footer=False,
+            target_blank=False,
+            created_at=None,
+            updated_at=None,
+            children=[]
+        ))
+
+    if quizzes_enabled:
+        learn_children.append(MenuItemResponse(
+            id=base_id + 3,
+            label="Quizzes",
+            url="/quizzes",
+            order=3,
             parent_id=base_id,
             visible=True,
             show_in_header=True,
@@ -61,10 +78,10 @@ def get_lms_plugin_links() -> list[MenuItemResponse]:
 
     if typing_game_enabled:
         learn_children.append(MenuItemResponse(
-            id=base_id + 3,
-            label="Typing Games",
-            url="/games/typing",
-            order=3,
+            id=base_id + 4,
+            label="Typing Practice",
+            url="/typing-practice",
+            order=4,
             parent_id=base_id,
             visible=True,
             show_in_header=True,
