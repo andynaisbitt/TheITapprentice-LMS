@@ -250,7 +250,10 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
             </div>
 
             <div className="flex items-center space-x-2">
-              <button className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors">
+              <button
+                onClick={() => handleNavigate('/challenges')}
+                className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors relative"
+              >
                 <Bell className="w-4 h-4" />
               </button>
               <button
