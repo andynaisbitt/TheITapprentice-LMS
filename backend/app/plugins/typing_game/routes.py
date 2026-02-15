@@ -272,8 +272,20 @@ async def get_my_stats(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Get current user's typing stats"""
+    """Get current user's typing stats (with streak data from UserTypingStreak)"""
     stats = crud.get_or_create_user_stats(db, current_user.id)
+
+    # Merge streak data from the dedicated streak table if stats are stale
+    streak = crud.get_or_create_user_streak(db, current_user.id)
+    if streak.current_streak != stats.current_streak_days:
+        stats.current_streak_days = streak.current_streak
+        stats.longest_streak_days = max(
+            stats.longest_streak_days,
+            streak.longest_streak
+        )
+        db.commit()
+        db.refresh(stats)
+
     return stats
 
 

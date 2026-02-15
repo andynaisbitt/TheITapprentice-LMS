@@ -245,6 +245,11 @@ export const QuickBrownFoxGame: React.FC<QuickBrownFoxGameProps> = ({
   // Track actual typed text for submission
   const [actualTypedText, setActualTypedText] = useState('');
 
+  // Accumulate text across all rounds for accurate submission
+  const accumulatedTypedTextRef = useRef<string[]>([]);
+  const accumulatedRoundTextsRef = useRef<string[]>([]);
+  const accumulatedTimeRef = useRef<number>(0);
+
   // Streak and daily challenges state
   const [streakInfo, setStreakInfo] = useState<StreakInfo | null>(null);
   const [dailyChallenges, setDailyChallenges] = useState<DailyChallenge[]>([]);
@@ -397,7 +402,11 @@ export const QuickBrownFoxGame: React.FC<QuickBrownFoxGameProps> = ({
     // Initialize first round - prefer backend text, fallback to local pool
     setCurrentRound(0);
     setRoundResults([]);
+    accumulatedTypedTextRef.current = [];
+    accumulatedRoundTextsRef.current = [];
+    accumulatedTimeRef.current = 0;
     const text = backendText || getRandomText(1);
+    accumulatedRoundTextsRef.current.push(text);
     setRoundText(text);
     setGameStatus('ready');
   }, [wordListId, getRandomText]);
@@ -446,6 +455,14 @@ export const QuickBrownFoxGame: React.FC<QuickBrownFoxGameProps> = ({
       ? (Date.now() - roundStartTime.current) / 1000
       : 0;
 
+    // Accumulate this round's typed text and time
+    const roundTypedText = wordStates
+      .filter(ws => ws.status === 'completed' || ws.status === 'skipped')
+      .map(ws => ws.typedValue)
+      .join(' ');
+    accumulatedTypedTextRef.current.push(roundTypedText);
+    accumulatedTimeRef.current += finalTime;
+
     // Record round result
     const roundResult: RoundResult = {
       round: currentRound + 1,
@@ -467,7 +484,7 @@ export const QuickBrownFoxGame: React.FC<QuickBrownFoxGameProps> = ({
     } else {
       setGameStatus('round_complete');
     }
-  }, [currentRound, stats, maxCombo, comboSystem.maxCombo, antiCheat]);
+  }, [currentRound, stats, maxCombo, comboSystem.maxCombo, antiCheat, wordStates]);
 
   // Keep completeRoundRef in sync
   useEffect(() => {
@@ -509,8 +526,9 @@ export const QuickBrownFoxGame: React.FC<QuickBrownFoxGameProps> = ({
       return;
     }
 
-    // Get actual typed text
-    const userTypedText = getFinalTypedText();
+    // Use accumulated text from ALL rounds (not just current round)
+    const allRoundsTypedText = accumulatedTypedTextRef.current.join(' ');
+    const totalTime = Math.round(accumulatedTimeRef.current);
 
     // Gather anti-cheat data
     const antiCheatData = antiCheat.getAntiCheatData();
@@ -518,8 +536,8 @@ export const QuickBrownFoxGame: React.FC<QuickBrownFoxGameProps> = ({
     // Build V2 request with anti-cheat data
     const submitRequest: TypingGameSubmitRequestV2 = {
       session_id: sessionData.session_id,
-      user_input: userTypedText, // FIXED: Now sends actual typed text!
-      time_elapsed: Math.round(stats.timeElapsed),
+      user_input: allRoundsTypedText,
+      time_elapsed: totalTime,
       checksum: checksum,
       max_combo: Math.max(maxCombo, comboSystem.maxCombo),
       anti_cheat: {
@@ -559,7 +577,7 @@ export const QuickBrownFoxGame: React.FC<QuickBrownFoxGameProps> = ({
       console.error('Failed to submit results:', error);
       setGameStatus('game_complete');
     }
-  }, [sessionData, getFinalTypedText, stats.timeElapsed, checksum, maxCombo, comboSystem.maxCombo, antiCheat, onComplete, sounds, refreshStreakAndChallenges]);
+  }, [sessionData, checksum, maxCombo, comboSystem.maxCombo, antiCheat, onComplete, sounds, refreshStreakAndChallenges]);
 
   // Move to next round (guarded against double-calls and skipping)
   const nextRound = useCallback(() => {
@@ -574,6 +592,7 @@ export const QuickBrownFoxGame: React.FC<QuickBrownFoxGameProps> = ({
     const nextRoundNum = currentRound + 1;
     setCurrentRound(nextRoundNum);
     const text = getRandomText(nextRoundNum + 1);
+    accumulatedRoundTextsRef.current.push(text);
     setRoundText(text);
     setGameStatus('ready');
 
