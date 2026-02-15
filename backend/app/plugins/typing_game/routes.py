@@ -104,18 +104,13 @@ async def get_word_list(
 async def start_game(
     request: schemas.TypingGameStartRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_optional_user)
 ):
-    """Start a new typing game session"""
-    session, checksum = crud.create_game_session(
-        db=db,
-        user_id=current_user.id,
-        word_list_id=request.word_list_id,
-        mode=request.mode,
-        word_count=request.word_count
-    )
+    """Start a new typing game session (supports guests)"""
+    import uuid
+    import hashlib
 
-    # Get word list name if specified
+    # Get word list info if specified
     word_list_name = None
     difficulty = "medium"
     related_skills = []
@@ -127,15 +122,48 @@ async def start_game(
             difficulty = word_list.difficulty
             related_skills = word_list.related_skills or []
 
-    return schemas.TypingGameStartResponse(
-        session_id=session.id,
-        text=session.text_content,
-        checksum=checksum,
-        word_list_name=word_list_name,
-        difficulty=difficulty,
-        word_count=session.word_count,
-        related_skills=related_skills
-    )
+    if current_user:
+        # Authenticated user - persist session to DB
+        session, checksum = crud.create_game_session(
+            db=db,
+            user_id=current_user.id,
+            word_list_id=request.word_list_id,
+            mode=request.mode,
+            word_count=request.word_count
+        )
+        return schemas.TypingGameStartResponse(
+            session_id=session.id,
+            text=session.text_content,
+            checksum=checksum,
+            word_list_name=word_list_name,
+            difficulty=difficulty,
+            word_count=session.word_count,
+            related_skills=related_skills
+        )
+    else:
+        # Guest user - create in-memory session (not persisted)
+        session_id = f"guest-{uuid.uuid4()}"
+
+        if request.word_list_id:
+            word_list = crud.get_word_list(db, request.word_list_id)
+            if word_list:
+                text_content = crud.generate_text_from_word_list(word_list, request.word_count)
+            else:
+                text_content = crud.generate_default_text(request.word_count)
+        else:
+            text_content = crud.generate_default_text(request.word_count)
+
+        checksum = hashlib.sha256(f"{session_id}:{text_content}".encode()).hexdigest()
+
+        return schemas.TypingGameStartResponse(
+            session_id=session_id,
+            text=text_content,
+            checksum=checksum,
+            word_list_name=word_list_name,
+            difficulty=difficulty,
+            word_count=len(text_content.split()),
+            related_skills=related_skills
+        )
 
 
 @router.post("/submit", response_model=schemas.TypingGameResultsResponse)
@@ -169,11 +197,11 @@ async def submit_game(
             accuracy = metrics["metrics"].get("accuracy", 0)
             skill_xp = calculate_typing_skill_xp(wpm, accuracy)
 
-            # Award XP to programming skill (typing practice improves coding speed)
+            # Award XP to typing skill
             skill_result = await award_skill_xp(
                 db=db,
                 user_id=current_user.id,
-                skill_slug="programming",
+                skill_slug="typing",
                 xp_amount=skill_xp,
                 source_type="typing_game",
                 source_id=str(session.id),
@@ -456,6 +484,41 @@ async def cancel_pvp_match(
 
 # ==================== ADMIN ROUTES ====================
 
+@router.get("/admin/word-lists", response_model=List[schemas.TypingWordListResponse])
+async def admin_get_word_lists(
+    difficulty: Optional[str] = None,
+    theme: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    """Get all word lists including inactive (admin only)"""
+    word_lists = crud.get_word_lists(db, difficulty=difficulty, theme=theme, is_active=None, skip=skip, limit=limit)
+    response = []
+    for wl in word_lists:
+        data = schemas.TypingWordListResponse(
+            id=wl.id,
+            name=wl.name,
+            description=wl.description,
+            difficulty=wl.difficulty,
+            theme=wl.theme,
+            words=wl.words or [],
+            related_skills=wl.related_skills or [],
+            unlock_level=wl.unlock_level,
+            is_active=wl.is_active,
+            is_featured=wl.is_featured,
+            display_order=wl.display_order,
+            times_played=wl.times_played,
+            avg_wpm=wl.avg_wpm,
+            avg_accuracy=wl.avg_accuracy,
+            created_at=wl.created_at,
+            updated_at=wl.updated_at,
+        )
+        response.append(data)
+    return response
+
+
 @router.post("/admin/word-lists", response_model=schemas.TypingWordListResponse)
 async def create_word_list(
     word_list: schemas.TypingWordListCreate,
@@ -599,7 +662,7 @@ async def get_admin_leaderboard(
     # Sort options
     sort_columns = {
         "best_wpm": models.UserTypingStats.best_wpm.desc(),
-        "avg_wpm": models.UserTypingStats.average_wpm.desc(),
+        "avg_wpm": models.UserTypingStats.avg_wpm.desc(),
         "games_played": models.UserTypingStats.total_games_completed.desc()
     }
     query = query.order_by(sort_columns.get(sort, models.UserTypingStats.best_wpm.desc()))
@@ -631,7 +694,7 @@ async def get_admin_leaderboard(
             "username": display_name or username,
             "email": email,
             "best_wpm": stats.best_wpm or 0,
-            "avg_wpm": round(stats.average_wpm or 0, 1),
+            "avg_wpm": round(stats.avg_wpm or 0, 1),
             "games_played": stats.total_games_completed,
             "total_xp": total_xp or 0,
             "is_suspicious": is_suspicious,
@@ -647,7 +710,7 @@ async def get_admin_leaderboard(
             models.TypingGameSession.completed_at >= today_start,
             models.TypingGameSession.is_completed == True
         ).count(),
-        "avg_wpm_global": round(db.query(func.avg(models.UserTypingStats.average_wpm)).scalar() or 0, 1),
+        "avg_wpm_global": round(db.query(func.avg(models.UserTypingStats.avg_wpm)).scalar() or 0, 1),
         "top_wpm_today": db.query(func.max(models.TypingGameSession.wpm)).filter(
             models.TypingGameSession.completed_at >= today_start
         ).scalar() or 0
@@ -1090,6 +1153,8 @@ async def submit_game_v2(
     Enhanced game submission with anti-cheat validation and analytics.
     Includes combo tracking, streak updates, and daily challenge progress.
     """
+    import traceback
+
     # Prepare anti-cheat data if provided
     anti_cheat_data = None
     if request.anti_cheat:
@@ -1104,15 +1169,19 @@ async def submit_game_v2(
         }
 
     # Complete game session with anti-cheat
-    result = crud.complete_game_session_v2(
-        db=db,
-        session_id=request.session_id,
-        user_input=request.user_input,
-        time_elapsed=request.time_elapsed,
-        checksum=request.checksum,
-        max_combo=request.max_combo,
-        anti_cheat_data=anti_cheat_data
-    )
+    try:
+        result = crud.complete_game_session_v2(
+            db=db,
+            session_id=request.session_id,
+            user_input=request.user_input,
+            time_elapsed=request.time_elapsed,
+            checksum=request.checksum,
+            max_combo=request.max_combo,
+            anti_cheat_data=anti_cheat_data
+        )
+    except Exception as e:
+        logger.error(f"[submit/v2] complete_game_session_v2 failed: {e}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Game completion error: {str(e)}")
 
     if not result:
         raise HTTPException(
@@ -1123,18 +1192,26 @@ async def submit_game_v2(
     session, metrics = result
 
     # Update user streak
-    streak_result = crud.update_user_streak(db, current_user.id)
+    try:
+        streak_result = crud.update_user_streak(db, current_user.id)
+    except Exception as e:
+        logger.error(f"[submit/v2] update_user_streak failed: {e}")
+        streak_result = None
 
     # Process daily challenges
     words_typed = len(request.user_input.split())
-    completed_challenges = crud.process_game_completion_for_challenges(
-        db=db,
-        user_id=current_user.id,
-        wpm=metrics["metrics"]["wpm"],
-        accuracy=metrics["metrics"]["accuracy"],
-        words_typed=words_typed,
-        max_combo=request.max_combo
-    )
+    try:
+        completed_challenges = crud.process_game_completion_for_challenges(
+            db=db,
+            user_id=current_user.id,
+            wpm=metrics["metrics"]["wpm"],
+            accuracy=metrics["metrics"]["accuracy"],
+            words_typed=words_typed,
+            max_combo=request.max_combo
+        )
+    except Exception as e:
+        logger.error(f"[submit/v2] process_game_completion_for_challenges failed: {e}")
+        completed_challenges = []
 
     # =========== SKILL XP INTEGRATION ===========
     # Award typing skill XP (if skills plugin enabled)
@@ -1144,11 +1221,11 @@ async def submit_game_v2(
             accuracy = metrics["metrics"].get("accuracy", 0)
             skill_xp = calculate_typing_skill_xp(wpm, accuracy)
 
-            # Award XP to programming skill (typing practice improves coding speed)
+            # Award XP to typing skill
             skill_result = await award_skill_xp(
                 db=db,
                 user_id=current_user.id,
-                skill_slug="programming",
+                skill_slug="typing",
                 xp_amount=skill_xp,
                 source_type="typing_game",
                 source_id=str(session.id),
@@ -1160,7 +1237,7 @@ async def submit_game_v2(
                 }
             )
             if skill_result.level_up:
-                logger.info(f"User {current_user.id} leveled up programming: {skill_result.old_level} -> {skill_result.new_level}")
+                logger.info(f"User {current_user.id} leveled up typing: {skill_result.old_level} -> {skill_result.new_level}")
         except Exception as e:
             logger.error(f"Failed to award skill XP for typing game v2: {e}")
 

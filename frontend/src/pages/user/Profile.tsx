@@ -111,8 +111,14 @@ export const Profile = () => {
         progressApi.getMyXPProgress().catch(() => null),
         progressApi.getMyAchievements().catch(() => []),
         progressApi.getMyActivities(50).catch(() => ({ activities: [], total: 0, has_more: false })),
-        typingGameApi.getMyStats().catch(() => null),
-        typingGameApi.getMyPVPStats().catch(() => null),
+        typingGameApi.getMyStats().catch((err) => {
+          console.error('[Profile] Failed to fetch typing stats:', err);
+          return null;
+        }),
+        typingGameApi.getMyPVPStats().catch((err) => {
+          console.error('[Profile] Failed to fetch PVP stats:', err);
+          return null;
+        }),
         tutorialApi.getMyTutorialProgress().catch(() => []),
       ]);
 
@@ -685,22 +691,22 @@ export const Profile = () => {
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                           <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white">
                             <Zap className="w-6 h-6 mb-2 opacity-80" />
-                            <div className="text-3xl font-bold">{typingStats.best_wpm?.toFixed(0) || '-'}</div>
+                            <div className="text-3xl font-bold">{typingStats.best_wpm != null ? typingStats.best_wpm.toFixed(0) : '-'}</div>
                             <div className="text-sm opacity-80">Best WPM</div>
                           </div>
                           <div className="bg-gradient-to-br from-green-500 to-teal-500 rounded-xl p-4 text-white">
                             <Target className="w-6 h-6 mb-2 opacity-80" />
-                            <div className="text-3xl font-bold">{typingStats.avg_accuracy?.toFixed(1) || '-'}%</div>
+                            <div className="text-3xl font-bold">{typingStats.avg_accuracy != null ? `${typingStats.avg_accuracy.toFixed(1)}%` : '-'}</div>
                             <div className="text-sm opacity-80">Avg Accuracy</div>
                           </div>
                           <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white">
                             <Gamepad2 className="w-6 h-6 mb-2 opacity-80" />
-                            <div className="text-3xl font-bold">{typingStats.total_games_completed}</div>
+                            <div className="text-3xl font-bold">{typingStats.total_games_completed ?? 0}</div>
                             <div className="text-sm opacity-80">Games Played</div>
                           </div>
                           <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-xl p-4 text-white">
                             <Clock className="w-6 h-6 mb-2 opacity-80" />
-                            <div className="text-3xl font-bold">{typingStats.avg_wpm?.toFixed(0) || '-'}</div>
+                            <div className="text-3xl font-bold">{typingStats.avg_wpm != null ? typingStats.avg_wpm.toFixed(0) : '-'}</div>
                             <div className="text-sm opacity-80">Avg WPM</div>
                           </div>
                         </div>
@@ -752,7 +758,7 @@ export const Profile = () => {
                             <div className="p-4 bg-white dark:bg-slate-800 rounded-lg">
                               <p className="text-sm text-gray-500 mb-1">Best Accuracy</p>
                               <p className="text-xl font-bold text-gray-900 dark:text-white">
-                                {typingStats.best_accuracy?.toFixed(1) || 0}%
+                                {typingStats.best_accuracy != null ? `${typingStats.best_accuracy.toFixed(1)}%` : '-'}
                               </p>
                             </div>
                             <div className="p-4 bg-white dark:bg-slate-800 rounded-lg">

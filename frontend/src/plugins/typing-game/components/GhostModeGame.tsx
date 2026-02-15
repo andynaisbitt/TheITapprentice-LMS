@@ -42,6 +42,7 @@ import { WordDisplay } from './WordDisplay';
 import { ComboCounter } from './ComboCounter';
 import { StreakDisplay } from './StreakDisplay';
 import { SoundSettingsPanel } from './SoundSettings';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../../state/contexts/AuthContext';
 import { RegistrationPrompt } from '../../../components/auth/RegistrationPrompt';
 import { useRegistrationPrompt } from '../../../hooks/useRegistrationPrompt';
@@ -635,16 +636,35 @@ export const GhostModeGame: React.FC<GhostModeGameProps> = ({
     return (
       <div className="max-w-2xl mx-auto p-4 sm:p-6">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 text-center">
-          <Ghost className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30 rounded-full flex items-center justify-center">
+            <Ghost className="w-10 h-10 text-purple-400" />
+          </div>
           <h2 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">
-            No Ghost Yet
+            {isAuthenticated ? 'Create Your Ghost' : 'No Ghost Yet'}
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mb-6">
             {isAuthenticated
-              ? "Complete at least one typing challenge to create your ghost!"
+              ? "Play your first typing game to unlock Ghost Mode! Your best performance becomes the ghost you'll race against."
               : "Sign in and complete a challenge to race against your personal best."}
           </p>
-          {!isAuthenticated && (
+          {isAuthenticated ? (
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link
+                to="/typing-practice/play"
+                className="px-6 py-3 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg font-semibold hover:opacity-90 transition-all inline-flex items-center gap-2 justify-center"
+              >
+                <Keyboard className="w-5 h-5" />
+                Quick Challenge
+              </Link>
+              <Link
+                to="/typing-practice/practice"
+                className="px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-all inline-flex items-center gap-2 justify-center"
+              >
+                <Target className="w-5 h-5" />
+                Word Lists
+              </Link>
+            </div>
+          ) : (
             <button
               onClick={showPrompt}
               className="px-6 py-3 bg-purple-500 text-white rounded-lg font-semibold hover:bg-purple-600 transition-all flex items-center gap-2 mx-auto"

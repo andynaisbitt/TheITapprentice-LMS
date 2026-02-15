@@ -8,10 +8,12 @@
  * - Pending words: grayed out
  */
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Word } from './Word';
 import type { WordState, CharacterState } from '../../hooks/useTypingEngine';
+
+const WORDS_PER_LINE = 8;
 
 interface WordDisplayProps {
   words: WordState[];
@@ -20,6 +22,7 @@ interface WordDisplayProps {
   getCharacterStates: (wordIndex: number) => CharacterState[];
   onContainerClick?: () => void;
   className?: string;
+  wordsPerLine?: number;
 }
 
 export const WordDisplay: React.FC<WordDisplayProps> = ({
@@ -29,9 +32,19 @@ export const WordDisplay: React.FC<WordDisplayProps> = ({
   getCharacterStates,
   onContainerClick,
   className = '',
+  wordsPerLine = WORDS_PER_LINE,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const currentWordRef = useRef<HTMLDivElement>(null);
+
+  // Group words into lines for cleaner visual layout
+  const lines = useMemo(() => {
+    const result: WordState[][] = [];
+    for (let i = 0; i < words.length; i += wordsPerLine) {
+      result.push(words.slice(i, i + wordsPerLine));
+    }
+    return result;
+  }, [words, wordsPerLine]);
 
   // Auto-scroll to keep current word visible
   useEffect(() => {
@@ -82,27 +95,34 @@ export const WordDisplay: React.FC<WordDisplayProps> = ({
       role="textbox"
       aria-label="Type the words shown"
     >
-      <div className="flex flex-wrap gap-x-1.5 gap-y-1.5 sm:gap-x-2 sm:gap-y-2 md:gap-x-3 md:gap-y-3 leading-relaxed">
-        {words.map((wordState, index) => {
-          const isCurrent = index === currentWordIndex;
-          const characterStates = getCharacterStates(index);
+      <div className="space-y-2 sm:space-y-2.5 md:space-y-3 pb-2">
+        {lines.map((lineWords, lineIndex) => (
+          <div
+            key={lineIndex}
+            className="flex flex-wrap gap-x-1.5 gap-y-1 sm:gap-x-2 md:gap-x-3 leading-relaxed"
+          >
+            {lineWords.map((wordState) => {
+              const isCurrent = wordState.index === currentWordIndex;
+              const characterStates = getCharacterStates(wordState.index);
 
-          return (
-            <div
-              key={index}
-              ref={isCurrent ? currentWordRef : undefined}
-            >
-              <Word
-                word={wordState.word}
-                status={wordState.status}
-                isCorrect={wordState.isCorrect}
-                characterStates={characterStates}
-                isCurrent={isCurrent}
-                typedValue={isCurrent ? currentInput : wordState.typedValue}
-              />
-            </div>
-          );
-        })}
+              return (
+                <div
+                  key={wordState.index}
+                  ref={isCurrent ? currentWordRef : undefined}
+                >
+                  <Word
+                    word={wordState.word}
+                    status={wordState.status}
+                    isCorrect={wordState.isCorrect}
+                    characterStates={characterStates}
+                    isCurrent={isCurrent}
+                    typedValue={isCurrent ? currentInput : wordState.typedValue}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        ))}
       </div>
 
       {/* Progress indicator */}

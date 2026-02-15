@@ -257,6 +257,8 @@ export const QuickBrownFoxGame: React.FC<QuickBrownFoxGameProps> = ({
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const roundStartTime = useRef<number | null>(null);
   const keyDownHandledRef = useRef(false);
+  const isAdvancingRef = useRef(false);
+  const completeRoundRef = useRef<(passed: boolean) => void>(() => {});
 
   // Current round config
   const currentRoundConfig = ROUNDS[currentRound];
@@ -455,6 +457,7 @@ export const QuickBrownFoxGame: React.FC<QuickBrownFoxGameProps> = ({
     };
 
     setRoundResults(prev => [...prev, roundResult]);
+    isAdvancingRef.current = false;
 
     if (!passed) {
       setGameStatus('failed');
@@ -465,6 +468,11 @@ export const QuickBrownFoxGame: React.FC<QuickBrownFoxGameProps> = ({
       setGameStatus('round_complete');
     }
   }, [currentRound, stats, maxCombo, comboSystem.maxCombo, antiCheat]);
+
+  // Keep completeRoundRef in sync
+  useEffect(() => {
+    completeRoundRef.current = completeRound;
+  }, [completeRound]);
 
   // Get final typed text from all word states
   const getFinalTypedText = useCallback((): string => {
@@ -553,16 +561,27 @@ export const QuickBrownFoxGame: React.FC<QuickBrownFoxGameProps> = ({
     }
   }, [sessionData, getFinalTypedText, stats.timeElapsed, checksum, maxCombo, comboSystem.maxCombo, antiCheat, onComplete, sounds, refreshStreakAndChallenges]);
 
-  // Move to next round
+  // Move to next round (guarded against double-calls and skipping)
   const nextRound = useCallback(() => {
+    // Prevent double-advance
+    if (isAdvancingRef.current) return;
+
+    // Only allow advancing if the current round was passed
+    const lastResult = roundResults[roundResults.length - 1];
+    if (!lastResult || !lastResult.passed) return;
+
+    isAdvancingRef.current = true;
     const nextRoundNum = currentRound + 1;
     setCurrentRound(nextRoundNum);
     const text = getRandomText(nextRoundNum + 1);
     setRoundText(text);
     setGameStatus('ready');
-  }, [currentRound, getRandomText]);
 
-  // Timer effect
+    // Reset the guard after a short delay to allow re-entry for subsequent rounds
+    setTimeout(() => { isAdvancingRef.current = false; }, 500);
+  }, [currentRound, getRandomText, roundResults]);
+
+  // Timer effect - uses ref to avoid recreating interval on completeRound changes
   useEffect(() => {
     if (gameStatus === 'playing' && currentRoundConfig?.timeLimit) {
       timerRef.current = setInterval(() => {
@@ -573,7 +592,7 @@ export const QuickBrownFoxGame: React.FC<QuickBrownFoxGameProps> = ({
 
         if (remaining <= 0) {
           setTimeRemaining(0);
-          completeRound(false);
+          completeRoundRef.current(false);
         } else {
           setTimeRemaining(Math.ceil(remaining));
         }
@@ -583,7 +602,7 @@ export const QuickBrownFoxGame: React.FC<QuickBrownFoxGameProps> = ({
         if (timerRef.current) clearInterval(timerRef.current);
       };
     }
-  }, [gameStatus, currentRoundConfig, completeRound]);
+  }, [gameStatus, currentRoundConfig]);
 
   // Auto-focus input when entering playing state
   useEffect(() => {
@@ -1096,6 +1115,31 @@ export const QuickBrownFoxGame: React.FC<QuickBrownFoxGameProps> = ({
                 <span className="font-bold">{lastResult?.maxCombo || 0}x <span className="text-xs font-normal opacity-80">COMBO</span></span>
               </div>
             </div>
+
+            {/* Perfect round bonus */}
+            {lastResult && lastResult.accuracy >= 98 && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="mt-2 flex items-center gap-2 bg-white/20 rounded-lg px-3 py-1.5 text-sm font-medium"
+              >
+                <Sparkles className="w-4 h-4 text-yellow-300" />
+                Perfect Round! {lastResult.accuracy}% accuracy
+              </motion.div>
+            )}
+
+            {/* WPM improvement from previous round */}
+            {roundResults.length >= 2 && (() => {
+              const prevWpm = roundResults[roundResults.length - 2].wpm;
+              const currWpm = lastResult?.wpm || 0;
+              const diff = currWpm - prevWpm;
+              if (diff === 0) return null;
+              return (
+                <div className={`mt-2 text-sm ${diff > 0 ? 'text-green-200' : 'text-red-200'}`}>
+                  {diff > 0 ? '+' : ''}{diff} WPM from Round {currentRound}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Next round preview + auto-advance */}
@@ -1161,11 +1205,24 @@ export const QuickBrownFoxGame: React.FC<QuickBrownFoxGameProps> = ({
 
           <div className="flex gap-4 justify-center">
             <button
-              onClick={startGame}
+              onClick={() => {
+                // Retry the same round with new text
+                const text = getRandomText(currentRound + 1);
+                setRoundText(text);
+                // Remove the failed result so the guard allows re-advancing
+                setRoundResults(prev => prev.slice(0, -1));
+                setGameStatus('ready');
+              }}
               className="px-6 py-3 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-all flex items-center gap-2"
             >
               <RotateCcw className="w-5 h-5" />
-              Try Again
+              Retry Round {currentRound + 1}
+            </button>
+            <button
+              onClick={startGame}
+              className="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-all flex items-center gap-2"
+            >
+              Start Over
             </button>
           </div>
         </motion.div>
@@ -1416,13 +1473,24 @@ export const QuickBrownFoxGame: React.FC<QuickBrownFoxGameProps> = ({
               ))}
             </div>
 
-            <button
-              onClick={startGame}
-              className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-semibold text-lg hover:from-blue-600 hover:to-purple-700 transition-all flex items-center gap-2 mx-auto"
-            >
-              <RotateCcw className="w-5 h-5" />
-              Play Again
-            </button>
+            <div className="flex items-center justify-center gap-4">
+              {onExit && (
+                <button
+                  onClick={onExit}
+                  className="px-8 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-semibold text-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-all flex items-center gap-2"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                  Back to Menu
+                </button>
+              )}
+              <button
+                onClick={startGame}
+                className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-semibold text-lg hover:from-blue-600 hover:to-purple-700 transition-all flex items-center gap-2"
+              >
+                <RotateCcw className="w-5 h-5" />
+                Play Again
+              </button>
+            </div>
           </motion.div>
 
           {/* Sidebar: Streak & Completed Challenges */}

@@ -5,7 +5,7 @@
  */
 
 import { useAuth } from '../../state/contexts/AuthContext';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -28,6 +28,7 @@ import {
   ChevronRight,
   Play,
   Swords,
+  Flame,
 } from 'lucide-react';
 import * as tutorialApi from '../../plugins/tutorials/services/tutorialApi';
 import type { TutorialProgress } from '../../plugins/tutorials/types';
@@ -43,6 +44,7 @@ import { SkillsWidget } from '../../plugins/skills/components/SkillsWidget';
 export const UserDashboard = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [tutorialProgress, setTutorialProgress] = useState<TutorialProgress[]>([]);
   const [loadingTutorials, setLoadingTutorials] = useState(true);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
@@ -135,6 +137,14 @@ export const UserDashboard = () => {
       href: '/leaderboard',
       color: 'from-yellow-500 to-orange-600',
       description: 'See top learners',
+    });
+
+    actions.push({
+      icon: Flame,
+      label: 'Challenges',
+      href: '/challenges',
+      color: 'from-orange-500 to-red-600',
+      description: 'Daily challenges',
     });
 
     actions.push({
@@ -462,13 +472,17 @@ export const UserDashboard = () => {
                           {course.isComplete && (
                             <>
                               <span>•</span>
-                              <Link
-                                to="/certifications"
-                                onClick={(e) => e.stopPropagation()}
-                                className="text-purple-500 hover:text-purple-600"
+                              <span
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  navigate('/certifications');
+                                }}
+                                className="text-purple-500 hover:text-purple-600 cursor-pointer"
+                                role="link"
                               >
                                 View Certificate
-                              </Link>
+                              </span>
                             </>
                           )}
                         </div>

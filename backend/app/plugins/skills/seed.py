@@ -2,7 +2,7 @@
 """
 Skill System Seed Script
 
-Seeds the 12 default IT skills into the database.
+Seeds the 13 default IT skills into the database.
 Run with: python -m app.plugins.skills.seed
 """
 import logging
@@ -13,7 +13,7 @@ from .models import Skill, SkillCategory
 
 logger = logging.getLogger(__name__)
 
-# The 12 IT Skills
+# The 13 IT Skills
 DEFAULT_SKILLS = [
     # Technical Skills (9)
     {
@@ -89,6 +89,16 @@ DEFAULT_SKILLS = [
         "display_order": 9,
     },
 
+    # Fundamental Skills (1)
+    {
+        "name": "Typing",
+        "slug": "typing",
+        "description": "Touch typing proficiency combining physical dexterity, muscle memory, and cognitive processing for fast, accurate text input. Covers WPM speed, accuracy, keyboard mastery, and typing endurance - a fundamental transferable skill that enhances productivity across all IT disciplines.",
+        "icon": "⌨️",
+        "category": SkillCategory.technical,
+        "display_order": 10,
+    },
+
     # Soft Skills (3)
     {
         "name": "Communication",
@@ -96,7 +106,7 @@ DEFAULT_SKILLS = [
         "description": "Technical and professional communication skills. Includes documentation, presentations, email etiquette, and explaining complex concepts to non-technical audiences.",
         "icon": "💬",
         "category": SkillCategory.soft,
-        "display_order": 10,
+        "display_order": 11,
     },
     {
         "name": "Problem Solving",
@@ -104,7 +114,7 @@ DEFAULT_SKILLS = [
         "description": "Analytical thinking and troubleshooting methodology. Covers root cause analysis, debugging strategies, critical thinking, and systematic problem resolution.",
         "icon": "🧩",
         "category": SkillCategory.soft,
-        "display_order": 11,
+        "display_order": 12,
     },
     {
         "name": "Project Management",
@@ -112,7 +122,7 @@ DEFAULT_SKILLS = [
         "description": "IT project management methodologies and practices. Includes Agile, Scrum, Kanban, resource planning, risk management, and stakeholder communication.",
         "icon": "📊",
         "category": SkillCategory.soft,
-        "display_order": 12,
+        "display_order": 13,
     },
 ]
 

@@ -39,7 +39,9 @@ class AntiCheatFlag(str, Enum):
 class AntiCheatThresholds:
     """Configurable thresholds for anti-cheat detection"""
     # Timing thresholds (milliseconds)
-    MIN_INTER_KEY_TIME: float = 30.0  # Physically impossible below this
+    MIN_INTER_KEY_TIME: float = 15.0  # True physical limit (key rollover can produce 20-30ms)
+    KEY_BOUNCE_THRESHOLD: float = 10.0  # Below this is keyboard bounce/artifact, filter out
+    IMPOSSIBLE_SPEED_RATIO: float = 0.10  # Flag if >10% of keystrokes are below MIN_INTER_KEY_TIME
     MAX_REASONABLE_WPM: int = 250  # World record is ~216 WPM
 
     # Consistency thresholds
@@ -114,21 +116,48 @@ class AntiCheatValidator:
 
         # Calculate statistics if we have timing data
         if len(keystroke_timings) >= 10:
-            avg_time = statistics.mean(keystroke_timings)
-            std_dev = statistics.stdev(keystroke_timings) if len(keystroke_timings) > 1 else 0
-            min_time = min(keystroke_timings)
-            max_time = max(keystroke_timings)
+            # Filter out keyboard bounce artifacts (< 10ms) before analysis
+            filtered_timings = [
+                t for t in keystroke_timings
+                if t >= self.thresholds.KEY_BOUNCE_THRESHOLD
+            ]
+            bounced_count = len(keystroke_timings) - len(filtered_timings)
+
+            # Use filtered timings for stats, fall back to raw if all filtered
+            analysis_timings = filtered_timings if len(filtered_timings) >= 5 else keystroke_timings
+
+            avg_time = statistics.mean(analysis_timings)
+            std_dev = statistics.stdev(analysis_timings) if len(analysis_timings) > 1 else 0
+            min_time = min(analysis_timings)
+            max_time = max(analysis_timings)
 
             details["avg_inter_key_time"] = round(avg_time, 2)
             details["std_dev_inter_key_time"] = round(std_dev, 2)
             details["min_inter_key_time"] = round(min_time, 2)
             details["max_inter_key_time"] = round(max_time, 2)
+            if bounced_count > 0:
+                details["key_bounce_filtered"] = bounced_count
 
-            # 1. Check for impossible speed
-            if min_time < self.thresholds.MIN_INTER_KEY_TIME:
-                confidence -= 0.4
+            # 1. Check for impossible speed (proportion-based)
+            # Only flag if a significant percentage of keystrokes are impossibly fast
+            impossible_count = sum(
+                1 for t in filtered_timings
+                if t < self.thresholds.MIN_INTER_KEY_TIME
+            )
+            impossible_ratio = impossible_count / len(filtered_timings) if filtered_timings else 0
+
+            if impossible_ratio > self.thresholds.IMPOSSIBLE_SPEED_RATIO:
+                # Scale penalty based on how many keystrokes are suspicious
+                penalty = min(0.4, impossible_ratio * 2.0)  # Max 0.4
+                confidence -= penalty
                 flags.append(AntiCheatFlag.IMPOSSIBLE_SPEED.value)
                 details["impossible_speed_detected"] = True
+                details["impossible_speed_count"] = impossible_count
+                details["impossible_speed_ratio"] = round(impossible_ratio, 3)
+                details["fastest_keystroke_ms"] = round(min_time, 2)
+            elif impossible_count > 0:
+                # A few fast keystrokes is normal (key rollover) - just note it
+                details["fast_keystrokes_count"] = impossible_count
                 details["fastest_keystroke_ms"] = round(min_time, 2)
 
             # 2. Check for too-consistent timing (bot behavior)

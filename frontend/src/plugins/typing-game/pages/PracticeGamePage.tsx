@@ -23,11 +23,13 @@ import {
   Beaker,
   Briefcase,
   Gamepad2,
-  Sparkles
+  Sparkles,
+  Flame,
 } from 'lucide-react';
 import { useAuth } from '../../../state/contexts/AuthContext';
 import { typingGameApi } from '../services/typingGameApi';
-import { QuickBrownFoxGame } from '../components/QuickBrownFoxGame';
+import { WordListPracticeGame } from '../components/WordListPracticeGame';
+import { StreakDisplay } from '../components/StreakDisplay';
 import type { TypingWordList } from '../types';
 
 type DifficultyFilter = 'all' | 'easy' | 'medium' | 'hard' | 'expert';
@@ -64,6 +66,14 @@ export const PracticeGamePage: React.FC = () => {
   const [themeFilter, setThemeFilter] = useState<ThemeFilter>('all');
   const [selectedWordList, setSelectedWordList] = useState<TypingWordList | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [streak, setStreak] = useState<{
+    current_streak: number;
+    longest_streak: number;
+    games_today: number;
+    freeze_available: boolean;
+    streak_at_risk: boolean;
+    played_today: boolean;
+  } | null>(null);
 
   // Check if we should start with a specific word list
   useEffect(() => {
@@ -96,6 +106,14 @@ export const PracticeGamePage: React.FC = () => {
     fetchWordLists();
   }, []);
 
+  // Fetch streak info for authenticated users
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    typingGameApi.getMyStreak()
+      .then(setStreak)
+      .catch(() => {/* streak is optional, fail silently */});
+  }, [isAuthenticated]);
+
   // Scroll to top when game starts
   useEffect(() => {
     if (isPlaying) {
@@ -121,19 +139,19 @@ export const PracticeGamePage: React.FC = () => {
     return true;
   });
 
-  // Handle game completion
+  // Handle game completion - don't close immediately, let the results modal show
+  // The user will click "Back to Word Lists" (onExit) to return
   const handleGameComplete = useCallback(() => {
-    setIsPlaying(false);
-    setSelectedWordList(null);
+    // No-op: keep the game mounted so the completion modal is visible
+    // User exits via onExit callback below
   }, []);
 
-  // If playing, show the game
-  // TODO: Fix WordListPracticeGame space bar detection issue
-  // For now, using QuickBrownFoxGame which works but uses hardcoded text
+  // If playing, show the WordListPracticeGame with the selected word list
   if (isPlaying && selectedWordList) {
     return (
-      <QuickBrownFoxGame
+      <WordListPracticeGame
         wordListId={selectedWordList.id}
+        wordListName={selectedWordList.name}
         onComplete={handleGameComplete}
         onExit={() => {
           setIsPlaying(false);
@@ -160,18 +178,23 @@ export const PracticeGamePage: React.FC = () => {
             Back to Typing Practice
           </button>
 
-          <div className="flex items-center gap-4 mb-2">
-            <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg">
-              <Target className="w-7 h-7 text-white" />
+          <div className="flex items-center justify-between gap-4 mb-2">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg">
+                <Target className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                  Practice Mode
+                </h1>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Select a word list to practice your typing skills
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                Practice Mode
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400">
-                Select a word list to practice your typing skills
-              </p>
-            </div>
+            {streak && streak.current_streak > 0 && (
+              <StreakDisplay streak={streak} compact />
+            )}
           </div>
         </motion.div>
 

@@ -3,7 +3,7 @@
 Skill System Models - OSRS-style skill progression
 
 Models:
-- Skill: The 12 IT skills (Networking, Security, Programming, etc.)
+- Skill: The 13 IT skills (Networking, Security, Programming, Typing, etc.)
 - UserSkill: Per-user progress tracking for each skill
 - SkillXPLog: Audit trail of all XP gains
 """
@@ -25,10 +25,10 @@ class SkillCategory(str, enum.Enum):
 
 class Skill(Base):
     """
-    Skill definition - one of the 12 IT skills
+    Skill definition - one of the 13 IT skills
 
     Technical skills: Networking, Security, Programming, Systems Administration,
-                     Cloud Computing, Databases, DevOps, Web Development, Hardware & Support
+                     Cloud Computing, Databases, DevOps, Web Development, Hardware & Support, Typing
     Soft skills: Communication, Problem Solving, Project Management
     """
     __tablename__ = "skills"

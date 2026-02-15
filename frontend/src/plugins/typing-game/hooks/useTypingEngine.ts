@@ -83,8 +83,8 @@ export function useTypingEngine(text: string, config: TypingEngineConfig = {}) {
     inputMethod = 'keydown',
   } = config;
 
-  // Parse text into words
-  const words = useMemo(() => text.trim().split(/\s+/), [text]);
+  // Parse text into words (initial set - may grow in infinite mode)
+  const initialWords = useMemo(() => text.trim().split(/\s+/), [text]);
 
   // State
   const [status, setStatus] = useState<TypingEngineState['status']>('idle');
@@ -93,6 +93,9 @@ export function useTypingEngine(text: string, config: TypingEngineConfig = {}) {
   const [currentInput, setCurrentInput] = useState('');
   const [combo, setCombo] = useState(0);
   const [maxCombo, setMaxCombo] = useState(0);
+
+  // Derive words array from wordStates so it stays in sync with dynamically added words
+  const words = useMemo(() => wordStates.map(ws => ws.word), [wordStates]);
 
   // Timing refs
   const gameStartTime = useRef<number | null>(null);
@@ -106,7 +109,7 @@ export function useTypingEngine(text: string, config: TypingEngineConfig = {}) {
 
   // Initialize word states when text changes
   useEffect(() => {
-    const initialStates: WordState[] = words.map((word, index) => ({
+    const initialStates: WordState[] = initialWords.map((word, index) => ({
       word,
       index,
       status: index === 0 ? 'current' : 'pending',
@@ -131,7 +134,7 @@ export function useTypingEngine(text: string, config: TypingEngineConfig = {}) {
     lastKeystrokeTime.current = null;
     wordStartTime.current = null;
     setStatus('ready');
-  }, [words]);
+  }, [initialWords]);
 
   // Calculate current stats using centralized hook
   const stats = useTypingStats({
@@ -304,8 +307,8 @@ export function useTypingEngine(text: string, config: TypingEngineConfig = {}) {
     onWordComplete?.(currentWordIndex, isCorrect, wordWpm);
 
     // Move to next word or complete game
-    if (currentWordIndex + 1 >= words.length) {
-      // Game complete
+    if (currentWordIndex + 1 >= words.length && !onLowWordCount) {
+      // Game complete (only for fixed-length modes, not infinite mode)
       setStatus('completed');
       onGameComplete?.(stats);
     } else {
@@ -393,7 +396,7 @@ export function useTypingEngine(text: string, config: TypingEngineConfig = {}) {
 
   // Reset the game
   const reset = useCallback(() => {
-    const initialStates: WordState[] = words.map((word, index) => ({
+    const resetStates: WordState[] = initialWords.map((word, index) => ({
       word,
       index,
       status: index === 0 ? 'current' : 'pending',
@@ -406,7 +409,7 @@ export function useTypingEngine(text: string, config: TypingEngineConfig = {}) {
       })),
     }));
 
-    setWordStates(initialStates);
+    setWordStates(resetStates);
     setCurrentWordIndex(0);
     setCurrentInput('');
     setCombo(0);
@@ -418,7 +421,7 @@ export function useTypingEngine(text: string, config: TypingEngineConfig = {}) {
     lastKeystrokeTime.current = null;
     wordStartTime.current = null;
     setStatus('ready');
-  }, [words]);
+  }, [initialWords]);
 
   // Start the game (can be called externally)
   const start = useCallback(() => {

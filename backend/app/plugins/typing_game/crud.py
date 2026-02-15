@@ -94,15 +94,39 @@ def update_word_list(
 # ==================== GAME SESSION CRUD ====================
 
 def generate_text_from_word_list(word_list: models.TypingWordList, word_count: int = 50) -> str:
-    """Generate random text from word list"""
-    words = word_list.words if word_list.words else []
-    if not words:
-        # Fallback to default text
+    """Generate random text from word list.
+
+    Handles two formats:
+    - Individual words: ["computer", "network", "server"] -> randomly pick word_count words
+    - Sentences/phrases: ["The quick brown fox..."] -> randomly pick sentences until reaching word_count words
+    """
+    entries = word_list.words if word_list.words else []
+    if not entries:
         return "The quick brown fox jumps over the lazy dog."
 
-    # Generate text by randomly selecting words
-    selected_words = [random.choice(words) for _ in range(word_count)]
-    return " ".join(selected_words)
+    # Check if entries are sentences (contain spaces) or individual words
+    has_sentences = any(' ' in entry.strip() for entry in entries[:10])
+
+    if has_sentences:
+        # Entries are sentences/phrases - pick enough to reach word_count
+        selected = []
+        total_words = 0
+        shuffled = entries[:]
+        random.shuffle(shuffled)
+        idx = 0
+        while total_words < word_count:
+            entry = shuffled[idx % len(shuffled)].strip()
+            selected.append(entry)
+            total_words += len(entry.split())
+            idx += 1
+            # Re-shuffle when we've used all entries
+            if idx % len(shuffled) == 0:
+                random.shuffle(shuffled)
+        return " ".join(selected)
+    else:
+        # Entries are individual words - pick word_count randomly
+        selected_words = [random.choice(entries) for _ in range(word_count)]
+        return " ".join(selected_words)
 
 
 def generate_default_text(word_count: int = 50) -> str:

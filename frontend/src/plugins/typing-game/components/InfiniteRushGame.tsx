@@ -249,6 +249,7 @@ export const InfiniteRushGame: React.FC<InfiniteRushGameProps> = ({
   // Refs
   const inputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const endGameRef = useRef<() => void>(() => {});
 
   // Combo system
   const comboSystem = useComboSystem({
@@ -405,25 +406,29 @@ export const InfiniteRushGame: React.FC<InfiniteRushGameProps> = ({
     setGameStatus('game_complete');
   }, [stats, sessionData, wordStates, comboSystem.maxCombo, antiCheat, sounds, onComplete, refreshStreakAndChallenges]);
 
-  // Timer effect
+  // Keep endGameRef in sync with latest endGame callback
+  useEffect(() => {
+    endGameRef.current = endGame;
+  }, [endGame]);
+
+  // Timer effect - only depends on gameStatus to avoid interval restarts
   useEffect(() => {
     if (gameStatus === 'playing') {
       timerRef.current = setInterval(() => {
         setTimeRemaining(prev => {
           if (prev <= 1) {
-            endGame();
+            endGameRef.current();
             return 0;
           }
           return prev - 1;
         });
-        // Stats are automatically updated by useTypingEngine
       }, 1000);
 
       return () => {
         if (timerRef.current) clearInterval(timerRef.current);
       };
     }
-  }, [gameStatus, endGame]);
+  }, [gameStatus]);
 
   // Auto-focus input when playing starts
   useEffect(() => {
@@ -1095,13 +1100,24 @@ export const InfiniteRushGame: React.FC<InfiniteRushGameProps> = ({
               </motion.div>
             )}
 
-            <button
-              onClick={startGame}
-              className="px-8 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg font-semibold text-lg hover:from-orange-600 hover:to-red-700 transition-all flex items-center gap-2 mx-auto"
-            >
-              <RotateCcw className="w-5 h-5" />
-              Play Again
-            </button>
+            <div className="flex items-center gap-3 justify-center">
+              <button
+                onClick={startGame}
+                className="px-8 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg font-semibold text-lg hover:from-orange-600 hover:to-red-700 transition-all flex items-center gap-2"
+              >
+                <RotateCcw className="w-5 h-5" />
+                Play Again
+              </button>
+              {onExit && (
+                <button
+                  onClick={onExit}
+                  className="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-all flex items-center gap-2"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                  Back
+                </button>
+              )}
+            </div>
           </motion.div>
 
           {/* Sidebar */}

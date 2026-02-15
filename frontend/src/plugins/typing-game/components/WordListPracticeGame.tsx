@@ -788,6 +788,85 @@ export const WordListPracticeGame: React.FC<WordListPracticeGameProps> = ({
     );
   }
 
+  // Completed state without backend results (guest users or submission failure)
+  if (gameStatus === 'completed') {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+        <div className="max-w-3xl mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8"
+          >
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-green-500 to-teal-600 rounded-2xl mb-4 shadow-lg">
+                <Trophy className="w-10 h-10 text-white" />
+              </div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                Practice Complete!
+              </h1>
+              {wordListName && (
+                <p className="text-gray-600 dark:text-gray-400">{wordListName}</p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-3 gap-4 mb-8">
+              <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+                <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">{wpm}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">WPM</div>
+              </div>
+              <div className="text-center p-4 bg-green-50 dark:bg-green-900/30 rounded-lg">
+                <div className="text-3xl font-bold text-green-600 dark:text-green-400">{accuracy.toFixed(1)}%</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Accuracy</div>
+              </div>
+              <div className="text-center p-4 bg-purple-50 dark:bg-purple-900/30 rounded-lg">
+                <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">{wordsCompleted}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Words</div>
+              </div>
+            </div>
+
+            {!isAuthenticated && (
+              <div className="mb-6 p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg text-center">
+                <p className="text-sm text-purple-700 dark:text-purple-300 mb-2">
+                  Sign up to save your scores and track progress!
+                </p>
+                <button
+                  onClick={showPrompt}
+                  className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white text-sm font-medium rounded-lg transition-colors"
+                >
+                  Create Free Account
+                </button>
+              </div>
+            )}
+
+            <div className="flex gap-4">
+              <button
+                onClick={onExit}
+                className="flex-1 px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                Back to Word Lists
+              </button>
+              <button
+                onClick={restartGame}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+              >
+                <RotateCcw className="w-5 h-5" />
+                Practice Again
+              </button>
+            </div>
+          </motion.div>
+        </div>
+
+        <RegistrationPrompt
+          isOpen={isPromptOpen}
+          onClose={closePrompt}
+          onSkip={handlePromptSkip}
+          context="game"
+        />
+      </div>
+    );
+  }
+
   return null;
 };
 

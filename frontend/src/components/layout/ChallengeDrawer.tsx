@@ -4,9 +4,9 @@
  * Accessible from header on every page
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   X,
   Flame,
@@ -38,6 +38,17 @@ interface ChallengesState {
 
 export const ChallengeDrawer: React.FC<ChallengeDrawerProps> = ({ isOpen, onClose }) => {
   const { isAuthenticated } = useAuth();
+  const location = useLocation();
+  const prevPathRef = useRef(location.pathname);
+
+  // Auto-close drawer when route changes
+  useEffect(() => {
+    if (prevPathRef.current !== location.pathname && isOpen) {
+      onClose();
+    }
+    prevPathRef.current = location.pathname;
+  }, [location.pathname, isOpen, onClose]);
+
   const [state, setState] = useState<ChallengesState>({
     challenges: [],
     streak: null,
@@ -232,11 +243,11 @@ export const ChallengeDrawer: React.FC<ChallengeDrawerProps> = ({ isOpen, onClos
             {isAuthenticated && (
               <div className="p-4 border-t border-slate-200 dark:border-slate-800">
                 <Link
-                  to="/dashboard"
+                  to="/challenges"
                   onClick={onClose}
                   className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl text-slate-700 dark:text-slate-300 font-medium transition-colors"
                 >
-                  View Full Dashboard
+                  View All Challenges
                   <ChevronRight className="w-4 h-4" />
                 </Link>
               </div>

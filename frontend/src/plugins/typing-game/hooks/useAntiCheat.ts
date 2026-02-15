@@ -47,7 +47,7 @@ export interface UseAntiCheatConfig {
 
 // ==================== CONSTANTS ====================
 
-const MIN_HUMANLY_POSSIBLE_INTERVAL = 30; // ms - faster than this is impossible
+const MIN_HUMANLY_POSSIBLE_INTERVAL = 15; // ms - true physical limit (key rollover can produce 20-30ms legitimately)
 const SEGMENT_SIZE = 10; // Number of keystrokes for first/last segment analysis
 
 // ==================== HOOK ====================
