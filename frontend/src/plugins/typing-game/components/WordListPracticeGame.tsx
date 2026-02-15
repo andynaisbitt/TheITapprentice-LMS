@@ -160,7 +160,7 @@ export const WordListPracticeGame: React.FC<WordListPracticeGameProps> = ({
   const startTimeRef = useRef<number | null>(null);
 
   // Hooks
-  const comboSystem = useComboSystem(sounds);
+  const comboSystem = useComboSystem();
   const antiCheat = useAntiCheat();
 
   // Focus input helper
@@ -284,8 +284,8 @@ export const WordListPracticeGame: React.FC<WordListPracticeGameProps> = ({
         const wordLength = currentWord.word.length;
         if (isCorrect) {
           setCorrectChars(prev => prev + wordLength);
-          sounds.playCorrectWord();
-          comboSystem.incrementCombo();
+          sounds.playMilestone();
+          comboSystem.increment();
         } else {
           // Count correct and incorrect chars
           let correct = 0;
@@ -299,7 +299,7 @@ export const WordListPracticeGame: React.FC<WordListPracticeGameProps> = ({
           }
           setCorrectChars(prev => prev + correct);
           setIncorrectChars(prev => prev + incorrect);
-          sounds.playIncorrectWord();
+          sounds.playError();
           comboSystem.breakCombo();
         }
 
@@ -335,13 +335,13 @@ export const WordListPracticeGame: React.FC<WordListPracticeGameProps> = ({
           endGame();
         }
 
-        antiCheat.trackKeystroke();
+        antiCheat.recordKeystroke();
         return;
       }
 
       // Normal typing - update character states
       setCurrentInput(value);
-      antiCheat.trackKeystroke();
+      antiCheat.recordKeystroke();
 
       const currentWord = wordStates[currentWordIndex];
       if (!currentWord) return;
@@ -399,7 +399,15 @@ export const WordListPracticeGame: React.FC<WordListPracticeGameProps> = ({
           time_elapsed: elapsedSeconds,
           checksum: sessionData.checksum,
           max_combo: comboSystem.maxCombo,
-          anti_cheat: antiCheatData,
+          anti_cheat: {
+            keystroke_timings: antiCheatData.keystrokeTimings,
+            keystroke_count: antiCheatData.keystrokeCount,
+            paste_attempts: antiCheatData.pasteAttempts,
+            focus_lost_count: antiCheatData.focusLostCount,
+            total_focus_lost_time: antiCheatData.totalFocusLostTime,
+            first_segment_avg: antiCheatData.firstSegmentAvg,
+            last_segment_avg: antiCheatData.lastSegmentAvg,
+          },
         };
 
         const result = await typingGameApi.submitGameV2(submitRequest);
@@ -407,8 +415,8 @@ export const WordListPracticeGame: React.FC<WordListPracticeGameProps> = ({
 
         // Fetch updated streak info
         try {
-          const streak = await typingGameApi.getStreakInfo();
-          setStreakInfo(streak);
+          const dailyData = await typingGameApi.getDailyChallenges();
+          setStreakInfo(dailyData.streak);
         } catch (err) {
           console.error('Failed to fetch streak info:', err);
         }
@@ -446,21 +454,17 @@ export const WordListPracticeGame: React.FC<WordListPracticeGameProps> = ({
   // Handle paste prevention
   const handlePaste = useCallback((e: React.ClipboardEvent) => {
     e.preventDefault();
-    antiCheat.trackPasteAttempt();
+    antiCheat.recordPasteAttempt();
   }, [antiCheat]);
 
   // Handle focus tracking
   const handleBlur = useCallback(() => {
-    if (gameStatus === 'playing') {
-      antiCheat.trackFocusLost();
-    }
-  }, [gameStatus, antiCheat]);
+    // Focus tracking handled automatically by useAntiCheat via visibilitychange
+  }, []);
 
   const handleFocus = useCallback(() => {
-    if (gameStatus === 'playing') {
-      antiCheat.trackFocusGained();
-    }
-  }, [gameStatus, antiCheat]);
+    // Focus tracking handled automatically by useAntiCheat via visibilitychange
+  }, []);
 
   // Restart game
   const restartGame = useCallback(() => {
@@ -642,7 +646,7 @@ export const WordListPracticeGame: React.FC<WordListPracticeGameProps> = ({
 
           {/* Combo counter */}
           <div className="mb-6">
-            <ComboCounter comboState={comboSystem} />
+            <ComboCounter comboState={comboSystem.state} />
           </div>
 
           {/* Word display */}

@@ -144,7 +144,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
       case 'overview':
         return <OverviewSection onNavigate={handleNavigate} />;
       case 'learn':
-        return <LearnSection onNavigate={handleNavigate} navItems={navItems} />;
+        return <LearnSection onNavigate={handleNavigate} />;
       case 'practice':
         return <PracticeSection onNavigate={handleNavigate} />;
       case 'account':

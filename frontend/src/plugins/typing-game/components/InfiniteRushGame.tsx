@@ -223,7 +223,7 @@ export const InfiniteRushGame: React.FC<InfiniteRushGameProps> = ({
         sounds.playMilestone();
         comboSystem.increment();
       } else {
-        comboSystem.break();
+        comboSystem.breakCombo();
       }
     },
     onError: () => {
@@ -293,8 +293,8 @@ export const InfiniteRushGame: React.FC<InfiniteRushGameProps> = ({
     engineHandleKeyDown(e);
   }, [gameStatus, engineHandleKeyDown, antiCheat]);
 
-  // Handle paste (block it - already handled by useTypingEngine, but keep for consistency)
-  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+  // Handle paste (block it)
+  const handlePasteBlock = useCallback((e: React.ClipboardEvent) => {
     e.preventDefault();
     antiCheat.recordPasteAttempt();
   }, [antiCheat]);
@@ -701,19 +701,19 @@ export const InfiniteRushGame: React.FC<InfiniteRushGameProps> = ({
           <div className="grid grid-cols-4 gap-1.5 sm:gap-2 md:gap-4 mb-3 sm:mb-4">
             <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-1.5 sm:p-2 md:p-3 text-center">
               <div className="text-base sm:text-lg md:text-2xl font-bold text-blue-600 dark:text-blue-400 tabular-nums">
-                {wpm}
+                {stats.wpm}
               </div>
               <div className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400">WPM</div>
             </div>
             <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-1.5 sm:p-2 md:p-3 text-center">
               <div className="text-base sm:text-lg md:text-2xl font-bold text-green-600 dark:text-green-400 tabular-nums">
-                {accuracy}%
+                {stats.accuracy}%
               </div>
               <div className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400">Acc</div>
             </div>
             <div className="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-1.5 sm:p-2 md:p-3 text-center">
               <div className="text-base sm:text-lg md:text-2xl font-bold text-purple-600 dark:text-purple-400 tabular-nums">
-                {wordsCompleted}
+                {wordStates.filter(w => w.status === 'completed').length}
               </div>
               <div className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400">Words</div>
             </div>
@@ -758,7 +758,7 @@ export const InfiniteRushGame: React.FC<InfiniteRushGameProps> = ({
               style={{ left: `${Math.min(((GAME_DURATION - timeRemaining) / GAME_DURATION) * 95, 95)}%` }}
               animate={{
                 y: [-2, 2, -2],
-                rotate: wpm > 60 ? [-5, 5, -5] : 0,
+                rotate: stats.wpm > 60 ? [-5, 5, -5] : 0,
               }}
               transition={{ duration: 0.3, repeat: Infinity }}
             >
@@ -781,7 +781,7 @@ export const InfiniteRushGame: React.FC<InfiniteRushGameProps> = ({
                   <div className="w-2 h-1.5 bg-gradient-to-l from-yellow-300 to-transparent rounded-l-full mt-0.5" />
                 </motion.div>
                 {/* Speed lines */}
-                {wpm > 40 && (
+                {stats.wpm > 40 && (
                   <div className="absolute -left-6 top-1/2 -translate-y-1/2 flex flex-col gap-0.5">
                     {[...Array(3)].map((_, i) => (
                       <motion.div
@@ -802,11 +802,11 @@ export const InfiniteRushGame: React.FC<InfiniteRushGameProps> = ({
               <div
                 key={milestone}
                 className={`absolute bottom-2 text-[10px] font-bold ${
-                  wordsCompleted >= milestone ? 'text-green-500' : 'text-gray-400'
+                  wordStates.filter(w => w.status === 'completed').length >= milestone ? 'text-green-500' : 'text-gray-400'
                 }`}
                 style={{ left: `${(milestone / 60) * 90 + 5}%` }}
               >
-                {wordsCompleted >= milestone ? '✓' : milestone}
+                {wordStates.filter(w => w.status === 'completed').length >= milestone ? '✓' : milestone}
               </div>
             ))}
 
@@ -857,28 +857,9 @@ export const InfiniteRushGame: React.FC<InfiniteRushGameProps> = ({
               enterKeyHint="next"
               value={currentInput}
               onKeyDown={handleKeyDown}
-              onPaste={handlePaste}
-              onChange={(e) => {
-                if (keyDownHandledRef.current) {
-                  keyDownHandledRef.current = false;
-                  return;
-                }
-                const newValue = e.target.value;
-                const oldValue = currentInput;
-                if (newValue.length > oldValue.length) {
-                  const addedChars = newValue.slice(oldValue.length);
-                  for (const char of addedChars) {
-                    handleKeyDown({
-                      key: char,
-                      preventDefault: () => {},
-                    } as React.KeyboardEvent<HTMLInputElement>, true);
-                  }
-                } else if (newValue.length < oldValue.length) {
-                  handleKeyDown({
-                    key: 'Backspace',
-                    preventDefault: () => {},
-                  } as React.KeyboardEvent<HTMLInputElement>, true);
-                }
+              onPaste={handlePasteBlock}
+              onChange={() => {
+                // Input is handled via onKeyDown; onChange is intentionally a no-op
               }}
               onFocus={() => setInputFocused(true)}
               onBlur={() => setInputFocused(false)}
@@ -981,7 +962,7 @@ export const InfiniteRushGame: React.FC<InfiniteRushGameProps> = ({
               className="mb-2"
             >
               {(() => {
-                const grade = wpm >= 80 ? 'S' : wpm >= 60 ? 'A' : wpm >= 45 ? 'B' : wpm >= 30 ? 'C' : 'D';
+                const grade = stats.wpm >= 80 ? 'S' : stats.wpm >= 60 ? 'A' : stats.wpm >= 45 ? 'B' : stats.wpm >= 30 ? 'C' : 'D';
                 const gradeColors: Record<string, string> = {
                   S: 'from-yellow-400 via-amber-500 to-orange-500',
                   A: 'from-green-400 to-emerald-500',
@@ -1041,21 +1022,21 @@ export const InfiniteRushGame: React.FC<InfiniteRushGameProps> = ({
               <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4">
                 <TrendingUp className="w-6 h-6 text-blue-500 mx-auto mb-2" />
                 <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-                  {wpm}
+                  {stats.wpm}
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">WPM</div>
               </div>
               <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-4">
                 <Target className="w-6 h-6 text-green-500 mx-auto mb-2" />
                 <div className="text-3xl font-bold text-green-600 dark:text-green-400">
-                  {accuracy}%
+                  {stats.accuracy}%
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">Accuracy</div>
               </div>
               <div className="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-4">
                 <Keyboard className="w-6 h-6 text-purple-500 mx-auto mb-2" />
                 <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">
-                  {wordsCompleted}
+                  {wordStates.filter(w => w.status === 'completed').length}
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">Words</div>
               </div>
@@ -1106,7 +1087,7 @@ export const InfiniteRushGame: React.FC<InfiniteRushGameProps> = ({
                 className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4 mb-6"
               >
                 <div className="text-xl font-bold text-orange-400/60 line-through mb-1">
-                  +{Math.round(wpm * 2.5)} XP
+                  +{Math.round(stats.wpm * 2.5)} XP
                 </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   Sign up to earn XP and track your progress!
