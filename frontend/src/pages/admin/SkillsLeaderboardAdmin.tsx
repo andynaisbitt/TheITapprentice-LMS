@@ -96,7 +96,8 @@ const SkillsLeaderboardAdmin: React.FC = () => {
         url = `/api/v1/skills/leaderboards/${selectedSkill}/leaderboard?limit=100`;
       }
       const response = await apiClient.get(url);
-      setLeaderboard(response.data);
+      const data = response.data;
+      setLeaderboard(Array.isArray(data) ? data : data.entries ?? []);
     } catch (error) {
       console.error('Failed to load leaderboard:', error);
       setLeaderboard([]);

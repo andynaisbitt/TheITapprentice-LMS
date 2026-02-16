@@ -262,6 +262,34 @@ class RecentXPActivity(BaseModel):
 
 
 # =============================================================================
+# SKILL ACTIVITIES SCHEMAS (Related content for a skill)
+# =============================================================================
+
+class SkillActivityItem(BaseModel):
+    """A single activity (course, quiz, tutorial, etc.) linked to a skill"""
+    id: str
+    title: str
+    description: Optional[str] = None
+    activity_type: str  # "course" | "quiz" | "tutorial" | "typing_practice"
+    difficulty: Optional[str] = None
+    xp_reward: int = 0
+    url: str  # Frontend route, e.g. "/courses/abc123"
+    estimated_time: Optional[str] = None
+    category: Optional[str] = None
+
+
+class SkillActivitiesResponse(BaseModel):
+    """All activities linked to a skill, grouped by type"""
+    skill_slug: str
+    skill_name: str
+    courses: List[SkillActivityItem] = []
+    quizzes: List[SkillActivityItem] = []
+    tutorials: List[SkillActivityItem] = []
+    typing_practice: List[SkillActivityItem] = []
+    total_count: int = 0
+
+
+# =============================================================================
 # UTILITY SCHEMAS
 # =============================================================================
 

@@ -403,9 +403,15 @@ def complete_game_session_v2(
         anti_cheat_data: Anti-cheat telemetry data
     """
     from .anti_cheat import validate_typing_session, AntiCheatResult
+    import logging
+    logger = logging.getLogger(__name__)
 
     session = get_game_session(db, session_id)
-    if not session or session.is_completed:
+    if not session:
+        logger.warning(f"[submit_v2] Session {session_id} NOT FOUND in database")
+        return None
+    if session.is_completed:
+        logger.warning(f"[submit_v2] Session {session_id} ALREADY COMPLETED (status={session.status})")
         return None
 
     # Verify checksum
@@ -414,9 +420,14 @@ def complete_game_session_v2(
     ).hexdigest()
 
     if checksum != expected_checksum:
+        logger.warning(f"[submit_v2] Session {session_id} CHECKSUM MISMATCH: "
+                       f"expected={expected_checksum[:16]}..., got={checksum[:16]}...")
         session.status = "abandoned"
         db.commit()
         return None
+
+    logger.info(f"[submit_v2] Processing session {session_id} for user {session.user_id}, "
+                f"input_len={len(user_input)}, time={time_elapsed}s")
 
     # Calculate metrics
     # For multi-round games (QBF), user_input may contain all rounds' text
@@ -430,33 +441,46 @@ def complete_game_session_v2(
 
     is_multi_round = chars_typed > len(original_text) * 1.5
 
-    if is_multi_round:
-        # Multi-round game: calculate WPM from total typed chars and time
-        # Accuracy is estimated from round results sent by frontend
-        # Use a high baseline accuracy since the game validates per-round
-        total_chars = chars_typed
-        # Word-level accuracy: count correct words vs total
-        correct_words = sum(1 for w in user_words if len(w) > 0)
-        accuracy = min(95.0, 85.0 + (correct_words / max(len(user_words), 1)) * 10)
-        error_count = max(0, int(total_chars * (1 - accuracy / 100)))
-        correct_chars = total_chars - error_count
-    else:
-        # Single round: character-by-character comparison against stored text
+    # Try character-by-character comparison for single-round games
+    use_char_comparison = not is_multi_round
+    if use_char_comparison:
         total_chars = len(original_text)
         correct_chars = 0
         min_len = min(len(original_text), len(user_input))
 
         for i in range(min_len):
-            if i < len(user_input) and i < len(original_text):
-                if user_input[i] == original_text[i]:
-                    correct_chars += 1
+            if user_input[i] == original_text[i]:
+                correct_chars += 1
 
-        accuracy = (correct_chars / total_chars * 100) if total_chars > 0 else 0
+        char_accuracy = (correct_chars / total_chars * 100) if total_chars > 0 else 0
+
+        # If char-by-char accuracy is very low (<30%), the texts likely don't match
+        # (e.g. InfiniteRush / GhostMode where words are randomized per round).
+        # Fall back to word-level estimation instead.
+        if char_accuracy < 30:
+            use_char_comparison = False
+
+    if use_char_comparison:
+        # Single round with matching text: use character comparison
+        accuracy = char_accuracy
         error_count = total_chars - correct_chars
+    else:
+        # Multi-round or mismatched text: estimate from typed content
+        total_chars = chars_typed
+        correct_words = sum(1 for w in user_words if len(w) > 0)
+        accuracy = min(95.0, 85.0 + (correct_words / max(len(user_words), 1)) * 10)
+        error_count = max(0, int(total_chars * (1 - accuracy / 100)))
+        correct_chars = total_chars - error_count
 
     minutes = time_elapsed / 60.0 if time_elapsed > 0 else 1/60
     raw_wpm = int((chars_typed / 5) / minutes)
-    adjusted_wpm = max(0, int(((chars_typed / 5) - error_count) / minutes))
+    # Net WPM: penalize by word-level errors (error_count is chars, convert to word equivalents)
+    error_words = error_count / 5.0
+    adjusted_wpm = max(1, int(((chars_typed / 5) - error_words) / minutes)) if chars_typed > 0 else 0
+
+    logger.info(f"[submit_v2] session={session_id}: is_multi_round={is_multi_round}, "
+                f"raw_wpm={raw_wpm}, adjusted_wpm={adjusted_wpm}, accuracy={accuracy:.1f}%, "
+                f"chars={chars_typed}, time={time_elapsed}s")
 
     # Anti-cheat validation
     anti_cheat_result: Optional[AntiCheatResult] = None
@@ -481,6 +505,9 @@ def complete_game_session_v2(
         session.anti_cheat_flags = anti_cheat_result.flags
         session.anti_cheat_flagged_for_review = anti_cheat_result.should_flag_for_review
         xp_multiplier = anti_cheat_result.adjusted_xp_multiplier
+
+        logger.info(f"[submit_v2] session={session_id}: anti_cheat confidence={anti_cheat_result.confidence_score}, "
+                    f"valid={anti_cheat_result.is_valid}, xp_mult={xp_multiplier}, flags={anti_cheat_result.flags}")
 
         # Reject invalid sessions
         if not anti_cheat_result.is_valid:
@@ -535,8 +562,9 @@ def complete_game_session_v2(
     is_pb_wpm = False
     is_pb_accuracy = False
 
-    # Only count personal bests for legitimate sessions
-    if xp_multiplier >= 1.0:
+    # Update personal bests for any valid (non-rejected) session
+    # The XP penalty from anti-cheat is sufficient - don't also block PB updates
+    if anti_cheat_result is None or anti_cheat_result.is_valid:
         if adjusted_wpm > stats.best_wpm:
             stats.best_wpm = adjusted_wpm
             stats.best_wpm_achieved_at = datetime.utcnow()
@@ -1093,14 +1121,15 @@ def get_leaderboard(
     """Get leaderboard entries"""
     from app.users.models import User
 
-    # Query user stats with user info (use actual columns, not properties)
+    # Query user stats with user info (respects privacy settings)
     query = db.query(
         models.UserTypingStats,
         User.username,
         User.first_name,
         User.last_name
     ).join(User).filter(
-        models.UserTypingStats.total_games_completed > 0
+        models.UserTypingStats.total_games_completed > 0,
+        User.show_on_leaderboard == True
     )
 
     if leaderboard_type == "wpm":

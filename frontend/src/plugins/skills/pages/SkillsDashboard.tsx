@@ -21,6 +21,7 @@ import {
   Cloud,
   Flame,
   Sparkles,
+  Rocket,
 } from 'lucide-react';
 
 // Category config with icons and labels
@@ -289,6 +290,7 @@ export const SkillsDashboard: React.FC = () => {
 
   // Calculate streak-like engagement stats
   const highestSkill = overview.skills.reduce((a, b) => (a.currentLevel > b.currentLevel ? a : b), overview.skills[0]);
+  const lowestSkill = overview.skills.reduce((a, b) => (a.currentLevel < b.currentLevel ? a : b), overview.skills[0]);
   const skillsAbove1 = overview.skills.filter(s => s.currentLevel > 1).length;
 
   return (
@@ -416,6 +418,35 @@ export const SkillsDashboard: React.FC = () => {
             <span className="text-sm text-gray-500 dark:text-gray-400 ml-auto hidden sm:inline">
               {(highestSkill.currentXp ?? 0).toLocaleString()} XP earned
             </span>
+          </div>
+        </div>
+      )}
+
+      {/* Suggest weakest skill */}
+      {lowestSkill && highestSkill && lowestSkill.skillSlug !== highestSkill.skillSlug && (
+        <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-blue-500/10 via-cyan-500/10 to-teal-500/10 dark:from-blue-500/5 dark:via-cyan-500/5 dark:to-teal-500/5 border border-blue-200/50 dark:border-blue-700/30">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-3">
+              <Rocket className="w-5 h-5 text-blue-500" />
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                Level up your weakest skill:
+              </span>
+              <span className="text-2xl">{lowestSkill.skillIcon}</span>
+              <span className="font-bold text-gray-900 dark:text-white">{lowestSkill.skillName}</span>
+              <span
+                className="text-sm font-bold px-2 py-0.5 rounded-full"
+                style={{ backgroundColor: `${lowestSkill.tierColor}20`, color: lowestSkill.tierColor }}
+              >
+                Lvl {lowestSkill.currentLevel}
+              </span>
+            </div>
+            <Link
+              to={`/skills/${lowestSkill.skillSlug}`}
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+            >
+              Find Activities
+              <ChevronRight className="w-4 h-4" />
+            </Link>
           </div>
         </div>
       )}

@@ -152,6 +152,29 @@ export interface TiersResponse {
   tiers: TierInfo[];
 }
 
+// Skill activities (linked content)
+export interface SkillActivityItem {
+  id: string;
+  title: string;
+  description: string | null;
+  activityType: 'course' | 'quiz' | 'tutorial' | 'typing_practice';
+  difficulty: string | null;
+  xpReward: number;
+  url: string;
+  estimatedTime: string | null;
+  category: string | null;
+}
+
+export interface SkillActivitiesResponse {
+  skillSlug: string;
+  skillName: string;
+  courses: SkillActivityItem[];
+  quizzes: SkillActivityItem[];
+  tutorials: SkillActivityItem[];
+  typingPractice: SkillActivityItem[];
+  totalCount: number;
+}
+
 // API response wrappers
 export interface SkillsListResponse {
   skills: Skill[];

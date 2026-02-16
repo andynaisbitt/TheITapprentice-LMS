@@ -572,6 +572,11 @@ export const GhostModeGame: React.FC<GhostModeGameProps> = ({
         const remaining = currentRoundConfig.timeLimit! - elapsed;
 
         if (remaining <= 0) {
+          // Clear interval before calling completeRound to prevent double-fire
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+          }
           setTimeRemaining(0);
           completeRound(false);
         } else {

@@ -84,6 +84,20 @@ class User(Base):
     courses_completed = Column(Integer, default=0)
     current_streak = Column(Integer, default=0)  # Daily login streak
     
+    # Privacy settings
+    show_on_leaderboard = Column(Boolean, default=True)
+    show_profile_public = Column(Boolean, default=True)
+    show_activity_public = Column(Boolean, default=True)
+
+    # Learning preferences
+    default_difficulty = Column(String(20), default="medium")  # easy, medium, hard
+
+    # Notification preferences
+    notify_challenge_reminders = Column(Boolean, default=True)
+    notify_streak_reminders = Column(Boolean, default=True)
+    notify_achievement_alerts = Column(Boolean, default=True)
+    notify_weekly_digest = Column(Boolean, default=True)
+
     # Activity tracking
     last_login = Column(DateTime(timezone=True), nullable=True)
     login_count = Column(Integer, default=0)

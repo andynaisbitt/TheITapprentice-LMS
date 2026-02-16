@@ -34,7 +34,7 @@ export const QuizCard: React.FC<QuizCardProps> = ({ quiz }) => {
       {/* Header with gradient */}
       <div className="h-3 bg-gradient-to-r from-purple-500 to-indigo-600"></div>
 
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         {/* Category & Difficulty badges */}
         <div className="flex items-center gap-2 mb-3">
           {quiz.category && (

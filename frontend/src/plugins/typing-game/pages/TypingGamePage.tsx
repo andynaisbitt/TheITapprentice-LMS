@@ -27,8 +27,11 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../state/contexts/AuthContext';
 import { typingGameApi, type StreakInfo } from '../services/typingGameApi';
+import { progressApi } from '../../shared/services/progressApi';
+import { XPProgressBar } from '../../shared/components/XPProgressBar';
 import { StreakDisplay } from '../components/StreakDisplay';
 import type { UserTypingStats, LeaderboardEntry } from '../types';
+import type { LevelProgress } from '../../shared/types';
 
 export const TypingGamePage: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
@@ -37,6 +40,7 @@ export const TypingGamePage: React.FC = () => {
 
   const [stats, setStats] = useState<UserTypingStats | null>(null);
   const [streakInfo, setStreakInfo] = useState<StreakInfo | null>(null);
+  const [levelProgress, setLevelProgress] = useState<LevelProgress | null>(null);
   const [topPlayers, setTopPlayers] = useState<LeaderboardEntry[]>([]);
   const [pvpEnabled, setPvpEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -58,12 +62,14 @@ export const TypingGamePage: React.FC = () => {
       setPvpEnabled(pvpSettings.pvp_enabled);
 
       if (isAuthenticated) {
-        const [userStats, streak] = await Promise.all([
+        const [userStats, streak, xpProgress] = await Promise.all([
           typingGameApi.getMyStats(),
           typingGameApi.getMyStreak().catch(() => null),
+          progressApi.getMyXPProgress().catch(() => null),
         ]);
         setStats(userStats);
         if (streak) setStreakInfo(streak);
+        if (xpProgress) setLevelProgress(xpProgress);
       }
     } catch (error) {
       console.error('Failed to fetch typing game data:', error);
@@ -227,6 +233,17 @@ export const TypingGamePage: React.FC = () => {
           </motion.div>
         )}
 
+        {/* ─── 2b. XP Level Progress ─── */}
+        {isAuthenticated && levelProgress && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.07 }}
+          >
+            <XPProgressBar progress={levelProgress} compact className="px-4 py-2.5 bg-white/80 dark:bg-gray-800/80 backdrop-blur rounded-xl border border-gray-200 dark:border-gray-700" />
+          </motion.div>
+        )}
+
         {/* ─── 3. Featured Quick Brown Fox Card ─── */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
@@ -294,6 +311,64 @@ export const TypingGamePage: React.FC = () => {
             );
           })}
         </div>
+
+        {/* ─── 4b. Next Milestones ─── */}
+        {isAuthenticated && stats && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4"
+          >
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-1.5 mb-3">
+              <Award className="w-4 h-4 text-purple-500" />
+              Next Milestones
+            </h2>
+            <div className="grid grid-cols-2 gap-2">
+              {(() => {
+                const milestones: Array<{ label: string; target: number; current: number; unit: string; color: string }> = [];
+                const wpm = stats.best_wpm || 0;
+                const wpmTargets = [30, 50, 80, 100, 120, 150];
+                const nextWpm = wpmTargets.find(t => t > wpm);
+                if (nextWpm) {
+                  milestones.push({ label: `Reach ${nextWpm} WPM`, target: nextWpm, current: wpm, unit: 'WPM', color: 'from-blue-500 to-cyan-500' });
+                }
+                const games = stats.total_games_completed || 0;
+                const gameTargets = [10, 25, 50, 100, 250, 500];
+                const nextGames = gameTargets.find(t => t > games);
+                if (nextGames) {
+                  milestones.push({ label: `Play ${nextGames} games`, target: nextGames, current: games, unit: 'games', color: 'from-green-500 to-emerald-500' });
+                }
+                const accuracy = stats.avg_accuracy || 0;
+                if (accuracy < 95) {
+                  milestones.push({ label: 'Reach 95% accuracy', target: 95, current: Math.round(accuracy), unit: '%', color: 'from-orange-500 to-yellow-500' });
+                } else if (accuracy < 99) {
+                  milestones.push({ label: 'Reach 99% accuracy', target: 99, current: Math.round(accuracy), unit: '%', color: 'from-orange-500 to-yellow-500' });
+                }
+                const streak = stats.current_streak_days || 0;
+                const streakTargets = [3, 7, 14, 30, 60];
+                const nextStreak = streakTargets.find(t => t > streak);
+                if (nextStreak) {
+                  milestones.push({ label: `${nextStreak}-day streak`, target: nextStreak, current: streak, unit: 'days', color: 'from-red-500 to-orange-500' });
+                }
+                return milestones.slice(0, 4).map((m, i) => {
+                  const pct = Math.min(100, Math.round((m.current / m.target) * 100));
+                  return (
+                    <div key={i} className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-2.5">
+                      <div className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 truncate">{m.label}</div>
+                      <div className="h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden mb-1">
+                        <div className={`h-full bg-gradient-to-r ${m.color} rounded-full transition-all`} style={{ width: `${pct}%` }} />
+                      </div>
+                      <div className="text-[10px] text-gray-500 dark:text-gray-400">
+                        {m.current}/{m.target} {m.unit} ({pct}%)
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          </motion.div>
+        )}
 
         {/* ─── 5. Horizontal Top 3 Leaderboard ─── */}
         <motion.div

@@ -8,7 +8,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ChevronLeft, ChevronRight, ChevronDown, Pause, Play } from 'lucide-react';
-import { featureSlides, FeatureSlide } from './slideData';
+import { featureSlides, FeatureSlide, SPRING_SNAPPY, SPRING_BOUNCY, SPRING_GENTLE } from './slideData';
 import { slideVisuals } from './SlideVisuals';
 import { useAuth } from '../../../state/contexts/AuthContext';
 
@@ -16,13 +16,14 @@ const AUTO_ADVANCE_INTERVAL = 6000;
 const SWIPE_THRESHOLD = 50;
 
 export const FeatureShowcaseHero: React.FC = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
   const [showSwipeHint, setShowSwipeHint] = useState(true);
 
   const currentSlide = featureSlides[currentIndex];
+  const isWelcomeSlide = currentSlide.id === 'welcome';
 
   const goToSlide = useCallback((index: number) => {
     setCurrentIndex(index);
@@ -83,9 +84,25 @@ export const FeatureShowcaseHero: React.FC = () => {
     window.scrollBy({ top: window.innerHeight * 0.85, behavior: 'smooth' });
   };
 
+  // Badge text: "Welcome" for welcome slide, "Feature N of 9" for others
+  const getBadgeText = () => {
+    if (isWelcomeSlide) return 'Welcome';
+    // Exclude welcome slide from the feature count
+    const featureIndex = featureSlides.slice(1).findIndex(s => s.id === currentSlide.id) + 1;
+    return `Feature ${featureIndex} of ${featureSlides.length - 1}`;
+  };
+
+  // Personalized headline for welcome slide
+  const getHeadline = () => {
+    if (isWelcomeSlide && isAuthenticated && user?.first_name) {
+      return `Welcome back, ${user.first_name}!`;
+    }
+    return currentSlide.headline;
+  };
+
   return (
     <section
-      className="relative h-[100dvh] flex flex-col overflow-hidden"
+      className="relative h-[80dvh] sm:h-[88dvh] lg:h-[100dvh] flex flex-col overflow-hidden"
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
       aria-label="Feature showcase"
@@ -97,7 +114,7 @@ export const FeatureShowcaseHero: React.FC = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.4, ease: 'easeOut' }}
           className={`absolute inset-0 bg-gradient-to-br ${currentSlide.gradient}`}
         />
       </AnimatePresence>
@@ -119,20 +136,21 @@ export const FeatureShowcaseHero: React.FC = () => {
         />
       </div>
 
-      {/* Main content area - uses flex to ensure controls stay in view */}
+      {/* Main content area */}
       <div className="relative flex-1 flex flex-col pt-4 sm:pt-8">
-        {/* Slide content - takes available space */}
-        <div className="flex-1 flex items-center">
+        {/* Slide content */}
+        <div className="flex-1 flex items-center justify-center">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentSlide.id}
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.4 }}
+              transition={{ x: SPRING_GENTLE, opacity: { duration: 0.25 } }}
               drag="x"
               dragConstraints={{ left: 0, right: 0 }}
-              dragElastic={0.1}
+              dragElastic={0.15}
+              dragTransition={{ bounceStiffness: 300, bounceDamping: 20 }}
               onDragEnd={handleDragEnd}
               className="w-full cursor-grab active:cursor-grabbing"
             >
@@ -142,10 +160,10 @@ export const FeatureShowcaseHero: React.FC = () => {
                   <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5, delay: 0.1 }}
-                    className="flex justify-center lg:justify-start mb-4 sm:mb-6 lg:mb-0"
+                    transition={{ scale: { ...SPRING_SNAPPY, delay: 0.04 }, opacity: { duration: 0.2 } }}
+                    className="flex justify-center lg:justify-start mb-2 sm:mb-4 lg:mb-0"
                   >
-                    <div className="w-full max-w-[260px] sm:max-w-[300px] lg:max-w-[380px]">
+                    <div className="w-full max-w-[280px] sm:max-w-[320px] lg:max-w-[400px]">
                       {slideVisuals[currentSlide.id] ? (
                         React.createElement(slideVisuals[currentSlide.id])
                       ) : (
@@ -166,41 +184,49 @@ export const FeatureShowcaseHero: React.FC = () => {
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.2 }}
+                    transition={{ y: { ...SPRING_SNAPPY, delay: 0.08 }, opacity: { duration: 0.2 } }}
                     className="text-center lg:text-left"
                   >
                     {/* Feature badge */}
                     <motion.div
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/15 backdrop-blur-sm rounded-full text-white/90 text-xs sm:text-sm font-medium mb-3"
+                      transition={{ scale: SPRING_BOUNCY, opacity: { duration: 0.2 } }}
+                      className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/15 backdrop-blur-sm rounded-full text-white/90 text-xs sm:text-sm font-medium mb-2"
                     >
                       <motion.span
                         animate={{ scale: [1, 1.2, 1] }}
                         transition={{ duration: 2, repeat: Infinity }}
                         className="w-1.5 h-1.5 rounded-full bg-white"
                       />
-                      Feature {currentIndex + 1} of {featureSlides.length}
+                      {getBadgeText()}
                     </motion.div>
 
                     {/* Headline */}
-                    <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-white mb-2 sm:mb-3 leading-tight">
-                      {currentSlide.headline}
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-white mb-1.5 sm:mb-2 leading-tight">
+                      {getHeadline()}
                     </h1>
 
                     {/* Subtext */}
-                    <p className="text-sm sm:text-base lg:text-lg text-white/80 mb-4 sm:mb-5 max-w-md mx-auto lg:mx-0">
+                    <p className="text-sm sm:text-base lg:text-lg text-white/80 mb-3 sm:mb-4 max-w-md mx-auto lg:mx-0">
                       {currentSlide.subtext}
                     </p>
 
                     {/* CTA Button */}
-                    <Link
-                      to={getCtaLink(currentSlide)}
-                      className="group inline-flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 bg-white text-gray-900 rounded-xl font-semibold text-sm sm:text-base shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300"
+                    <motion.div
+                      whileHover={{ scale: 1.04 }}
+                      whileTap={{ scale: 0.97 }}
+                      transition={SPRING_SNAPPY}
+                      className="inline-block"
                     >
-                      {currentSlide.cta}
-                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                    </Link>
+                      <Link
+                        to={getCtaLink(currentSlide)}
+                        className="group inline-flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 bg-white text-gray-900 rounded-xl font-semibold text-sm sm:text-base shadow-xl hover:shadow-2xl"
+                      >
+                        {currentSlide.cta}
+                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                      </Link>
+                    </motion.div>
                   </motion.div>
                 </div>
               </div>
@@ -209,7 +235,7 @@ export const FeatureShowcaseHero: React.FC = () => {
         </div>
 
         {/* Bottom section - controls + scroll hint */}
-        <div className="relative z-10 px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20">
+        <div className="relative z-10 px-4 sm:px-6 lg:px-8 pb-8 sm:pb-12">
           {/* Swipe hint - mobile only */}
           <AnimatePresence>
             {showSwipeHint && (
@@ -233,10 +259,12 @@ export const FeatureShowcaseHero: React.FC = () => {
             {/* Progress dots */}
             <div className="flex items-center gap-1.5 sm:gap-2">
               {featureSlides.map((slide, index) => (
-                <button
+                <motion.button
                   key={slide.id}
+                  layout
+                  transition={SPRING_SNAPPY}
                   onClick={() => goToSlide(index)}
-                  className={`relative h-2 rounded-full transition-all duration-300 ${
+                  className={`relative h-2 rounded-full ${
                     index === currentIndex
                       ? 'w-6 sm:w-8 bg-white'
                       : 'w-2 bg-white/40 hover:bg-white/60'
@@ -252,33 +280,42 @@ export const FeatureShowcaseHero: React.FC = () => {
                       className="absolute inset-0 bg-white/50 rounded-full"
                     />
                   )}
-                </button>
+                </motion.button>
               ))}
             </div>
 
             {/* Navigation controls */}
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <button
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                whileHover={{ scale: 1.08 }}
+                transition={SPRING_SNAPPY}
                 onClick={() => setIsPaused((p) => !p)}
-                className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+                className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white"
                 aria-label={isPaused ? 'Play' : 'Pause'}
               >
                 {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
-              </button>
-              <button
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                whileHover={{ scale: 1.08 }}
+                transition={SPRING_SNAPPY}
                 onClick={prevSlide}
-                className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+                className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white"
                 aria-label="Previous"
               >
                 <ChevronLeft className="w-5 h-5" />
-              </button>
-              <button
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                whileHover={{ scale: 1.08 }}
+                transition={SPRING_SNAPPY}
                 onClick={nextSlide}
-                className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+                className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white"
                 aria-label="Next"
               >
                 <ChevronRight className="w-5 h-5" />
-              </button>
+              </motion.button>
             </div>
           </div>
 

@@ -74,10 +74,10 @@ export const usePublicSidebar = (): UsePublicSidebarReturn => {
     }
   }, [location.pathname]);
 
-  // Close sidebar on navigation (for mobile-like behavior)
+  // Close sidebar on any navigation (pathname or search changes)
   useEffect(() => {
     setIsOpen(false);
-  }, [location.pathname]);
+  }, [location.pathname, location.search]);
 
   // Handle ESC key to close sidebar
   useEffect(() => {
@@ -96,10 +96,13 @@ export const usePublicSidebar = (): UsePublicSidebarReturn => {
     };
   }, [isOpen]);
 
-  // Prevent body scroll when sidebar is open
+  // Prevent body scroll when sidebar is open (only on md+ where sidebar is visible)
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
+      const isMdScreen = window.matchMedia('(min-width: 768px)').matches;
+      if (isMdScreen) {
+        document.body.style.overflow = 'hidden';
+      }
     } else {
       document.body.style.overflow = '';
     }
@@ -109,8 +112,25 @@ export const usePublicSidebar = (): UsePublicSidebarReturn => {
     };
   }, [isOpen]);
 
+  // Close sidebar if window resizes below md breakpoint while open
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)');
+    const handler = (e: MediaQueryListEvent) => {
+      if (!e.matches && isOpen) {
+        setIsOpen(false);
+        document.body.style.overflow = '';
+      }
+    };
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, [isOpen]);
+
   const openSidebar = useCallback(() => setIsOpen(true), []);
-  const closeSidebar = useCallback(() => setIsOpen(false), []);
+  const closeSidebar = useCallback(() => {
+    setIsOpen(false);
+    // Immediately unlock scroll to avoid race with exit animation
+    document.body.style.overflow = '';
+  }, []);
   const toggleSidebar = useCallback(() => setIsOpen((prev) => !prev), []);
 
   const toggleSection = useCallback((sectionId: string) => {

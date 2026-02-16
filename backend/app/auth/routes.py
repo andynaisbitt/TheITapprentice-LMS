@@ -12,7 +12,7 @@ from app.core.config import settings
 from app.core.security_utils import mask_email, SafeLogger
 from app.core.rate_limit_middleware import limiter, user_limiter
 from app.users.models import User
-from app.users.schemas import UserResponse, UserProfileUpdate, UserPasswordChange
+from app.users.schemas import UserResponse, UserProfileUpdate, UserPasswordChange, UserPreferencesUpdate
 from app.auth.dependencies import get_current_user
 from app.plugins.shared.xp_service import xp_service
 from app.plugins.shared.achievement_service import achievement_service
@@ -193,6 +193,29 @@ async def update_profile(
     db.commit()
     db.refresh(current_user)
     
+    return current_user
+
+
+@router.put("/me/preferences", response_model=UserResponse)
+async def update_preferences(
+    prefs: UserPreferencesUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update user preferences (privacy, notifications, learning difficulty)."""
+    pref_fields = [
+        'show_on_leaderboard', 'show_profile_public', 'show_activity_public',
+        'default_difficulty',
+        'notify_challenge_reminders', 'notify_streak_reminders',
+        'notify_achievement_alerts', 'notify_weekly_digest',
+    ]
+    for field in pref_fields:
+        value = getattr(prefs, field, None)
+        if value is not None:
+            setattr(current_user, field, value)
+
+    db.commit()
+    db.refresh(current_user)
     return current_user
 
 

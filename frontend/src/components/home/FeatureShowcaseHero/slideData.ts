@@ -8,6 +8,8 @@ import {
   Target,
   Sparkles,
   Award,
+  Rocket,
+  Flame,
   type LucideIcon
 } from 'lucide-react';
 
@@ -25,14 +27,25 @@ export interface FeatureSlide {
 
 export const featureSlides: FeatureSlide[] = [
   {
+    id: 'welcome',
+    icon: Rocket,
+    headline: 'Your IT Journey Starts Here',
+    subtext: 'Free courses, typing games, quizzes, and challenges — everything you need to build real IT skills.',
+    cta: 'Get Started',
+    ctaLink: '/courses',
+    gradient: 'from-slate-800 to-indigo-800',
+    iconGradient: 'from-indigo-300 to-violet-400',
+    accentColor: 'indigo',
+  },
+  {
     id: 'courses',
     icon: GraduationCap,
     headline: 'Learn IT Basics',
     subtext: 'Step-by-step courses for complete beginners. No experience needed.',
     cta: 'Start Learning',
     ctaLink: '/courses',
-    gradient: 'from-blue-600 via-indigo-600 to-violet-700',
-    iconGradient: 'from-blue-400 to-indigo-500',
+    gradient: 'from-blue-800 to-indigo-700',
+    iconGradient: 'from-blue-300 to-indigo-400',
     accentColor: 'blue',
   },
   {
@@ -42,8 +55,8 @@ export const featureSlides: FeatureSlide[] = [
     subtext: 'Track your progress across PC basics, typing, email, and more',
     cta: 'View Skills',
     ctaLink: '/skills',
-    gradient: 'from-violet-600 via-purple-600 to-fuchsia-600',
-    iconGradient: 'from-violet-400 to-purple-500',
+    gradient: 'from-violet-800 to-purple-700',
+    iconGradient: 'from-violet-300 to-purple-400',
     accentColor: 'violet',
   },
   {
@@ -53,8 +66,8 @@ export const featureSlides: FeatureSlide[] = [
     subtext: 'Fun typing games to boost your speed. Track your WPM and accuracy.',
     cta: 'Start Typing',
     ctaLink: '/typing-practice',
-    gradient: 'from-orange-500 via-amber-500 to-yellow-500',
-    iconGradient: 'from-orange-400 to-amber-500',
+    gradient: 'from-amber-800 to-orange-700',
+    iconGradient: 'from-amber-300 to-orange-400',
     accentColor: 'amber',
   },
   {
@@ -64,8 +77,8 @@ export const featureSlides: FeatureSlide[] = [
     subtext: 'Quick quizzes on keyboards, files, shortcuts, and IT basics',
     cta: 'Take a Quiz',
     ctaLink: '/quizzes',
-    gradient: 'from-purple-600 via-fuchsia-600 to-pink-600',
-    iconGradient: 'from-purple-400 to-pink-500',
+    gradient: 'from-purple-800 to-fuchsia-700',
+    iconGradient: 'from-purple-300 to-pink-400',
     accentColor: 'purple',
   },
   {
@@ -75,8 +88,8 @@ export const featureSlides: FeatureSlide[] = [
     subtext: 'Easy tutorials: set up email, connect to WiFi, install apps',
     cta: 'Browse Tutorials',
     ctaLink: '/tutorials',
-    gradient: 'from-emerald-500 via-teal-500 to-cyan-600',
-    iconGradient: 'from-emerald-400 to-teal-500',
+    gradient: 'from-emerald-800 to-teal-700',
+    iconGradient: 'from-emerald-300 to-teal-400',
     accentColor: 'emerald',
   },
   {
@@ -86,8 +99,8 @@ export const featureSlides: FeatureSlide[] = [
     subtext: 'Compete with other learners and climb the weekly leaderboard',
     cta: 'View Leaderboard',
     ctaLink: '/leaderboard',
-    gradient: 'from-yellow-500 via-amber-500 to-orange-600',
-    iconGradient: 'from-yellow-400 to-orange-500',
+    gradient: 'from-amber-700 to-orange-800',
+    iconGradient: 'from-amber-300 to-orange-400',
     accentColor: 'yellow',
   },
   {
@@ -97,9 +110,20 @@ export const featureSlides: FeatureSlide[] = [
     subtext: 'Complete challenges to unlock badges and show off your progress',
     cta: 'My Achievements',
     ctaLink: '/certifications',
-    gradient: 'from-amber-500 via-yellow-500 to-lime-500',
-    iconGradient: 'from-amber-400 to-yellow-500',
+    gradient: 'from-amber-800 to-yellow-700',
+    iconGradient: 'from-amber-300 to-yellow-400',
     accentColor: 'amber',
+  },
+  {
+    id: 'challenges',
+    icon: Flame,
+    headline: 'Daily Challenges',
+    subtext: 'Complete daily tasks to earn XP, build streaks, and climb the leaderboard.',
+    cta: "Today's Challenges",
+    ctaLink: '/challenges',
+    gradient: 'from-rose-800 to-red-700',
+    iconGradient: 'from-rose-300 to-red-400',
+    accentColor: 'rose',
   },
   {
     id: 'progress',
@@ -108,8 +132,13 @@ export const featureSlides: FeatureSlide[] = [
     subtext: 'See your streak, XP, level, and everything you have accomplished',
     cta: 'My Dashboard',
     ctaLink: '/dashboard',
-    gradient: 'from-cyan-500 via-blue-500 to-indigo-600',
-    iconGradient: 'from-cyan-400 to-blue-500',
+    gradient: 'from-cyan-800 to-blue-700',
+    iconGradient: 'from-cyan-300 to-blue-400',
     accentColor: 'cyan',
   },
 ];
+
+// Spring animation presets
+export const SPRING_SNAPPY = { type: 'spring' as const, stiffness: 400, damping: 28 };
+export const SPRING_BOUNCY = { type: 'spring' as const, stiffness: 500, damping: 22 };
+export const SPRING_GENTLE = { type: 'spring' as const, stiffness: 260, damping: 26 };

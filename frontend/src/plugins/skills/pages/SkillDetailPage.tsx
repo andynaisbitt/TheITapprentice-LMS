@@ -13,6 +13,8 @@ import type {
   UserSkillProgress,
   SkillLeaderboard,
   SkillXPLogEntry,
+  SkillActivitiesResponse,
+  SkillActivityItem,
 } from '../types';
 import {
   ArrowLeft,
@@ -24,7 +26,9 @@ import {
   Gamepad2,
   ClipboardCheck,
   GraduationCap,
-  Award
+  Award,
+  Rocket,
+  ExternalLink,
 } from 'lucide-react';
 
 // Source type icons
@@ -34,6 +38,24 @@ const sourceIcons: Record<string, React.ReactNode> = {
   quiz: <ClipboardCheck className="w-4 h-4" />,
   typing_game: <Gamepad2 className="w-4 h-4" />,
   achievement: <Award className="w-4 h-4" />,
+};
+
+// Activity type config
+const activityTypeConfig: Record<string, { icon: React.ReactNode; label: string; color: string }> = {
+  course: { icon: <GraduationCap className="w-5 h-5" />, label: 'Courses', color: 'text-blue-600 dark:text-blue-400' },
+  quiz: { icon: <ClipboardCheck className="w-5 h-5" />, label: 'Quizzes', color: 'text-purple-600 dark:text-purple-400' },
+  tutorial: { icon: <BookOpen className="w-5 h-5" />, label: 'Tutorials', color: 'text-emerald-600 dark:text-emerald-400' },
+  typing_practice: { icon: <Gamepad2 className="w-5 h-5" />, label: 'Typing Practice', color: 'text-amber-600 dark:text-amber-400' },
+};
+
+const difficultyColors: Record<string, string> = {
+  beginner: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+  easy: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+  intermediate: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  medium: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  advanced: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+  hard: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+  expert: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
 };
 
 // Format relative time
@@ -78,9 +100,10 @@ export const SkillDetailPage: React.FC = () => {
   const [userProgress, setUserProgress] = useState<UserSkillProgress | null>(null);
   const [leaderboard, setLeaderboard] = useState<SkillLeaderboard | null>(null);
   const [xpHistory, setXpHistory] = useState<SkillXPLogEntry[]>([]);
+  const [activities, setActivities] = useState<SkillActivitiesResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'history' | 'players'>('history');
+  const [activeTab, setActiveTab] = useState<'activities' | 'history' | 'players'>('activities');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -97,6 +120,11 @@ export const SkillDetailPage: React.FC = () => {
         // Fetch leaderboard
         const lb = await skillsApi.getSkillLeaderboard(slug, 10);
         setLeaderboard(lb);
+
+        // Fetch activities (non-blocking — endpoint may not be deployed yet)
+        skillsApi.getSkillActivities(slug).then(setActivities).catch((err) => {
+          console.warn('Could not fetch skill activities:', err);
+        });
 
         // If authenticated, fetch user progress and history
         if (isAuthenticated) {
@@ -265,11 +293,22 @@ export const SkillDetailPage: React.FC = () => {
         )}
       </div>
 
-      {/* Mobile tab switcher */}
-      <div className="lg:hidden flex border-b border-gray-200 dark:border-gray-700 mb-4">
+      {/* Tab switcher */}
+      <div className="flex border-b border-gray-200 dark:border-gray-700 mb-4">
+        <button
+          onClick={() => setActiveTab('activities')}
+          className={`flex-1 lg:flex-none lg:px-6 py-2.5 text-sm font-medium text-center transition-colors ${
+            activeTab === 'activities'
+              ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+          }`}
+        >
+          <Rocket className="w-4 h-4 inline mr-1.5" />
+          Activities
+        </button>
         <button
           onClick={() => setActiveTab('history')}
-          className={`flex-1 py-2.5 text-sm font-medium text-center transition-colors ${
+          className={`flex-1 lg:flex-none lg:px-6 py-2.5 text-sm font-medium text-center transition-colors ${
             activeTab === 'history'
               ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
               : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
@@ -280,7 +319,7 @@ export const SkillDetailPage: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('players')}
-          className={`flex-1 py-2.5 text-sm font-medium text-center transition-colors ${
+          className={`flex-1 lg:flex-none lg:px-6 py-2.5 text-sm font-medium text-center transition-colors ${
             activeTab === 'players'
               ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
               : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
@@ -292,8 +331,106 @@ export const SkillDetailPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Activities */}
+        <div className={`lg:col-span-2 ${activeTab !== 'activities' ? 'hidden' : ''}`}>
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <Rocket className="w-5 h-5" />
+              Activities for {skill.name}
+            </h2>
+
+            {activities && activities.totalCount > 0 ? (
+              <div className="space-y-6">
+                {(
+                  [
+                    { key: 'courses', items: activities.courses || [] },
+                    { key: 'quizzes', items: activities.quizzes || [] },
+                    { key: 'tutorials', items: activities.tutorials || [] },
+                    { key: 'typing_practice', items: activities.typingPractice || [] },
+                  ] as { key: string; items: SkillActivityItem[] }[]
+                )
+                  .filter((group) => group.items.length > 0 && activityTypeConfig[group.key])
+                  .map((group) => {
+                    const config = activityTypeConfig[group.key]!
+                    return (
+                      <div key={group.key}>
+                        <h3 className={`text-sm font-semibold uppercase tracking-wider mb-3 flex items-center gap-2 ${config.color}`}>
+                          {config.icon}
+                          {config.label}
+                          <span className="text-gray-400 dark:text-gray-500 font-normal">({group.items.length})</span>
+                        </h3>
+                        <div className="space-y-2">
+                          {group.items.map((item) => (
+                            <Link
+                              key={item.id}
+                              to={item.url}
+                              className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors group"
+                            >
+                              <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                                group.key === 'courses' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                                : group.key === 'quizzes' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
+                                : group.key === 'tutorials' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
+                                : 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
+                              }`}>
+                                {config.icon}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium text-gray-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                                  {item.title}
+                                </div>
+                                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                  {item.difficulty && (
+                                    <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${difficultyColors[item.difficulty] || 'bg-gray-100 text-gray-600 dark:bg-gray-600 dark:text-gray-300'}`}>
+                                      {item.difficulty}
+                                    </span>
+                                  )}
+                                  {item.estimatedTime && (
+                                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                                      {item.estimatedTime}
+                                    </span>
+                                  )}
+                                </div>
+                                {item.description && (
+                                  <p className="text-sm text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                                    {item.description}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                {item.xpReward > 0 && (
+                                  <span className="text-sm font-semibold text-green-600 dark:text-green-400">
+                                    +{item.xpReward} XP
+                                  </span>
+                                )}
+                                <ExternalLink className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            ) : activities && activities.totalCount === 0 ? (
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                <Rocket className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p>No activities linked to this skill yet</p>
+                <p className="text-sm mt-1">Check back soon!</p>
+                {skill.slug === 'typing' && (
+                  <Link
+                    to="/typing-practice"
+                    className="inline-block mt-4 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg"
+                  >
+                    Practice Typing
+                  </Link>
+                )}
+              </div>
+            ) : null}
+          </div>
+        </div>
+
         {/* XP History */}
-        <div className={`lg:col-span-2 ${activeTab !== 'history' ? 'hidden lg:block' : ''}`}>
+        <div className={`lg:col-span-2 ${activeTab !== 'history' ? 'hidden' : ''}`}>
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <Clock className="w-5 h-5" />
@@ -355,8 +492,8 @@ export const SkillDetailPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Leaderboard */}
-        <div className={`${activeTab !== 'players' ? 'hidden lg:block' : ''}`}>
+        {/* Leaderboard sidebar */}
+        <div className={`${activeTab === 'players' ? '' : 'hidden lg:block'}`}>
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <Trophy className="w-5 h-5 text-yellow-500" />

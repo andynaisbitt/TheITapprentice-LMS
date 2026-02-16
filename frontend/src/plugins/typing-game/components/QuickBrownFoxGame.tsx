@@ -264,6 +264,7 @@ export const QuickBrownFoxGame: React.FC<QuickBrownFoxGameProps> = ({
   const keyDownHandledRef = useRef(false);
   const isAdvancingRef = useRef(false);
   const completeRoundRef = useRef<(passed: boolean) => void>(() => {});
+  const submitFinalResultsRef = useRef<() => void>(() => {});
 
   // Current round config
   const currentRoundConfig = ROUNDS[currentRound];
@@ -416,8 +417,14 @@ export const QuickBrownFoxGame: React.FC<QuickBrownFoxGameProps> = ({
     // Reset systems
     resetEngine();
     comboSystem.reset();
-    antiCheat.reset();
-    antiCheat.startTracking();
+    // Only fully reset anti-cheat on round 1; resume tracking on subsequent rounds
+    // so keystroke data accumulates across all rounds for accurate validation
+    if (currentRound === 0) {
+      antiCheat.reset();
+      antiCheat.startTracking();
+    } else {
+      antiCheat.resumeTracking();
+    }
     lastTierRef.current = 'none';
 
     // Reset typed text tracking
@@ -479,8 +486,8 @@ export const QuickBrownFoxGame: React.FC<QuickBrownFoxGameProps> = ({
     if (!passed) {
       setGameStatus('failed');
     } else if (currentRound >= ROUNDS.length - 1) {
-      // All rounds complete
-      submitFinalResults();
+      // All rounds complete - use ref to avoid stale closure
+      submitFinalResultsRef.current();
     } else {
       setGameStatus('round_complete');
     }
@@ -521,7 +528,9 @@ export const QuickBrownFoxGame: React.FC<QuickBrownFoxGameProps> = ({
 
   // Submit final results to API
   const submitFinalResults = useCallback(async () => {
+    console.log('[QBF] submitFinalResults called, sessionData:', sessionData ? sessionData.session_id : 'NULL');
     if (!sessionData) {
+      console.warn('[QBF] No session data - skipping submission!');
       setGameStatus('game_complete');
       return;
     }
@@ -529,6 +538,7 @@ export const QuickBrownFoxGame: React.FC<QuickBrownFoxGameProps> = ({
     // Use accumulated text from ALL rounds (not just current round)
     const allRoundsTypedText = accumulatedTypedTextRef.current.join(' ');
     const totalTime = Math.round(accumulatedTimeRef.current);
+    console.log(`[QBF] Submitting: text_len=${allRoundsTypedText.length}, time=${totalTime}s, rounds=${accumulatedTypedTextRef.current.length}`);
 
     // Gather anti-cheat data
     const antiCheatData = antiCheat.getAntiCheatData();
@@ -579,6 +589,11 @@ export const QuickBrownFoxGame: React.FC<QuickBrownFoxGameProps> = ({
     }
   }, [sessionData, checksum, maxCombo, comboSystem.maxCombo, antiCheat, onComplete, sounds, refreshStreakAndChallenges]);
 
+  // Keep submitFinalResultsRef in sync so completeRound always calls the latest version
+  useEffect(() => {
+    submitFinalResultsRef.current = submitFinalResults;
+  }, [submitFinalResults]);
+
   // Move to next round (guarded against double-calls and skipping)
   const nextRound = useCallback(() => {
     // Prevent double-advance
@@ -610,6 +625,11 @@ export const QuickBrownFoxGame: React.FC<QuickBrownFoxGameProps> = ({
         const remaining = currentRoundConfig.timeLimit! - elapsed;
 
         if (remaining <= 0) {
+          // Clear interval before calling completeRound to prevent double-fire
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+          }
           setTimeRemaining(0);
           completeRoundRef.current(false);
         } else {

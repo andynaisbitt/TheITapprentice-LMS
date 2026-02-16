@@ -664,7 +664,8 @@ async def get_admin_leaderboard(
     query = db.query(
         models.UserTypingStats,
         User.email,
-        User.display_name,
+        User.first_name,
+        User.last_name,
         User.username,
         User.total_points.label("total_xp")
     ).join(User, models.UserTypingStats.user_id == User.id).filter(
@@ -691,7 +692,8 @@ async def get_admin_leaderboard(
 
     # Build response with suspicious flag
     entries = []
-    for idx, (stats, email, display_name, username, total_xp) in enumerate(results):
+    for idx, (stats, email, first_name, last_name, username, total_xp) in enumerate(results):
+        display_name = f"{first_name} {last_name}".strip() if first_name and last_name else username
         # Flag as suspicious if best WPM > 180 AND games played < 10
         is_suspicious = stats.best_wpm > 180 and stats.total_games_completed < 10
 
@@ -1196,6 +1198,8 @@ async def submit_game_v2(
         raise HTTPException(status_code=500, detail=f"Game completion error: {str(e)}")
 
     if not result:
+        logger.warning(f"[submit/v2] Rejected: session_id={request.session_id}, "
+                       f"user={current_user.id}, checksum={request.checksum[:16]}...")
         raise HTTPException(
             status_code=400,
             detail="Invalid session or checksum"

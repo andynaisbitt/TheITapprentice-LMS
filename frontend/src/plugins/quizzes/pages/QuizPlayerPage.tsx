@@ -161,23 +161,23 @@ const QuizPlayerPage: React.FC = () => {
     const canAttempt = quiz.max_attempts === 0 || attempts.filter(a => a.is_complete).length < quiz.max_attempts;
 
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-        <div className="container mx-auto px-4 max-w-4xl">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-4 sm:py-8">
+        <div className="container mx-auto px-3 sm:px-4 max-w-4xl">
           {/* Back link */}
           <Link
             to="/quizzes"
-            className="inline-flex items-center text-purple-600 dark:text-purple-400 hover:underline mb-6"
+            className="inline-flex items-center text-purple-600 dark:text-purple-400 hover:underline mb-4 sm:mb-6 text-sm sm:text-base"
           >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             Back to Quizzes
           </Link>
 
           {/* Quiz Header Card */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden mb-8">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden mb-6 sm:mb-8">
             <div className="h-2 bg-gradient-to-r from-purple-500 to-indigo-600"></div>
-            <div className="p-8">
+            <div className="p-4 sm:p-6 lg:p-8">
               <div className="flex flex-wrap gap-2 mb-4">
                 {quiz.category && (
                   <span className="px-3 py-1 text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full">
@@ -189,30 +189,30 @@ const QuizPlayerPage: React.FC = () => {
                 </span>
               </div>
 
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">{quiz.title}</h1>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">{quiz.title}</h1>
               {quiz.description && (
-                <p className="text-gray-600 dark:text-gray-400 mb-6">{quiz.description}</p>
+                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-4 sm:mb-6">{quiz.description}</p>
               )}
 
               {/* Stats Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center">
-                  <div className="text-2xl font-bold text-gray-900 dark:text-white">{quiz.question_count}</div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 sm:p-4 text-center">
+                  <div className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">{quiz.question_count}</div>
                   <div className="text-sm text-gray-600 dark:text-gray-400">Questions</div>
                 </div>
-                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center">
-                  <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 sm:p-4 text-center">
+                  <div className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">
                     {quiz.time_limit_minutes ? `${quiz.time_limit_minutes}m` : 'None'}
                   </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">Time Limit</div>
+                  <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Time Limit</div>
                 </div>
-                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center">
-                  <div className="text-2xl font-bold text-gray-900 dark:text-white">{quiz.passing_score}%</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">Pass Score</div>
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 sm:p-4 text-center">
+                  <div className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">{quiz.passing_score}%</div>
+                  <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Pass Score</div>
                 </div>
-                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center">
-                  <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{quiz.xp_reward}</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">XP Reward</div>
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 sm:p-4 text-center">
+                  <div className="text-lg sm:text-2xl font-bold text-purple-600 dark:text-purple-400">{quiz.xp_reward}</div>
+                  <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">XP Reward</div>
                 </div>
               </div>
 
@@ -268,8 +268,8 @@ const QuizPlayerPage: React.FC = () => {
 
           {/* Leaderboard */}
           {leaderboard && leaderboard.entries.length > 0 && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Leaderboard</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-4">Leaderboard</h2>
               <div className="space-y-2">
                 {leaderboard.entries.slice(0, 5).map((entry) => (
                   <div
@@ -320,38 +320,42 @@ const QuizPlayerPage: React.FC = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         {/* Top Bar */}
         <div className="sticky top-0 bg-white dark:bg-gray-800 shadow-md z-10">
-          <div className="container mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <h1 className="font-bold text-gray-900 dark:text-white truncate max-w-xs">
+          <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-4">
+            {/* Mobile: stacked layout */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <h1 className="font-bold text-sm sm:text-base text-gray-900 dark:text-white truncate">
                   {quiz.title}
                 </h1>
-                <span className="text-sm text-gray-600 dark:text-gray-400">
+                <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                   Question {currentQuestion + 1} of {quiz.questions.length}
                 </span>
               </div>
 
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
                 {timeRemaining !== null && (
-                  <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${
+                  <div className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm ${
                     timeRemaining < 60 ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
                     timeRemaining < 300 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
                     'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
                   }`}>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <span className="font-mono font-medium">{formatTime(timeRemaining)}</span>
                   </div>
                 )}
-                <span className="text-sm text-gray-600 dark:text-gray-400">
+                <span className="hidden sm:inline text-sm text-gray-600 dark:text-gray-400">
                   {answeredCount}/{quiz.questions.length} answered
+                </span>
+                <span className="sm:hidden text-xs text-gray-600 dark:text-gray-400">
+                  {answeredCount}/{quiz.questions.length}
                 </span>
               </div>
             </div>
 
             {/* Progress bar */}
-            <div className="mt-3 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+            <div className="mt-2 sm:mt-3 h-1.5 sm:h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-purple-500 to-indigo-600 transition-all duration-300"
                 style={{ width: `${progress}%` }}
@@ -361,11 +365,11 @@ const QuizPlayerPage: React.FC = () => {
         </div>
 
         {/* Question Content */}
-        <div className="container mx-auto px-4 py-8 max-w-3xl">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
+        <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-3xl">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 lg:p-8">
             {/* Question */}
-            <div className="mb-8">
-              <div className="flex items-center gap-2 mb-4">
+            <div className="mb-4 sm:mb-8">
+              <div className="flex items-center gap-2 mb-3 sm:mb-4">
                 <span className="px-3 py-1 text-sm font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded-full">
                   {question.points} point{question.points !== 1 ? 's' : ''}
                 </span>
@@ -461,54 +465,54 @@ const QuizPlayerPage: React.FC = () => {
   // Results Phase
   if (phase === 'results' && result) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-        <div className="container mx-auto px-4 max-w-3xl">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-4 sm:py-8">
+        <div className="container mx-auto px-3 sm:px-4 max-w-3xl">
           {/* Result Card */}
-          <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden mb-8 ${
+          <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden mb-6 sm:mb-8 ${
             result.passed ? 'border-t-4 border-green-500' : 'border-t-4 border-red-500'
           }`}>
-            <div className="p-8 text-center">
-              <div className={`w-24 h-24 mx-auto rounded-full flex items-center justify-center mb-6 ${
+            <div className="p-4 sm:p-6 lg:p-8 text-center">
+              <div className={`w-16 h-16 sm:w-24 sm:h-24 mx-auto rounded-full flex items-center justify-center mb-4 sm:mb-6 ${
                 result.passed ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'
               }`}>
                 {result.passed ? (
-                  <svg className="w-12 h-12 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-8 h-8 sm:w-12 sm:h-12 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 ) : (
-                  <svg className="w-12 h-12 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-8 h-8 sm:w-12 sm:h-12 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 )}
               </div>
 
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
                 {result.passed ? 'Congratulations!' : 'Keep Trying!'}
               </h1>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-4 sm:mb-6">
                 {result.passed ? 'You passed the quiz!' : `You need ${quiz.passing_score}% to pass.`}
               </p>
 
-              <div className="text-5xl font-bold mb-4">
+              <div className="text-3xl sm:text-5xl font-bold mb-4">
                 <span className={result.passed ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
                   {result.percentage.toFixed(0)}%
                 </span>
               </div>
 
-              <div className="flex justify-center gap-8 text-gray-600 dark:text-gray-400">
+              <div className="flex justify-center gap-4 sm:gap-8 text-gray-600 dark:text-gray-400">
                 <div>
-                  <div className="text-2xl font-bold text-gray-900 dark:text-white">{result.score}/{result.max_score}</div>
+                  <div className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">{result.score}/{result.max_score}</div>
                   <div className="text-sm">Points</div>
                 </div>
                 {result.time_taken_seconds && (
                   <div>
-                    <div className="text-2xl font-bold text-gray-900 dark:text-white">{formatTime(result.time_taken_seconds)}</div>
+                    <div className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">{formatTime(result.time_taken_seconds)}</div>
                     <div className="text-sm">Time</div>
                   </div>
                 )}
                 {result.xp_awarded > 0 && (
                   <div>
-                    <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">+{result.xp_awarded}</div>
+                    <div className="text-lg sm:text-2xl font-bold text-purple-600 dark:text-purple-400">+{result.xp_awarded}</div>
                     <div className="text-sm">XP Earned</div>
                   </div>
                 )}
@@ -518,7 +522,7 @@ const QuizPlayerPage: React.FC = () => {
 
           {/* Guest Sign-up CTA */}
           {!isAuthenticated && (
-            <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-6 mb-8 text-center">
+            <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4 sm:p-6 mb-6 sm:mb-8 text-center">
               <h3 className="text-lg font-semibold text-purple-900 dark:text-purple-100 mb-2">
                 Want to save your score?
               </h3>
@@ -544,8 +548,8 @@ const QuizPlayerPage: React.FC = () => {
 
           {/* Question Review */}
           {result.show_answers && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Question Review</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 mb-6 sm:mb-8">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-4 sm:mb-6">Question Review</h2>
               <div className="space-y-6">
                 {result.question_results.map((qr, idx) => {
                   const question = quiz.questions.find(q => q.id === qr.question_id);
@@ -588,27 +592,27 @@ const QuizPlayerPage: React.FC = () => {
           )}
 
           {/* Actions */}
-          <div className="flex gap-4 justify-center">
+          <div className="flex gap-3 sm:gap-4 justify-center">
             <button
               onClick={() => {
                 setPhase('overview');
                 setResult(null);
                 setAnswers({});
               }}
-              className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+              className="px-4 sm:px-6 py-2.5 sm:py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm sm:text-base"
             >
               Try Again
             </button>
             <Link
               to="/quizzes"
-              className="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
+              className="px-4 sm:px-6 py-2.5 sm:py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 text-sm sm:text-base"
             >
               Back to Quizzes
             </Link>
           </div>
 
           {/* What's Next? Suggestions */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mt-8">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 mt-6 sm:mt-8">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">What's Next?</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 

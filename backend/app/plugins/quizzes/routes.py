@@ -63,6 +63,7 @@ async def list_quizzes(
             total_attempts=q.total_attempts,
             avg_score=q.avg_score,
             pass_rate=q.pass_rate,
+            related_skills=q.related_skills or [],
             created_at=q.created_at,
         )
         for q in quizzes
@@ -97,6 +98,7 @@ async def get_featured_quizzes(
             total_attempts=q.total_attempts,
             avg_score=q.avg_score,
             pass_rate=q.pass_rate,
+            related_skills=q.related_skills or [],
             created_at=q.created_at,
         )
         for q in quizzes
@@ -156,6 +158,7 @@ async def get_quiz(
         ],
         total_attempts=quiz.total_attempts,
         avg_score=quiz.avg_score,
+        related_skills=quiz.related_skills or [],
         created_at=quiz.created_at,
     )
 
@@ -523,6 +526,7 @@ async def admin_list_all_quizzes(
                 module_id=quiz.module_id,
                 created_by=quiz.created_by,
                 pass_rate=quiz.pass_rate,
+                related_skills=quiz.related_skills or [],
                 created_at=quiz.created_at,
                 updated_at=quiz.updated_at,
                 published_at=quiz.published_at,
@@ -590,6 +594,7 @@ async def admin_get_quiz(
         created_at=quiz.created_at,
         updated_at=quiz.updated_at,
         published_at=quiz.published_at,
+        related_skills=quiz.related_skills or [],
     )
 
 

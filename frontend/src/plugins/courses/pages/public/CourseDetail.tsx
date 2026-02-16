@@ -203,7 +203,7 @@ const CourseDetail: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-7xl mx-auto px-4 py-12">
+      <div className="max-w-7xl mx-auto px-4 py-6 sm:py-12">
 
         {/* Back Button */}
         <button
@@ -213,14 +213,14 @@ const CourseDetail: React.FC = () => {
           ← Back to Courses
         </button>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6 lg:space-y-8">
             {/* Course Header */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white dark:bg-gray-800/50 shadow-lg dark:shadow-none rounded-2xl p-8 border border-gray-200 dark:border-gray-700/50"
+              className="bg-white dark:bg-gray-800/50 shadow-lg dark:shadow-none rounded-2xl p-4 sm:p-6 lg:p-8 border border-gray-200 dark:border-gray-700/50"
             >
               {/* Level Badge */}
               <div className="flex items-center gap-3 mb-4">
@@ -247,11 +247,11 @@ const CourseDetail: React.FC = () => {
                 )}
               </div>
 
-              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">{course.title}</h1>
-              <p className="text-xl text-gray-600 dark:text-gray-300 mb-6">{course.short_description || course.description}</p>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">{course.title}</h1>
+              <p className="text-base sm:text-lg lg:text-xl text-gray-600 dark:text-gray-300 mb-4 sm:mb-6">{course.short_description || course.description}</p>
 
               {/* Stats */}
-              <div className="flex flex-wrap gap-6 text-gray-500 dark:text-gray-400">
+              <div className="flex flex-wrap gap-3 sm:gap-6 text-sm sm:text-base text-gray-500 dark:text-gray-400">
                 <div className="flex items-center gap-2">
                   <Clock size={18} className="text-blue-500 dark:text-blue-400" />
                   <span>{course.estimated_hours} hours</span>
@@ -274,9 +274,9 @@ const CourseDetail: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="bg-white dark:bg-gray-800/50 shadow-lg dark:shadow-none rounded-2xl p-8 border border-gray-200 dark:border-gray-700/50"
+              className="bg-white dark:bg-gray-800/50 shadow-lg dark:shadow-none rounded-2xl p-4 sm:p-6 lg:p-8 border border-gray-200 dark:border-gray-700/50"
             >
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">About This Course</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4">About This Course</h2>
               <p className="text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-line">{course.description}</p>
             </motion.div>
 
@@ -286,9 +286,9 @@ const CourseDetail: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="bg-white dark:bg-gray-800/50 shadow-lg dark:shadow-none rounded-2xl p-8 border border-gray-200 dark:border-gray-700/50"
+                className="bg-white dark:bg-gray-800/50 shadow-lg dark:shadow-none rounded-2xl p-4 sm:p-6 lg:p-8 border border-gray-200 dark:border-gray-700/50"
               >
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">What You'll Learn</h2>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4">What You'll Learn</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {course.objectives.map((objective, idx) => (
                     <div key={idx} className="flex items-start gap-2">
@@ -306,9 +306,9 @@ const CourseDetail: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="bg-white dark:bg-gray-800/50 shadow-lg dark:shadow-none rounded-2xl p-8 border border-gray-200 dark:border-gray-700/50"
+                className="bg-white dark:bg-gray-800/50 shadow-lg dark:shadow-none rounded-2xl p-4 sm:p-6 lg:p-8 border border-gray-200 dark:border-gray-700/50"
               >
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Course Content</h2>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4 sm:mb-6">Course Content</h2>
                 <div className="space-y-3">
                   {course.modules
                     .sort((a, b) => a.order_index - b.order_index)
@@ -354,9 +354,9 @@ const CourseDetail: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
-                className="bg-white dark:bg-gray-800/50 shadow-lg dark:shadow-none rounded-2xl p-8 border border-gray-200 dark:border-gray-700/50"
+                className="bg-white dark:bg-gray-800/50 shadow-lg dark:shadow-none rounded-2xl p-4 sm:p-6 lg:p-8 border border-gray-200 dark:border-gray-700/50"
               >
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Requirements</h2>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4">Requirements</h2>
                 <ul className="space-y-2">
                   {course.requirements.map((req, idx) => (
                     <li key={idx} className="flex items-start gap-2 text-gray-700 dark:text-gray-300">
@@ -369,12 +369,12 @@ const CourseDetail: React.FC = () => {
             )}
           </div>
 
-          {/* Sidebar */}
-          <div className="lg:col-span-1">
+          {/* Sidebar — shows first on mobile so CTA is visible */}
+          <div className="lg:col-span-1 order-first lg:order-none">
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="bg-white dark:bg-gray-800/50 shadow-lg dark:shadow-none rounded-2xl p-6 border border-gray-200 dark:border-gray-700/50 sticky top-6"
+              className="bg-white dark:bg-gray-800/50 shadow-lg dark:shadow-none rounded-2xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700/50 lg:sticky lg:top-6"
             >
               {/* Course Image */}
               {course.image && (

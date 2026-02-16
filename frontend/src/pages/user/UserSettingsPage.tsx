@@ -28,6 +28,7 @@ import {
   BookOpen,
 } from 'lucide-react';
 import { useAuth } from '../../state/contexts/AuthContext';
+import { apiClient } from '../../services/api/client';
 
 type ThemePreference = 'light' | 'dark' | 'system';
 
@@ -75,23 +76,37 @@ const UserSettingsPage: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  // Load saved preferences from localStorage
+  // Load preferences from backend user data + localStorage for theme
   useEffect(() => {
-    const savedPrefs = localStorage.getItem('userPreferences');
-    if (savedPrefs) {
-      try {
-        setPreferences({ ...DEFAULT_PREFERENCES, ...JSON.parse(savedPrefs) });
-      } catch {
-        // Ignore parse errors
-      }
-    }
-
-    // Detect current theme
+    // Theme from localStorage (client-side only)
     const currentTheme = localStorage.getItem('theme');
     if (currentTheme === 'dark' || currentTheme === 'light') {
       setPreferences(prev => ({ ...prev, theme: currentTheme as ThemePreference }));
     }
-  }, []);
+
+    // Load backend preferences from user object
+    if (user) {
+      const u = user as any;
+      setPreferences(prev => ({
+        ...prev,
+        notifications: {
+          challengeReminders: u.notify_challenge_reminders ?? prev.notifications.challengeReminders,
+          streakReminders: u.notify_streak_reminders ?? prev.notifications.streakReminders,
+          achievementAlerts: u.notify_achievement_alerts ?? prev.notifications.achievementAlerts,
+          weeklyDigest: u.notify_weekly_digest ?? prev.notifications.weeklyDigest,
+        },
+        privacy: {
+          showOnLeaderboard: u.show_on_leaderboard ?? prev.privacy.showOnLeaderboard,
+          showProfile: u.show_profile_public ?? prev.privacy.showProfile,
+          showActivity: u.show_activity_public ?? prev.privacy.showActivity,
+        },
+        learning: {
+          ...prev.learning,
+          defaultDifficulty: u.default_difficulty ?? prev.learning.defaultDifficulty,
+        },
+      }));
+    }
+  }, [user]);
 
   const handleThemeChange = (theme: ThemePreference) => {
     setPreferences(prev => ({ ...prev, theme }));
@@ -130,9 +145,24 @@ const UserSettingsPage: React.FC = () => {
   const savePreferences = async () => {
     setSaving(true);
     try {
+      // Save to backend (privacy, notifications, learning difficulty)
+      await apiClient.put('/api/v1/auth/me/preferences', {
+        show_on_leaderboard: preferences.privacy.showOnLeaderboard,
+        show_profile_public: preferences.privacy.showProfile,
+        show_activity_public: preferences.privacy.showActivity,
+        default_difficulty: preferences.learning.defaultDifficulty,
+        notify_challenge_reminders: preferences.notifications.challengeReminders,
+        notify_streak_reminders: preferences.notifications.streakReminders,
+        notify_achievement_alerts: preferences.notifications.achievementAlerts,
+        notify_weekly_digest: preferences.notifications.weeklyDigest,
+      });
+
+      // Theme stays in localStorage (client-side only)
       localStorage.setItem('userPreferences', JSON.stringify(preferences));
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      console.error('Failed to save preferences:', err);
     } finally {
       setSaving(false);
     }

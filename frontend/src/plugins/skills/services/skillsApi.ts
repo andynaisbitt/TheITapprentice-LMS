@@ -14,6 +14,8 @@ import type {
   XPCalculatorResponse,
   TiersResponse,
   SkillsListResponse,
+  SkillActivitiesResponse,
+  SkillActivityItem,
 } from '../types';
 
 const BASE_URL = '/api/v1/skills';
@@ -202,6 +204,41 @@ export const skillsApi = {
       entries: response.data.entries.map(transformGlobalLeaderboardEntry),
       totalParticipants: response.data.total_participants,
       userRank: response.data.user_rank,
+    };
+  },
+
+  // ==================== Skill Activities ====================
+
+  /**
+   * Get courses, quizzes, tutorials, and typing practice linked to a skill
+   */
+  async getSkillActivities(
+    slug: string,
+    limit: number = 5
+  ): Promise<SkillActivitiesResponse> {
+    const response = await apiClient.get<any>(
+      `${BASE_URL}/slug/${slug}/activities?limit=${limit}`
+    );
+    const d = response.data;
+    const transformItem = (item: any): SkillActivityItem => ({
+      id: item.id,
+      title: item.title,
+      description: item.description,
+      activityType: item.activity_type,
+      difficulty: item.difficulty,
+      xpReward: item.xp_reward,
+      url: item.url,
+      estimatedTime: item.estimated_time,
+      category: item.category,
+    });
+    return {
+      skillSlug: d.skill_slug,
+      skillName: d.skill_name,
+      courses: (d.courses || []).map(transformItem),
+      quizzes: (d.quizzes || []).map(transformItem),
+      tutorials: (d.tutorials || []).map(transformItem),
+      typingPractice: (d.typing_practice || []).map(transformItem),
+      totalCount: d.total_count,
     };
   },
 

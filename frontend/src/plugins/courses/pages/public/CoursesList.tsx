@@ -72,6 +72,7 @@ const CoursesList: React.FC = () => {
   // Enrollment tracking
   const [enrolledCourseIds, setEnrolledCourseIds] = useState<Set<string>>(new Set());
   const [enrollmentInfo, setEnrollmentInfo] = useState<Map<string, EnrollmentInfo>>(new Map());
+  const [hideCompleted, setHideCompleted] = useState(false);
 
   // Fetch courses from backend
   useEffect(() => {
@@ -327,6 +328,19 @@ const CoursesList: React.FC = () => {
                 Advanced
               </button>
             </div>
+
+            {/* Hide completed toggle */}
+            {isAuthenticated && (
+              <label className="flex items-center gap-2 cursor-pointer select-none whitespace-nowrap">
+                <input
+                  type="checkbox"
+                  checked={hideCompleted}
+                  onChange={(e) => setHideCompleted(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm text-slate-600 dark:text-slate-300">Hide completed</span>
+              </label>
+            )}
           </div>
         </motion.div>
 
@@ -362,7 +376,9 @@ const CoursesList: React.FC = () => {
             transition={{ delay: 0.3 }}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
           >
-            {courses.map((course, index) => {
+            {courses
+              .filter(c => !hideCompleted || !enrollmentInfo.get(c.id)?.isComplete)
+              .map((course, index) => {
               const isEnrolled = enrolledCourseIds.has(course.id);
               const info = enrollmentInfo.get(course.id);
               const actionBtn = getActionButton(course);

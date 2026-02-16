@@ -4,6 +4,7 @@ Skills API Routes - Public and Protected Endpoints
 
 Public endpoints for skill info, protected endpoints for user progress.
 """
+import logging
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
@@ -21,6 +22,8 @@ from .service import (
     calculate_xp_to_next_level,
     calculate_xp_progress_percentage
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -72,6 +75,149 @@ async def get_skill_by_slug(
     if not skill:
         raise HTTPException(status_code=404, detail="Skill not found")
     return skill
+
+
+@router.get("/slug/{slug}/activities", response_model=schemas.SkillActivitiesResponse)
+async def get_skill_activities(
+    slug: str,
+    limit: int = Query(5, ge=1, le=20),
+    db: Session = Depends(get_db)
+):
+    """Get courses, quizzes, tutorials, and typing practice linked to a skill."""
+    skill = crud.get_skill_by_slug(db, slug)
+    if not skill:
+        raise HTTPException(status_code=404, detail="Skill not found")
+
+    courses_items: List[schemas.SkillActivityItem] = []
+    quizzes_items: List[schemas.SkillActivityItem] = []
+    tutorials_items: List[schemas.SkillActivityItem] = []
+    typing_items: List[schemas.SkillActivityItem] = []
+
+    def _has_skill(related_skills, target_slug: str) -> bool:
+        """Check if target_slug is in related_skills (handles JSON list, string list, or None)."""
+        if not related_skills:
+            return False
+        if isinstance(related_skills, list):
+            return target_slug in related_skills
+        if isinstance(related_skills, str):
+            return target_slug in related_skills
+        return False
+
+    # --- Courses ---
+    try:
+        from app.plugins.courses.models import Course, CourseStatus
+        all_courses = db.query(Course).filter(
+            Course.status == CourseStatus.published,
+        ).all()
+        count = 0
+        for c in all_courses:
+            if count >= limit:
+                break
+            if _has_skill(c.related_skills, slug):
+                courses_items.append(schemas.SkillActivityItem(
+                    id=str(c.id),
+                    title=c.title,
+                    description=c.short_description,
+                    activity_type="course",
+                    difficulty=c.level.value if c.level else None,
+                    xp_reward=c.xp_reward or 0,
+                    url=f"/courses/{c.id}",
+                    estimated_time=c.duration,
+                    category=c.category,
+                ))
+                count += 1
+    except Exception as e:
+        logger.warning(f"Could not fetch courses for skill {slug}: {e}", exc_info=True)
+
+    # --- Quizzes ---
+    try:
+        from app.plugins.quizzes.models import Quiz, QuizStatus
+        all_quizzes = db.query(Quiz).filter(
+            Quiz.status == QuizStatus.PUBLISHED,
+        ).all()
+        count = 0
+        for q in all_quizzes:
+            if count >= limit:
+                break
+            if _has_skill(q.related_skills, slug):
+                quizzes_items.append(schemas.SkillActivityItem(
+                    id=str(q.id),
+                    title=q.title,
+                    description=q.description,
+                    activity_type="quiz",
+                    difficulty=q.difficulty.value if q.difficulty else None,
+                    xp_reward=q.xp_reward or 50,
+                    url=f"/quizzes/{q.id}",
+                    estimated_time=f"{q.time_limit_minutes} min" if q.time_limit_minutes else None,
+                    category=q.category,
+                ))
+                count += 1
+    except Exception as e:
+        logger.warning(f"Could not fetch quizzes for skill {slug}: {e}", exc_info=True)
+
+    # --- Tutorials ---
+    try:
+        from app.plugins.tutorials.models import Tutorial
+        all_tutorials = db.query(Tutorial).filter(
+            Tutorial.is_published == True,
+        ).all()
+        count = 0
+        for t in all_tutorials:
+            if count >= limit:
+                break
+            if _has_skill(t.related_skills, slug):
+                tutorials_items.append(schemas.SkillActivityItem(
+                    id=str(t.id),
+                    title=t.title,
+                    description=t.description,
+                    activity_type="tutorial",
+                    difficulty=t.difficulty,
+                    xp_reward=t.xp_reward or 50,
+                    url=f"/tutorials/{t.slug}",
+                    estimated_time=f"{t.estimated_time_minutes} min" if t.estimated_time_minutes else None,
+                    category=None,
+                ))
+                count += 1
+    except Exception as e:
+        logger.warning(f"Could not fetch tutorials for skill {slug}: {e}", exc_info=True)
+
+    # --- Typing Word Lists ---
+    try:
+        from app.plugins.typing_game.models import TypingWordList
+        all_word_lists = db.query(TypingWordList).filter(
+            TypingWordList.is_active == True,
+        ).all()
+        count = 0
+        for wl in all_word_lists:
+            if count >= limit:
+                break
+            if _has_skill(wl.related_skills, slug):
+                typing_items.append(schemas.SkillActivityItem(
+                    id=str(wl.id),
+                    title=wl.name,
+                    description=None,
+                    activity_type="typing_practice",
+                    difficulty=wl.difficulty,
+                    xp_reward=10,
+                    url="/typing-practice",
+                    estimated_time=None,
+                    category=None,
+                ))
+                count += 1
+    except Exception as e:
+        logger.warning(f"Could not fetch typing word lists for skill {slug}: {e}", exc_info=True)
+
+    total = len(courses_items) + len(quizzes_items) + len(tutorials_items) + len(typing_items)
+
+    return schemas.SkillActivitiesResponse(
+        skill_slug=skill.slug,
+        skill_name=skill.name,
+        courses=courses_items,
+        quizzes=quizzes_items,
+        tutorials=tutorials_items,
+        typing_practice=typing_items,
+        total_count=total,
+    )
 
 
 @router.get("/{skill_id}", response_model=schemas.SkillResponse)

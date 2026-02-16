@@ -52,12 +52,12 @@ interface SystemAnalytics {
 
 interface SkillAnalytics {
   skill_name: string;
-  total_users: number;
+  total_users_with_progress: number;
   total_xp_awarded: number;
-  avg_level: number;
-  max_level: number;
+  average_level: number;
   users_at_level_99: number;
-  xp_last_7_days: number;
+  level_distribution: Record<string, number>;
+  xp_by_source: Record<string, number>;
 }
 
 const SKILL_ICONS = ['🖥️', '🔒', '💻', '⚙️', '☁️', '🗄️', '🔄', '🌐', '🔧', '💬', '🧩', '📋'];
@@ -469,7 +469,7 @@ const SkillsAdmin: React.FC = () => {
                   <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                     <div className="text-sm text-gray-500 dark:text-gray-400">Total Users</div>
                     <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {selectedSkillAnalytics.total_users.toLocaleString()}
+                      {selectedSkillAnalytics.total_users_with_progress.toLocaleString()}
                     </div>
                   </div>
                   <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
@@ -481,13 +481,7 @@ const SkillsAdmin: React.FC = () => {
                   <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                     <div className="text-sm text-gray-500 dark:text-gray-400">Avg Level</div>
                     <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {selectedSkillAnalytics.avg_level.toFixed(1)}
-                    </div>
-                  </div>
-                  <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
-                    <div className="text-sm text-gray-500 dark:text-gray-400">Max Level</div>
-                    <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {selectedSkillAnalytics.max_level}
+                      {selectedSkillAnalytics.average_level.toFixed(1)}
                     </div>
                   </div>
                   <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
@@ -496,12 +490,18 @@ const SkillsAdmin: React.FC = () => {
                       {selectedSkillAnalytics.users_at_level_99}
                     </div>
                   </div>
-                  <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
-                    <div className="text-sm text-gray-500 dark:text-gray-400">XP (Last 7 Days)</div>
-                    <div className="text-2xl font-bold text-green-500">
-                      +{selectedSkillAnalytics.xp_last_7_days.toLocaleString()}
+                  {Object.keys(selectedSkillAnalytics.level_distribution || {}).length > 0 && (
+                    <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 col-span-2">
+                      <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">Level Distribution</div>
+                      <div className="flex gap-2 flex-wrap">
+                        {Object.entries(selectedSkillAnalytics.level_distribution).map(([range, count]) => (
+                          <div key={range} className="text-xs bg-gray-200 dark:bg-gray-600 rounded px-2 py-1">
+                            <span className="font-medium">{range}:</span> {count}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               )}
             </div>

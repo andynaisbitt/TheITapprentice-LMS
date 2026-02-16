@@ -47,7 +47,7 @@ export interface UseAntiCheatConfig {
 
 // ==================== CONSTANTS ====================
 
-const MIN_HUMANLY_POSSIBLE_INTERVAL = 15; // ms - true physical limit (key rollover can produce 20-30ms legitimately)
+const MIN_HUMANLY_POSSIBLE_INTERVAL = 10; // ms - below this is keyboard bounce/artifact (backend also filters at 10ms)
 const SEGMENT_SIZE = 10; // Number of keystrokes for first/last segment analysis
 
 // ==================== HOOK ====================
@@ -95,6 +95,13 @@ export function useAntiCheat(config: UseAntiCheatConfig = {}) {
       focusLostStart.current = null;
     }
   }, []);
+
+  // Resume tracking without resetting data (for multi-round games)
+  const resumeTracking = useCallback(() => {
+    if (!enabled) return;
+    isGameActive.current = true;
+    setGameActive(true);
+  }, [enabled]);
 
   // Record a keystroke
   const recordKeystroke = useCallback((timestamp?: number) => {
@@ -285,6 +292,7 @@ export function useAntiCheat(config: UseAntiCheatConfig = {}) {
     // Methods
     startTracking,
     stopTracking,
+    resumeTracking,
     recordKeystroke,
     recordPasteAttempt,
     getAntiCheatData,

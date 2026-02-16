@@ -3,7 +3,7 @@
  * Quizzes Browse Page
  * Main page for browsing and searching quizzes
  */
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { QuizCard } from '../components/QuizCard';
 import { useQuizzes, useFeaturedQuizzes, useMyQuizStats } from '../hooks/useQuizzes';
 import { useAuth } from '../../../state/contexts/AuthContext';
@@ -20,6 +20,19 @@ const QuizzesPage: React.FC = () => {
     difficulty: selectedDifficulty || undefined,
   });
   const { stats } = useMyQuizStats();
+  const [hidePassed, setHidePassed] = useState(false);
+
+  // Derive set of quiz IDs the user has passed
+  const passedQuizIds = useMemo(() => {
+    if (!stats?.recent_attempts) return new Set<string>();
+    return new Set(
+      stats.recent_attempts.filter(a => a.passed).map(a => a.quiz_id)
+    );
+  }, [stats]);
+
+  // Filter quizzes based on hidePassed
+  const displayQuizzes = hidePassed ? quizzes.filter(q => !passedQuizIds.has(q.id)) : quizzes;
+  const displayFeatured = hidePassed ? featuredQuizzes.filter(q => !passedQuizIds.has(q.id)) : featuredQuizzes;
 
   // Extract unique categories from quizzes
   const categories = Array.from(new Set(quizzes.map(q => q.category).filter(Boolean)));
@@ -56,13 +69,13 @@ const QuizzesPage: React.FC = () => {
 
       <div className="container mx-auto px-4 py-6 sm:py-8">
         {/* Featured Quizzes */}
-        {featuredQuizzes.length > 0 && !selectedCategory && !selectedDifficulty && (
+        {displayFeatured.length > 0 && !selectedCategory && !selectedDifficulty && (
           <div className="mb-8 sm:mb-12">
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4 sm:mb-6">
               Featured Quizzes
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {featuredQuizzes.map((quiz) => (
+              {displayFeatured.map((quiz) => (
                 <QuizCard key={quiz.id} quiz={quiz} />
               ))}
             </div>
@@ -100,6 +113,17 @@ const QuizzesPage: React.FC = () => {
               >
                 Clear
               </button>
+            )}
+            {isAuthenticated && (
+              <label className="flex items-center gap-2 cursor-pointer select-none whitespace-nowrap flex-shrink-0">
+                <input
+                  type="checkbox"
+                  checked={hidePassed}
+                  onChange={(e) => setHidePassed(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">Hide passed</span>
+              </label>
             )}
           </div>
         </div>
@@ -161,6 +185,19 @@ const QuizzesPage: React.FC = () => {
                   Clear Filters
                 </button>
               )}
+
+              {/* Hide passed toggle */}
+              {isAuthenticated && (
+                <label className="flex items-center gap-2 cursor-pointer select-none mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={hidePassed}
+                    onChange={(e) => setHidePassed(e.target.checked)}
+                    className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Hide passed quizzes</span>
+                </label>
+              )}
             </div>
           </aside>
 
@@ -172,7 +209,7 @@ const QuizzesPage: React.FC = () => {
                 {selectedCategory || selectedDifficulty ? 'Filtered Quizzes' : 'All Quizzes'}
               </h2>
               <span className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
-                {quizzes.length} quiz{quizzes.length !== 1 ? 'zes' : ''}
+                {displayQuizzes.length} quiz{displayQuizzes.length !== 1 ? 'zes' : ''}
               </span>
             </div>
 
@@ -194,9 +231,9 @@ const QuizzesPage: React.FC = () => {
             {/* Quiz Grid */}
             {!loading && !error && (
               <>
-                {quizzes.length > 0 ? (
+                {displayQuizzes.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-                    {quizzes.map((quiz) => (
+                    {displayQuizzes.map((quiz) => (
                       <QuizCard key={quiz.id} quiz={quiz} />
                     ))}
                   </div>

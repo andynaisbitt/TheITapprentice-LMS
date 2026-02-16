@@ -46,7 +46,7 @@ async def get_homepage_stats(
     from app.plugins.tutorials.models import TutorialProgress
     from app.plugins.typing_game.models import UserTypingStats
     from app.plugins.quizzes.models import QuizAttempt
-    from app.plugins.courses.models import UserCourseProgress
+    from app.plugins.courses.models import CourseEnrollment, EnrollmentStatus
     from .models import UserAchievement
 
     # Total learners (users with any XP)
@@ -68,8 +68,8 @@ async def get_homepage_stats(
     ).count()
 
     # Courses completed
-    courses_completed = db.query(UserCourseProgress).filter(
-        UserCourseProgress.status == "completed"
+    courses_completed = db.query(CourseEnrollment).filter(
+        CourseEnrollment.status == EnrollmentStatus.COMPLETED
     ).count()
 
     # Quizzes completed (passed attempts)

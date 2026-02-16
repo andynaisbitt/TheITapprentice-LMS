@@ -250,6 +250,7 @@ export const InfiniteRushGame: React.FC<InfiniteRushGameProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const endGameRef = useRef<() => void>(() => {});
+  const isSubmittingRef = useRef(false);
 
   // Combo system
   const comboSystem = useComboSystem({
@@ -302,6 +303,9 @@ export const InfiniteRushGame: React.FC<InfiniteRushGameProps> = ({
 
   // Start the game
   const startGame = useCallback(async () => {
+    // Reset submit guard for new game
+    isSubmittingRef.current = false;
+
     // Try to get session from backend
     try {
       const response = await typingGameApi.startGame({
@@ -345,6 +349,10 @@ export const InfiniteRushGame: React.FC<InfiniteRushGameProps> = ({
 
   // End the game
   const endGame = useCallback(async () => {
+    // Prevent double-submit
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
@@ -417,6 +425,11 @@ export const InfiniteRushGame: React.FC<InfiniteRushGameProps> = ({
       timerRef.current = setInterval(() => {
         setTimeRemaining(prev => {
           if (prev <= 1) {
+            // Clear interval BEFORE calling endGame to prevent double-submit
+            if (timerRef.current) {
+              clearInterval(timerRef.current);
+              timerRef.current = null;
+            }
             endGameRef.current();
             return 0;
           }

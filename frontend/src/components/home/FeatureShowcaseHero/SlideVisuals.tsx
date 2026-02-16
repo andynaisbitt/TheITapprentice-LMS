@@ -15,7 +15,86 @@ import {
   Flame,
   Medal,
   Star,
+  Rocket,
 } from 'lucide-react';
+import { SPRING_SNAPPY, SPRING_BOUNCY, SPRING_GENTLE } from './slideData';
+
+// Shared animation constants
+const STAGGER = 0.05;
+
+// ============================================
+// WELCOME VISUAL
+// ============================================
+export const WelcomeVisual: React.FC = () => {
+  const features = [
+    { icon: '📚', label: 'Courses', desc: 'Step-by-step IT basics', color: 'from-blue-500 to-indigo-500' },
+    { icon: '⌨️', label: 'Typing Games', desc: '5 game modes', color: 'from-orange-500 to-amber-500' },
+    { icon: '🧠', label: 'Quizzes', desc: 'Test your knowledge', color: 'from-purple-500 to-pink-500' },
+    { icon: '🏆', label: 'Compete', desc: 'Leaderboards & XP', color: 'from-yellow-500 to-orange-500' },
+  ];
+
+  return (
+    <div className="w-full flex justify-center">
+      <div className="relative w-full max-w-xs">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ y: SPRING_SNAPPY, opacity: { duration: 0.2, ease: 'easeOut' } }}
+          className="backdrop-blur-xl bg-white/90 dark:bg-slate-800/90 rounded-2xl shadow-2xl border border-white/30 overflow-hidden"
+        >
+          {/* Header with rocket */}
+          <div className="bg-gradient-to-r from-indigo-700 to-violet-700 p-3 sm:p-4">
+            <div className="flex items-center gap-3">
+              <motion.div
+                animate={{ y: [0, -4, 0] }}
+                transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                className="w-10 h-10 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center"
+              >
+                <Rocket className="w-5 h-5 text-white" />
+              </motion.div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">The IT Apprentice</h3>
+                <p className="text-white/80 text-xs">Learn IT from scratch</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Feature rows */}
+          <div className="p-2 sm:p-3 space-y-1">
+            {features.map((feature, i) => (
+              <motion.div
+                key={feature.label}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ x: { ...SPRING_SNAPPY, delay: i * STAGGER }, opacity: { duration: 0.2, delay: i * STAGGER } }}
+                className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50"
+              >
+                <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${feature.color} flex items-center justify-center shadow-sm`}>
+                  <span className="text-sm">{feature.icon}</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">{feature.label}</p>
+                  <p className="text-[10px] text-slate-500">{feature.desc}</p>
+                </div>
+                <Zap className="w-3 h-3 text-amber-400" />
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* 100% Free badge */}
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1, y: [0, -4, 0] }}
+          transition={{ scale: { delay: 0.3, ...SPRING_BOUNCY }, y: { duration: 2, repeat: Infinity } }}
+          className="absolute -top-2 -right-2 px-2.5 py-1.5 bg-gradient-to-r from-emerald-400 to-green-500 rounded-lg shadow-lg"
+        >
+          <span className="text-white font-bold text-xs">100% Free</span>
+        </motion.div>
+      </div>
+    </div>
+  );
+};
 
 // ============================================
 // COURSES VISUAL
@@ -52,9 +131,10 @@ export const CoursesVisual: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ y: SPRING_SNAPPY, opacity: { duration: 0.2, ease: 'easeOut' } }}
           className="backdrop-blur-xl bg-white/90 dark:bg-slate-800/90 rounded-2xl shadow-2xl border border-white/30 overflow-hidden"
         >
-          <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-3 sm:p-4">
+          <div className="bg-gradient-to-r from-blue-700 to-indigo-700 p-3 sm:p-4">
             <div className="flex items-center gap-3">
               <motion.div
                 animate={{ rotate: [0, -5, 5, 0] }}
@@ -77,10 +157,9 @@ export const CoursesVisual: React.FC = () => {
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${progress}%` }}
-                  transition={{ duration: 1.5, ease: 'easeOut' }}
+                  transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
                   className="h-full bg-gradient-to-r from-white to-blue-100 rounded-full relative"
                 >
-                  {/* Shimmer effect */}
                   <motion.div
                     animate={{ x: ['-100%', '200%'] }}
                     transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 1 }}
@@ -102,7 +181,7 @@ export const CoursesVisual: React.FC = () => {
                   backgroundColor: activeModule === i ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
                   scale: activeModule === i ? 1.02 : 1,
                 }}
-                transition={{ delay: i * 0.1 }}
+                transition={{ x: { ...SPRING_SNAPPY, delay: i * STAGGER }, opacity: { duration: 0.2, delay: i * STAGGER } }}
                 className="flex items-center gap-2 p-2 rounded-lg"
               >
                 <motion.div
@@ -133,6 +212,7 @@ export const CoursesVisual: React.FC = () => {
                   <motion.span
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
+                    transition={{ scale: SPRING_BOUNCY, opacity: { duration: 0.2 } }}
                     className="text-[10px] bg-blue-500 text-white px-1.5 py-0.5 rounded-full"
                   >
                     Next
@@ -146,7 +226,7 @@ export const CoursesVisual: React.FC = () => {
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1, y: [0, -4, 0] }}
-          transition={{ scale: { delay: 0.3, type: 'spring' }, y: { duration: 2, repeat: Infinity } }}
+          transition={{ scale: { delay: 0.3, ...SPRING_BOUNCY }, y: { duration: 2, repeat: Infinity } }}
           className="absolute -top-2 -right-2 px-2.5 py-1.5 bg-gradient-to-r from-amber-400 to-orange-500 rounded-lg shadow-lg"
         >
           <span className="flex items-center gap-1 text-white font-bold text-xs">
@@ -167,11 +247,11 @@ export const TypingVisual: React.FC = () => {
   const [activeMode, setActiveMode] = useState(0);
 
   const modes = [
-    { name: 'Speed Test', icon: '⚡', desc: 'Test your WPM', color: 'from-yellow-400 to-orange-500' },
-    { name: 'Practice', icon: '📝', desc: 'Custom words', color: 'from-green-400 to-emerald-500' },
-    { name: 'Infinite Rush', icon: '🔥', desc: 'Endless mode', color: 'from-red-400 to-rose-500' },
-    { name: 'Ghost Mode', icon: '👻', desc: 'Race yourself', color: 'from-purple-400 to-violet-500' },
-    { name: 'PvP Battle', icon: '⚔️', desc: 'Real-time 1v1', color: 'from-blue-400 to-cyan-500' },
+    { name: 'Speed Test', icon: '\u26A1', desc: 'Test your WPM', color: 'from-yellow-600 to-orange-600' },
+    { name: 'Practice', icon: '\uD83D\uDCDD', desc: 'Custom words', color: 'from-green-600 to-emerald-600' },
+    { name: 'Infinite Rush', icon: '\uD83D\uDD25', desc: 'Endless mode', color: 'from-red-600 to-rose-600' },
+    { name: 'Ghost Mode', icon: '\uD83D\uDC7B', desc: 'Race yourself', color: 'from-purple-600 to-violet-600' },
+    { name: 'PvP Battle', icon: '\u2694\uFE0F', desc: 'Real-time 1v1', color: 'from-blue-600 to-cyan-600' },
   ];
 
   useEffect(() => {
@@ -217,6 +297,7 @@ export const TypingVisual: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
+            transition={{ y: SPRING_GENTLE, opacity: { duration: 0.2 } }}
             className={`absolute inset-0 bg-gradient-to-r ${modes[activeMode].color} rounded-xl p-3 shadow-xl`}
           >
             <div className="flex items-center gap-3">
@@ -262,7 +343,7 @@ export const TypingVisual: React.FC = () => {
       <motion.div
         animate={{ y: [0, -3, 0] }}
         transition={{ duration: 1.5, repeat: Infinity }}
-        className="px-3 py-1 bg-yellow-400 text-yellow-900 rounded-lg font-bold text-xs"
+        className="px-3 py-1 bg-amber-600 text-white rounded-lg font-bold text-xs"
       >
         <span className="flex items-center gap-1">
           <Zap className="w-3 h-3" />
@@ -310,7 +391,7 @@ export const QuizzesVisual: React.FC = () => {
     <div className="w-full flex justify-center">
       <div className="w-full max-w-xs">
         <motion.div className="backdrop-blur-xl bg-white/80 dark:bg-slate-800/80 rounded-2xl shadow-2xl border border-white/20 overflow-hidden">
-          <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-3">
+          <div className="bg-gradient-to-r from-purple-700 to-fuchsia-700 p-3">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-white font-bold text-sm">Quick Quiz</h3>
@@ -371,9 +452,9 @@ export const TutorialsVisual: React.FC = () => {
   const [activeStep, setActiveStep] = useState(0);
 
   const tutorials = [
-    { title: 'Setting Up Email', icon: '📧', steps: ['Open browser', 'Go to Gmail', 'Click Sign Up', 'Fill details'], color: '#EF4444' },
-    { title: 'Connect to WiFi', icon: '📶', steps: ['Click WiFi icon', 'Find network', 'Enter password', 'Connect!'], color: '#3B82F6' },
-    { title: 'Install Software', icon: '💿', steps: ['Download file', 'Open installer', 'Click Next', 'Done!'], color: '#10B981' },
+    { title: 'Setting Up Email', icon: '\uD83D\uDCE7', steps: ['Open browser', 'Go to Gmail', 'Click Sign Up', 'Fill details'], color: '#EF4444' },
+    { title: 'Connect to WiFi', icon: '\uD83D\uDCF6', steps: ['Click WiFi icon', 'Find network', 'Enter password', 'Connect!'], color: '#3B82F6' },
+    { title: 'Install Software', icon: '\uD83D\uDCBF', steps: ['Download file', 'Open installer', 'Click Next', 'Done!'], color: '#10B981' },
   ];
 
   useEffect(() => {
@@ -426,7 +507,7 @@ export const TutorialsVisual: React.FC = () => {
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: '100%' }}
-                      transition={{ duration: 1.1 }}
+                      transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
                       className="h-0.5 mt-1 rounded-full"
                       style={{ backgroundColor: currentTutorial.color }}
                     />
@@ -477,7 +558,7 @@ export const LeaderboardVisual: React.FC = () => {
     <div className="w-full flex justify-center">
       <div className="w-full max-w-xs">
         <motion.div className="backdrop-blur-xl bg-white/80 dark:bg-slate-800/80 rounded-2xl shadow-2xl border border-white/20 overflow-hidden">
-          <div className="bg-gradient-to-r from-amber-400 to-orange-400 p-3">
+          <div className="bg-gradient-to-r from-amber-700 to-orange-700 p-3">
             <div className="flex items-center gap-3">
               <Trophy className="w-6 h-6 text-white" />
               <div>
@@ -496,7 +577,7 @@ export const LeaderboardVisual: React.FC = () => {
                 }`}
               >
                 <span className="w-6 text-center text-sm">
-                  {player.rank === 1 ? '🥇' : player.rank === 2 ? '🥈' : player.rank === 3 ? '🥉' : `#${player.rank}`}
+                  {player.rank === 1 ? '\uD83E\uDD47' : player.rank === 2 ? '\uD83E\uDD48' : player.rank === 3 ? '\uD83E\uDD49' : `#${player.rank}`}
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className={`font-medium text-xs truncate ${
@@ -542,7 +623,7 @@ export const ProgressVisual: React.FC = () => {
               cx="50%" cy="50%" r="45%" fill="none" stroke="url(#progressGradient)" strokeWidth="6" strokeLinecap="round"
               initial={{ pathLength: 0 }}
               animate={{ pathLength: 0.65 }}
-              transition={{ duration: 1.5, ease: 'easeOut' }}
+              transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
             />
             <defs>
               <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -586,10 +667,10 @@ export const SkillsVisual: React.FC = () => {
   const [activeSkill, setActiveSkill] = useState(0);
 
   const skills = [
-    { name: 'PC Basics', icon: '🖥️', level: 45, color: '#3B82F6' },
-    { name: 'Typing', icon: '⌨️', level: 67, color: '#10B981' },
-    { name: 'Email', icon: '📧', level: 52, color: '#EF4444' },
-    { name: 'Internet', icon: '🌐', level: 38, color: '#8B5CF6' },
+    { name: 'PC Basics', icon: '\uD83D\uDDA5\uFE0F', level: 45, color: '#3B82F6' },
+    { name: 'Typing', icon: '\u2328\uFE0F', level: 67, color: '#10B981' },
+    { name: 'Email', icon: '\uD83D\uDCE7', level: 52, color: '#EF4444' },
+    { name: 'Internet', icon: '\uD83C\uDF10', level: 38, color: '#8B5CF6' },
   ];
 
   useEffect(() => {
@@ -608,6 +689,7 @@ export const SkillsVisual: React.FC = () => {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ scale: SPRING_GENTLE, opacity: { duration: 0.2 } }}
             className="backdrop-blur-xl bg-white/80 dark:bg-slate-800/80 rounded-2xl p-4 shadow-2xl border border-white/20"
           >
             <div className="text-center">
@@ -622,7 +704,7 @@ export const SkillsVisual: React.FC = () => {
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${currentSkill.level}%` }}
-                    transition={{ duration: 1 }}
+                    transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
                     className="h-full rounded-full"
                     style={{ backgroundColor: currentSkill.color }}
                   />
@@ -633,7 +715,7 @@ export const SkillsVisual: React.FC = () => {
         </AnimatePresence>
 
         <motion.div className="mt-4 flex justify-center">
-          <div className="bg-gradient-to-r from-violet-500 to-purple-600 px-3 py-1.5 rounded-lg shadow-lg">
+          <div className="bg-gradient-to-r from-violet-700 to-purple-700 px-3 py-1.5 rounded-lg shadow-lg">
             <span className="text-white font-bold text-xs flex items-center gap-1">
               <Zap className="w-3 h-3" />
               Total: 297 / 594
@@ -652,9 +734,9 @@ export const CertificationsVisual: React.FC = () => {
   const [activeCert, setActiveCert] = useState(0);
 
   const certs = [
-    { name: 'PC Basics Complete', type: 'Course', date: 'Today', icon: '🖥️' },
-    { name: 'Speed Typer', type: '60 WPM achieved', date: 'Yesterday', icon: '⌨️' },
-    { name: 'Quiz Champion', type: '10 quizzes passed', date: 'This week', icon: '🧠' },
+    { name: 'PC Basics Complete', type: 'Course', date: 'Today', icon: '\uD83D\uDDA5\uFE0F' },
+    { name: 'Speed Typer', type: '60 WPM achieved', date: 'Yesterday', icon: '\u2328\uFE0F' },
+    { name: 'Quiz Champion', type: '10 quizzes passed', date: 'This week', icon: '\uD83E\uDDE0' },
   ];
 
   useEffect(() => {
@@ -673,9 +755,10 @@ export const CertificationsVisual: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
+            transition={{ y: SPRING_GENTLE, opacity: { duration: 0.2 } }}
             className="backdrop-blur-xl bg-white/90 dark:bg-slate-800/90 rounded-2xl shadow-2xl border border-white/30 overflow-hidden"
           >
-            <div className="h-1.5 bg-gradient-to-r from-amber-400 to-orange-500" />
+            <div className="h-1.5 bg-gradient-to-r from-amber-600 to-orange-600" />
             <div className="p-4 text-center">
               <span className="text-4xl block mb-2">{currentCert.icon}</span>
               <Award className="w-10 h-10 mx-auto mb-2 text-amber-500" />
@@ -701,7 +784,7 @@ export const CertificationsVisual: React.FC = () => {
             <motion.div
               key={i}
               animate={{ y: [0, -4, 0] }}
-              transition={{ duration: 1.5, delay: i * 0.2, repeat: Infinity }}
+              transition={{ duration: 1.5, delay: i * 0.08, repeat: Infinity }}
               className="w-8 h-8 bg-white/90 dark:bg-slate-700/90 rounded-lg flex items-center justify-center shadow"
             >
               <Icon className="w-4 h-4 text-amber-500" />
@@ -713,8 +796,113 @@ export const CertificationsVisual: React.FC = () => {
   );
 };
 
+// ============================================
+// CHALLENGES VISUAL
+// ============================================
+export const ChallengesVisual: React.FC = () => {
+  const [checkedTasks, setCheckedTasks] = useState<number[]>([]);
+
+  const tasks = [
+    { label: 'Complete a typing test', xp: 50 },
+    { label: 'Pass a quiz with 80%+', xp: 75 },
+    { label: 'Finish a tutorial step', xp: 40 },
+  ];
+
+  useEffect(() => {
+    const timers = [
+      setTimeout(() => setCheckedTasks([0]), 1200),
+      setTimeout(() => setCheckedTasks([0, 1]), 2400),
+      setTimeout(() => setCheckedTasks([0, 1, 2]), 3600),
+      setTimeout(() => setCheckedTasks([]), 5000),
+    ];
+    const interval = setInterval(() => {
+      setCheckedTasks([]);
+      timers.push(
+        setTimeout(() => setCheckedTasks([0]), 1200),
+        setTimeout(() => setCheckedTasks([0, 1]), 2400),
+        setTimeout(() => setCheckedTasks([0, 1, 2]), 3600),
+        setTimeout(() => setCheckedTasks([]), 5000),
+      );
+    }, 5500);
+    return () => {
+      timers.forEach(clearTimeout);
+      clearInterval(interval);
+    };
+  }, []);
+
+  return (
+    <div className="w-full flex justify-center">
+      <div className="relative w-full max-w-xs">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ y: SPRING_SNAPPY, opacity: { duration: 0.2, ease: 'easeOut' } }}
+          className="backdrop-blur-xl bg-white/90 dark:bg-slate-800/90 rounded-2xl shadow-2xl border border-white/30 overflow-hidden"
+        >
+          <div className="bg-gradient-to-r from-rose-700 to-red-700 p-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Flame className="w-6 h-6 text-white" />
+                <div>
+                  <h3 className="text-white font-bold text-sm">Daily Challenges</h3>
+                  <p className="text-white/80 text-xs">{checkedTasks.length} / {tasks.length} complete</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-3 space-y-2">
+            {tasks.map((task, i) => {
+              const done = checkedTasks.includes(i);
+              return (
+                <motion.div
+                  key={task.label}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ x: { ...SPRING_SNAPPY, delay: i * STAGGER }, opacity: { duration: 0.2, delay: i * STAGGER } }}
+                  className={`flex items-center gap-2 p-2 rounded-lg ${done ? 'bg-green-50 dark:bg-green-900/20' : ''}`}
+                >
+                  <motion.div
+                    animate={{ scale: done ? [1, 1.2, 1] : 1 }}
+                    transition={SPRING_BOUNCY}
+                    className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                      done ? 'bg-green-500 text-white' : 'border-2 border-slate-300 dark:border-slate-600'
+                    }`}
+                  >
+                    {done && <CheckCircle className="w-3.5 h-3.5" />}
+                  </motion.div>
+                  <span className={`flex-1 text-xs font-medium ${
+                    done ? 'text-green-600 dark:text-green-400 line-through' : 'text-slate-700 dark:text-slate-200'
+                  }`}>
+                    {task.label}
+                  </span>
+                  <span className="text-[10px] font-bold text-amber-500">+{task.xp} XP</span>
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.div>
+
+        {/* Streak badge */}
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1, y: [0, -4, 0] }}
+          transition={{ scale: { delay: 0.3, ...SPRING_BOUNCY }, y: { duration: 2, repeat: Infinity } }}
+          className="absolute -top-2 -right-2 px-2.5 py-1.5 bg-gradient-to-r from-orange-400 to-red-500 rounded-lg shadow-lg"
+        >
+          <span className="flex items-center gap-1 text-white font-bold text-xs">
+            <Flame className="w-3 h-3" />
+            7 day streak
+          </span>
+        </motion.div>
+      </div>
+    </div>
+  );
+};
+
 // Export mapping
 export const slideVisuals: Record<string, React.FC> = {
+  welcome: WelcomeVisual,
   courses: CoursesVisual,
   typing: TypingVisual,
   quizzes: QuizzesVisual,
@@ -723,6 +911,7 @@ export const slideVisuals: Record<string, React.FC> = {
   progress: ProgressVisual,
   skills: SkillsVisual,
   certifications: CertificationsVisual,
+  challenges: ChallengesVisual,
 };
 
 export default slideVisuals;

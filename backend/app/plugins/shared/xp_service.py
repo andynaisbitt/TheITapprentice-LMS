@@ -362,9 +362,10 @@ class XPService:
         limit: int = 10,
         offset: int = 0
     ) -> list:
-        """Get top users by XP/level"""
+        """Get top users by XP/level (respects privacy settings)"""
         users = db.query(User).filter(
-            User.is_active == True
+            User.is_active == True,
+            User.show_on_leaderboard == True
         ).order_by(
             User.total_points.desc()
         ).offset(offset).limit(limit).all()

@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Trophy, Medal, Crown, Zap, Target } from 'lucide-react';
+import { ArrowLeft, Trophy, Medal, Crown, Zap, Target, Shield } from 'lucide-react';
 import { useAuth } from '../../../state/contexts/AuthContext';
 import { typingGameApi } from '../services/typingGameApi';
 import type { LeaderboardEntry, LeaderboardResponse } from '../types';
@@ -217,6 +217,29 @@ export const TypingLeaderboardPage: React.FC = () => {
             </div>
           )}
         </motion.div>
+
+        {/* Privacy notice for authenticated users */}
+        {user && !leaderboard?.user_rank && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="mt-6 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl p-4"
+          >
+            <div className="flex items-start gap-3">
+              <Shield className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Not seeing yourself on the leaderboard? Your privacy settings may be hiding your profile.
+                  You can manage your leaderboard visibility in{' '}
+                  <Link to="/settings" className="text-blue-600 dark:text-blue-400 hover:underline font-medium">
+                    Settings
+                  </Link>.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
       </div>
     </div>
   );

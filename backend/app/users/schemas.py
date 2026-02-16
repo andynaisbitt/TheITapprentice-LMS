@@ -89,6 +89,21 @@ class UserProfileUpdate(BaseModel):
     avatar_url: Optional[str] = None
 
 
+class UserPreferencesUpdate(BaseModel):
+    """Update user preferences (privacy, notifications, learning)"""
+    # Privacy
+    show_on_leaderboard: Optional[bool] = None
+    show_profile_public: Optional[bool] = None
+    show_activity_public: Optional[bool] = None
+    # Learning
+    default_difficulty: Optional[str] = None
+    # Notifications
+    notify_challenge_reminders: Optional[bool] = None
+    notify_streak_reminders: Optional[bool] = None
+    notify_achievement_alerts: Optional[bool] = None
+    notify_weekly_digest: Optional[bool] = None
+
+
 class UserPasswordChange(BaseModel):
     """Change user password"""
     current_password: str
@@ -145,6 +160,20 @@ class UserResponse(BaseModel):
     total_points: int
     level: int
     login_count: int = 0
+
+    # Privacy settings
+    show_on_leaderboard: bool = True
+    show_profile_public: bool = True
+    show_activity_public: bool = True
+
+    # Learning preferences
+    default_difficulty: Optional[str] = "medium"
+
+    # Notification preferences
+    notify_challenge_reminders: bool = True
+    notify_streak_reminders: bool = True
+    notify_achievement_alerts: bool = True
+    notify_weekly_digest: bool = True
 
     # Timestamps
     created_at: datetime
