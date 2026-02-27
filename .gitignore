@@ -104,6 +104,7 @@ backend/static/blog/uploads/
 # Generated output — never commit these
 testing/node_modules/
 testing/screenshots/
+testing/videos/
 testing/playwright-report/
 testing/test-results/
 testing/dist/

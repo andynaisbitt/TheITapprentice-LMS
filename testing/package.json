@@ -6,16 +6,22 @@
   "scripts": {
     "install:browsers": "playwright install chromium",
     "screenshots": "npx ts-node scripts/screenshots.ts",
-    "screenshots:prod": "BASE_URL=https://theitapprentice.com npx ts-node scripts/screenshots.ts",
-    "screenshots:dark": "DARK_MODE=true npx ts-node scripts/screenshots.ts",
+    "screenshots:prod": "cross-env BASE_URL=https://theitapprentice.com npx ts-node scripts/screenshots.ts",
+    "screenshots:dark": "cross-env DARK_MODE=true npx ts-node scripts/screenshots.ts",
+    "screenshots:prod:dark": "cross-env BASE_URL=https://theitapprentice.com DARK_MODE=true npx ts-node scripts/screenshots.ts",
+    "record": "npx ts-node scripts/record-videos.ts",
+    "record:prod": "cross-env BASE_URL=https://theitapprentice.com npx ts-node scripts/record-videos.ts",
+    "record:dark": "cross-env DARK_MODE=true npx ts-node scripts/record-videos.ts",
+    "record:prod:dark": "cross-env BASE_URL=https://theitapprentice.com DARK_MODE=true npx ts-node scripts/record-videos.ts",
     "smoke": "npx playwright test scripts/smoke-tests.spec.ts",
-    "smoke:prod": "BASE_URL=https://theitapprentice.com npx playwright test scripts/smoke-tests.spec.ts",
+    "smoke:prod": "cross-env BASE_URL=https://theitapprentice.com npx playwright test scripts/smoke-tests.spec.ts",
     "test": "npx playwright test",
     "test:report": "npx playwright show-report"
   },
   "dependencies": {},
   "devDependencies": {
     "@playwright/test": "^1.41.0",
+    "cross-env": "^7.0.3",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
   }
