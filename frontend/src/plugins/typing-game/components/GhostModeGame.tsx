@@ -606,7 +606,14 @@ export const GhostModeGame: React.FC<GhostModeGameProps> = ({
       return;
     }
 
-    if (!fromOnChange) {
+    // Only block the onChange fallback for keys the engine can actually process.
+    // On mobile, onKeyDown fires with key:'Unidentified' — setting the flag in
+    // that case silently kills the onChange mobile fallback. Only set it for
+    // real, actionable keys so mobile input is never swallowed.
+    const isProcessableKey = !fromOnChange && (
+      e.key.length === 1 || e.key === 'Backspace' || e.key === ' ' || e.key === 'Enter'
+    );
+    if (isProcessableKey) {
       keyDownHandledRef.current = true;
     }
 

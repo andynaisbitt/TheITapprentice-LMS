@@ -211,7 +211,7 @@ export const InfiniteRushGame: React.FC<InfiniteRushGameProps> = ({
     combo,
     maxCombo,
     getCharacterStates,
-    handleKeyDown: engineHandleKeyDown,
+    handleChange,
     handlePaste,
     reset: resetEngine,
     start: startEngine,
@@ -237,7 +237,7 @@ export const InfiniteRushGame: React.FC<InfiniteRushGameProps> = ({
     },
     minWordCount: 5,
     wordRefreshThreshold: 3,
-    inputMethod: 'keydown',
+    inputMethod: 'change',
   });
 
   // Streak and daily challenges state
@@ -284,16 +284,15 @@ export const InfiniteRushGame: React.FC<InfiniteRushGameProps> = ({
     }
   }, []);
 
-  // Wrapper for key handling (adds game status check)
+  // Wrapper for key handling — only handles Tab prevention and anti-cheat.
+  // All character input is processed via onChange/handleChange for mobile compatibility.
+  // engineHandleKeyDown is intentionally NOT called here to avoid double-processing
+  // with the handleChange that runs on every onChange event.
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (gameStatus !== 'playing') return;
-
-    // Let anti-cheat track keystrokes
+    if (e.key === 'Tab') { e.preventDefault(); return; }
     antiCheat.recordKeystroke(Date.now());
-
-    // Delegate to typing engine
-    engineHandleKeyDown(e);
-  }, [gameStatus, engineHandleKeyDown, antiCheat]);
+  }, [gameStatus, antiCheat]);
 
   // Handle paste (block it)
   const handlePasteBlock = useCallback((e: React.ClipboardEvent) => {
@@ -876,9 +875,7 @@ export const InfiniteRushGame: React.FC<InfiniteRushGameProps> = ({
               value={currentInput}
               onKeyDown={handleKeyDown}
               onPaste={handlePasteBlock}
-              onChange={() => {
-                // Input is handled via onKeyDown; onChange is intentionally a no-op
-              }}
+              onChange={handleChange}
               onFocus={() => setInputFocused(true)}
               onBlur={() => setInputFocused(false)}
               className="absolute top-0 left-0 w-full h-full opacity-0 cursor-default"
