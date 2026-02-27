@@ -5,7 +5,7 @@
  * Available on all pages, hidden by default
  */
 
-import { useEffect, useRef } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Home, Crown, ChevronRight } from 'lucide-react';
@@ -32,28 +32,6 @@ export const PublicSidebar: React.FC<PublicSidebarProps> = ({
   const { sections, loading } = usePublicNavigation();
   const { settings } = useSiteSettings();
   const { user, isAuthenticated } = useAuth();
-  const sidebarRef = useRef<HTMLDivElement>(null);
-
-  // Handle click outside to close
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        sidebarRef.current &&
-        !sidebarRef.current.contains(event.target as Node)
-      ) {
-        onClose();
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isOpen, onClose]);
-
   return (
     <AnimatePresence>
       {isOpen && (
@@ -71,7 +49,6 @@ export const PublicSidebar: React.FC<PublicSidebarProps> = ({
 
           {/* Sidebar Drawer */}
           <motion.aside
-            ref={sidebarRef}
             initial={{ x: '-100%' }}
             animate={{ x: 0 }}
             exit={{ x: '-100%' }}

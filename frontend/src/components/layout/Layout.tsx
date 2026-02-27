@@ -39,7 +39,7 @@ export const Layout: React.FC<LayoutProps> = ({
   const { settings } = useSiteSettings();
   const {
     isOpen: isSidebarOpen,
-    openSidebar,
+    toggleSidebar,
     closeSidebar,
     toggleSection,
     isSectionExpanded,
@@ -65,7 +65,7 @@ export const Layout: React.FC<LayoutProps> = ({
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-slate-900">
-      {!hideHeader && <Header onToggleDesktopSidebar={openSidebar} />}
+      {!hideHeader && <Header onToggleDesktopSidebar={toggleSidebar} />}
 
       {/* Desktop Sidebar Drawer - only shown on md+ screens */}
       <PublicSidebar
