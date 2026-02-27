@@ -99,3 +99,12 @@ DEPLOY_*.md
 
 # User uploads (should not be in git - media files)
 backend/static/blog/uploads/
+
+# ─── Playwright / Testing ────────────────────────────────────────────────────
+# Generated output — never commit these
+testing/node_modules/
+testing/screenshots/
+testing/playwright-report/
+testing/test-results/
+testing/dist/
+# Keep scripts, config, and README committed — ignore only generated artefacts

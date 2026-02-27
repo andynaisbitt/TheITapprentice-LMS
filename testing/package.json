@@ -1,0 +1,22 @@
+{
+  "name": "theitapprentice-testing",
+  "version": "1.0.0",
+  "description": "Playwright tests and documentation screenshot automation for TheITApprentice",
+  "private": true,
+  "scripts": {
+    "install:browsers": "playwright install chromium",
+    "screenshots": "npx ts-node scripts/screenshots.ts",
+    "screenshots:prod": "BASE_URL=https://theitapprentice.com npx ts-node scripts/screenshots.ts",
+    "screenshots:dark": "DARK_MODE=true npx ts-node scripts/screenshots.ts",
+    "smoke": "npx playwright test scripts/smoke-tests.spec.ts",
+    "smoke:prod": "BASE_URL=https://theitapprentice.com npx playwright test scripts/smoke-tests.spec.ts",
+    "test": "npx playwright test",
+    "test:report": "npx playwright show-report"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@playwright/test": "^1.41.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}
