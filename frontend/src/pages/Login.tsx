@@ -17,7 +17,6 @@ export const Login: React.FC = () => {
 
   // Get registration settings from site settings store
   const registrationEnabled = useSiteSettingsStore((state) => state.settings.registrationEnabled);
-  const registrationDisabledMessage = useSiteSettingsStore((state) => state.settings.registrationDisabledMessage);
   const loadSettings = useSiteSettingsStore((state) => state.loadSettings);
 
   const [formData, setFormData] = useState({
@@ -222,18 +221,30 @@ export const Login: React.FC = () => {
                 </p>
               </div>
             ) : (
-              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 text-xl mt-0.5">ℹ️</div>
+              <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 rounded-lg p-4">
+                <div className="flex items-start gap-3 mb-3">
+                  <svg className="flex-shrink-0 w-4 h-4 text-blue-500 dark:text-blue-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
                   <div className="flex-1">
-                    <h4 className="font-medium text-amber-900 dark:text-amber-300 mb-1 text-sm">
-                      Registration Currently Unavailable
+                    <h4 className="font-semibold text-blue-900 dark:text-blue-200 text-sm mb-1">
+                      Closed Beta — Access by Invite
                     </h4>
-                    <p className="text-sm text-amber-800 dark:text-amber-400 leading-relaxed">
-                      {registrationDisabledMessage || 'Registration is currently disabled. Please check back later.'}
+                    <p className="text-sm text-blue-800 dark:text-blue-300 leading-relaxed">
+                      New registrations are currently paused while we shape the next version of the platform. Existing members, welcome back.
                     </p>
                   </div>
                 </div>
+                <a
+                  href="https://theitapprentice.com"
+                  className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg bg-white dark:bg-gray-700 border border-blue-200 dark:border-blue-700/60 text-blue-700 dark:text-blue-300 text-sm font-medium hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+                >
+                  <span>←</span>
+                  <span>Back to TheITApprentice.com</span>
+                </a>
+                <p className="mt-2.5 text-center text-xs text-blue-600/70 dark:text-blue-400/60">
+                  A learning platform for IT apprentices and self-taught developers.
+                </p>
               </div>
             )}
           </div>
