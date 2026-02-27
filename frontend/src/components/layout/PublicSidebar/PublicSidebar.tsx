@@ -6,7 +6,6 @@
  */
 
 import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
 import { X, Home, Crown, ChevronRight } from 'lucide-react';
 import { PublicSidebarSection } from './PublicSidebarSection';
 import { usePublicNavigation } from '../../../hooks/usePublicNavigation';
@@ -31,176 +30,163 @@ export const PublicSidebar: React.FC<PublicSidebarProps> = ({
   const { sections, loading } = usePublicNavigation();
   const { settings } = useSiteSettings();
   const { user, isAuthenticated } = useAuth();
+
   return (
-    <AnimatePresence>
-      {/* Backdrop — keyed so AnimatePresence can animate its exit */}
-      {isOpen && (
-        <motion.div
-          key="sidebar-backdrop"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          className="fixed inset-0 bg-black/50 z-40 hidden md:block"
-          onClick={onClose}
-          aria-hidden="true"
-        />
-      )}
+    <>
+      {/* Backdrop */}
+      <div
+        className={`fixed inset-0 bg-black/50 z-40 hidden md:block transition-opacity duration-200
+          ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        onClick={onClose}
+        aria-hidden="true"
+      />
 
-      {/* Sidebar Drawer — keyed so AnimatePresence can animate its exit */}
-      {isOpen && (
-        <motion.aside
-          key="sidebar-drawer"
-          initial={{ x: '-100%' }}
-          animate={{ x: 0 }}
-          exit={{ x: '-100%' }}
-          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="
-            fixed left-0 top-0 h-screen w-72
-            bg-white dark:bg-gray-900
-            border-r border-gray-200 dark:border-gray-800
-            flex flex-col
-            z-50
-            shadow-xl
-            hidden md:flex
-          "
-        >
-            {/* Header */}
-            <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200 dark:border-gray-800">
-              <Link
-                to="/"
-                className="flex items-center gap-2"
-                onClick={onClose}
-              >
-                {settings.logoUrl ? (
-                  <img
-                    src={settings.logoUrl}
-                    alt={settings.siteTitle}
-                    className="h-8 w-auto"
-                  />
-                ) : (
-                  <>
-                    <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <span className="text-white font-bold text-sm">
-                        {settings.siteTitle.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                    <span className="font-bold text-gray-900 dark:text-white">
-                      {settings.siteTitle}
-                    </span>
-                  </>
-                )}
-              </Link>
-
-              <button
-                onClick={onClose}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                aria-label="Close sidebar"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
-
-            {/* User Profile Section */}
-            {isAuthenticated && user ? (
-              <Link
-                to="/profile"
-                onClick={onClose}
-                className="mx-3 mt-3 p-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition-all group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center relative flex-shrink-0">
-                    <span className="font-bold text-sm">
-                      {user.first_name?.[0]}{user.last_name?.[0]}
-                    </span>
-                    {user.is_admin && (
-                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center">
-                        <Crown className="w-2.5 h-2.5 text-white" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm truncate">
-                      {user.first_name} {user.last_name}
-                    </p>
-                    <p className="text-white/70 text-xs">
-                      Level {(user as any).level || 1}
-                    </p>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-white/50 group-hover:text-white/80 transition-colors" />
-                </div>
-              </Link>
-            ) : (
-              <div className="mx-3 mt-3 p-3 rounded-xl bg-gray-100 dark:bg-gray-800">
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                  Sign in to track progress
-                </p>
-                <Link
-                  to="/login"
-                  onClick={onClose}
-                  className="block w-full text-center py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
-                >
-                  Sign In
-                </Link>
-              </div>
-            )}
-
-            {/* Navigation */}
-            <nav className="flex-1 overflow-y-auto py-4 px-3">
-              {/* Home Link */}
-              <Link
-                to="/"
-                onClick={onClose}
-                className="
-                  flex items-center gap-3 px-3 py-2.5 mb-4 rounded-lg
-                  text-sm font-medium text-gray-700 dark:text-gray-300
-                  hover:bg-gray-100 dark:hover:bg-gray-800
-                  transition-colors duration-200
-                "
-              >
-                <Home className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                <span>Home</span>
-              </Link>
-
-              {/* Loading State */}
-              {loading ? (
-                <div className="space-y-4 animate-pulse">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="space-y-2">
-                      <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-lg" />
-                      <div className="ml-4 space-y-1">
-                        <div className="h-8 bg-gray-100 dark:bg-gray-800 rounded" />
-                        <div className="h-8 bg-gray-100 dark:bg-gray-800 rounded" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
+      {/* Sidebar Drawer */}
+      <aside
+        className={`fixed left-0 top-0 h-screen w-72
+          bg-white dark:bg-gray-900
+          border-r border-gray-200 dark:border-gray-800
+          flex-col z-50 shadow-xl
+          hidden md:flex
+          transition-transform duration-200 ease-in-out
+          ${isOpen ? 'translate-x-0' : '-translate-x-full pointer-events-none'}`}
+        aria-hidden={!isOpen}
+      >
+          {/* Header */}
+          <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200 dark:border-gray-800">
+            <Link
+              to="/"
+              className="flex items-center gap-2"
+              onClick={onClose}
+            >
+              {settings.logoUrl ? (
+                <img
+                  src={settings.logoUrl}
+                  alt={settings.siteTitle}
+                  className="h-8 w-auto"
+                />
               ) : (
-                /* Navigation Sections */
-                sections.map((section) => (
-                  <PublicSidebarSection
-                    key={section.id}
-                    id={section.id}
-                    label={section.label}
-                    icon={section.icon}
-                    items={section.items}
-                    isExpanded={isSectionExpanded(section.id)}
-                    onToggle={() => onToggleSection(section.id)}
-                    onItemClick={onClose}
-                  />
-                ))
+                <>
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <span className="text-white font-bold text-sm">
+                      {settings.siteTitle.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <span className="font-bold text-gray-900 dark:text-white">
+                    {settings.siteTitle}
+                  </span>
+                </>
               )}
-            </nav>
+            </Link>
 
-            {/* Footer */}
-            <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-2">
-              <p className="text-[10px] text-gray-400 dark:text-gray-500 text-center">
-                <kbd className="px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-[10px]">ESC</kbd> to close
+            <button
+              onClick={onClose}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label="Close sidebar"
+            >
+              <X className="w-5 h-5 text-gray-500" />
+            </button>
+          </div>
+
+          {/* User Profile Section */}
+          {isAuthenticated && user ? (
+            <Link
+              to="/profile"
+              onClick={onClose}
+              className="mx-3 mt-3 p-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center relative flex-shrink-0">
+                  <span className="font-bold text-sm">
+                    {user.first_name?.[0]}{user.last_name?.[0]}
+                  </span>
+                  {user.is_admin && (
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center">
+                      <Crown className="w-2.5 h-2.5 text-white" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm truncate">
+                    {user.first_name} {user.last_name}
+                  </p>
+                  <p className="text-white/70 text-xs">
+                    Level {(user as any).level || 1}
+                  </p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-white/50 group-hover:text-white/80 transition-colors" />
+              </div>
+            </Link>
+          ) : (
+            <div className="mx-3 mt-3 p-3 rounded-xl bg-gray-100 dark:bg-gray-800">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                Sign in to track progress
               </p>
+              <Link
+                to="/login"
+                onClick={onClose}
+                className="block w-full text-center py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                Sign In
+              </Link>
             </div>
-          </motion.aside>
-      )}
-    </AnimatePresence>
+          )}
+
+          {/* Navigation */}
+          <nav className="flex-1 overflow-y-auto py-4 px-3">
+            {/* Home Link */}
+            <Link
+              to="/"
+              onClick={onClose}
+              className="
+                flex items-center gap-3 px-3 py-2.5 mb-4 rounded-lg
+                text-sm font-medium text-gray-700 dark:text-gray-300
+                hover:bg-gray-100 dark:hover:bg-gray-800
+                transition-colors duration-200
+              "
+            >
+              <Home className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              <span>Home</span>
+            </Link>
+
+            {/* Loading State */}
+            {loading ? (
+              <div className="space-y-4 animate-pulse">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="space-y-2">
+                    <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-lg" />
+                    <div className="ml-4 space-y-1">
+                      <div className="h-8 bg-gray-100 dark:bg-gray-800 rounded" />
+                      <div className="h-8 bg-gray-100 dark:bg-gray-800 rounded" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              /* Navigation Sections */
+              sections.map((section) => (
+                <PublicSidebarSection
+                  key={section.id}
+                  id={section.id}
+                  label={section.label}
+                  icon={section.icon}
+                  items={section.items}
+                  isExpanded={isSectionExpanded(section.id)}
+                  onToggle={() => onToggleSection(section.id)}
+                  onItemClick={onClose}
+                />
+              ))
+            )}
+          </nav>
+
+          {/* Footer */}
+          <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-2">
+            <p className="text-[10px] text-gray-400 dark:text-gray-500 text-center">
+              <kbd className="px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-[10px]">ESC</kbd> to close
+            </p>
+          </div>
+        </aside>
+    </>
   );
 };
 
