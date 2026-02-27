@@ -25,74 +25,86 @@ interface SoundConfig {
   poolSize: number;
 }
 
-// Sound configurations - using Web Audio API oscillators for demo
-// In production, replace with actual audio files
+// Sound configurations — volumes are intentionally low for a subtle, ambient feel
 const SOUND_CONFIGS: Record<SoundType, SoundConfig> = {
-  keystroke: { url: '', volume: 0.3, poolSize: 5 },
-  error: { url: '', volume: 0.4, poolSize: 3 },
-  combo: { url: '', volume: 0.5, poolSize: 3 },
-  combo_break: { url: '', volume: 0.4, poolSize: 1 },
-  milestone: { url: '', volume: 0.6, poolSize: 1 },
-  challenge_complete: { url: '', volume: 0.7, poolSize: 1 },
-  level_up: { url: '', volume: 0.8, poolSize: 1 },
-  game_start: { url: '', volume: 0.5, poolSize: 1 },
-  game_end: { url: '', volume: 0.5, poolSize: 1 },
-  personal_best: { url: '', volume: 0.8, poolSize: 1 },
-  countdown: { url: '', volume: 0.4, poolSize: 1 },
+  keystroke:         { url: '', volume: 0.07, poolSize: 5 },
+  error:             { url: '', volume: 0.18, poolSize: 3 },
+  combo:             { url: '', volume: 0.20, poolSize: 3 },
+  combo_break:       { url: '', volume: 0.16, poolSize: 1 },
+  milestone:         { url: '', volume: 0.22, poolSize: 1 },
+  challenge_complete:{ url: '', volume: 0.25, poolSize: 1 },
+  level_up:          { url: '', volume: 0.25, poolSize: 1 },
+  game_start:        { url: '', volume: 0.20, poolSize: 1 },
+  game_end:          { url: '', volume: 0.20, poolSize: 1 },
+  personal_best:     { url: '', volume: 0.25, poolSize: 1 },
+  countdown:         { url: '', volume: 0.15, poolSize: 1 },
 };
 
-// Synthesized sound frequencies and durations
+// Synthesized sound definitions — all sine waves (no sawtooth/square to avoid harshness).
+// Durations are short; the envelope adds a 5 ms attack to prevent click artifacts.
 const SYNTH_SOUNDS: Record<SoundType, { freq: number; duration: number; type: OscillatorType; freqEnd?: number }[]> = {
-  keystroke: [{ freq: 440, duration: 0.05, type: 'sine' }],
+  // Barely-there soft tick — just enough feedback without distraction
+  keystroke: [{ freq: 320, duration: 0.025, type: 'sine' }],
+
+  // Gentle two-tone descend — conveys "wrong" without being jarring
   error: [
-    { freq: 200, duration: 0.1, type: 'sawtooth' },
-    { freq: 150, duration: 0.1, type: 'sawtooth' },
+    { freq: 200, duration: 0.07, type: 'sine' },
+    { freq: 150, duration: 0.07, type: 'sine' },
   ],
+
+  // Quick ascending chord — subtle positive signal
   combo: [
-    { freq: 523, duration: 0.08, type: 'sine' },
-    { freq: 659, duration: 0.08, type: 'sine' },
-    { freq: 784, duration: 0.1, type: 'sine' },
+    { freq: 440, duration: 0.05, type: 'sine' },
+    { freq: 554, duration: 0.05, type: 'sine' },
+    { freq: 659, duration: 0.07, type: 'sine' },
   ],
-  combo_break: [{ freq: 300, duration: 0.2, type: 'sawtooth', freqEnd: 100 }],
+
+  // Soft descending glide — no harsh sawtooth
+  combo_break: [{ freq: 260, duration: 0.12, type: 'sine', freqEnd: 130 }],
+
+  // Two-note chime — clean and brief
   milestone: [
-    { freq: 523, duration: 0.1, type: 'sine' },
-    { freq: 659, duration: 0.1, type: 'sine' },
-    { freq: 784, duration: 0.1, type: 'sine' },
-    { freq: 1047, duration: 0.2, type: 'sine' },
+    { freq: 440, duration: 0.07, type: 'sine' },
+    { freq: 660, duration: 0.12, type: 'sine' },
   ],
+
+  // Three ascending tones — slightly celebratory but not overbearing
   challenge_complete: [
-    { freq: 392, duration: 0.15, type: 'sine' },
-    { freq: 523, duration: 0.15, type: 'sine' },
-    { freq: 659, duration: 0.15, type: 'sine' },
-    { freq: 784, duration: 0.3, type: 'sine' },
+    { freq: 330, duration: 0.08, type: 'sine' },
+    { freq: 440, duration: 0.08, type: 'sine' },
+    { freq: 554, duration: 0.14, type: 'sine' },
   ],
+
+  // Four ascending tones — meaningful without being arcade-y
   level_up: [
-    { freq: 262, duration: 0.1, type: 'sine' },
-    { freq: 330, duration: 0.1, type: 'sine' },
-    { freq: 392, duration: 0.1, type: 'sine' },
-    { freq: 523, duration: 0.1, type: 'sine' },
-    { freq: 659, duration: 0.1, type: 'sine' },
-    { freq: 784, duration: 0.3, type: 'sine' },
+    { freq: 262, duration: 0.06, type: 'sine' },
+    { freq: 330, duration: 0.06, type: 'sine' },
+    { freq: 440, duration: 0.06, type: 'sine' },
+    { freq: 523, duration: 0.14, type: 'sine' },
   ],
+
+  // Two-note rising signal
   game_start: [
-    { freq: 440, duration: 0.1, type: 'sine' },
-    { freq: 523, duration: 0.1, type: 'sine' },
-    { freq: 659, duration: 0.15, type: 'sine' },
+    { freq: 392, duration: 0.07, type: 'sine' },
+    { freq: 523, duration: 0.10, type: 'sine' },
   ],
+
+  // Two-note descend — quiet sign-off
   game_end: [
-    { freq: 659, duration: 0.15, type: 'sine' },
-    { freq: 523, duration: 0.15, type: 'sine' },
-    { freq: 440, duration: 0.2, type: 'sine' },
+    { freq: 440, duration: 0.09, type: 'sine' },
+    { freq: 330, duration: 0.11, type: 'sine' },
   ],
+
+  // Four-note flourish — rewarding but not over the top
   personal_best: [
-    { freq: 523, duration: 0.1, type: 'sine' },
-    { freq: 659, duration: 0.1, type: 'sine' },
-    { freq: 784, duration: 0.1, type: 'sine' },
-    { freq: 1047, duration: 0.1, type: 'sine' },
-    { freq: 784, duration: 0.1, type: 'sine' },
-    { freq: 1047, duration: 0.3, type: 'sine' },
+    { freq: 440, duration: 0.06, type: 'sine' },
+    { freq: 554, duration: 0.06, type: 'sine' },
+    { freq: 659, duration: 0.06, type: 'sine' },
+    { freq: 880, duration: 0.16, type: 'sine' },
   ],
-  countdown: [{ freq: 880, duration: 0.1, type: 'sine' }],
+
+  // Single soft tick for countdown
+  countdown: [{ freq: 660, duration: 0.07, type: 'sine' }],
 };
 
 interface SoundSettings {
@@ -102,8 +114,8 @@ interface SoundSettings {
 }
 
 const DEFAULT_SETTINGS: SoundSettings = {
-  enabled: true,
-  volume: 0.5,
+  enabled: false,  // off by default — user opts in
+  volume: 0.3,
   keyboardSounds: true,
 };
 
@@ -173,8 +185,12 @@ export function useSoundEffects() {
         oscillator.frequency.linearRampToValueAtTime(note.freqEnd, startTime + note.duration);
       }
 
-      noteGain.gain.setValueAtTime(config.volume * volumeMultiplier * settings.volume, startTime);
-      noteGain.gain.exponentialRampToValueAtTime(0.01, startTime + note.duration);
+      // Short attack (5 ms) prevents the hard click you get from jumping straight
+      // to full volume, then decay to near-silence over the note's duration.
+      const peak = config.volume * volumeMultiplier * settings.volume;
+      noteGain.gain.setValueAtTime(0.0001, startTime);
+      noteGain.gain.exponentialRampToValueAtTime(peak, startTime + 0.005);
+      noteGain.gain.exponentialRampToValueAtTime(0.0001, startTime + note.duration);
 
       oscillator.connect(noteGain);
       noteGain.connect(ctx.destination);

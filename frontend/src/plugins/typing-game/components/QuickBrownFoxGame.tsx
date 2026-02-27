@@ -981,15 +981,12 @@ export const QuickBrownFoxGame: React.FC<QuickBrownFoxGameProps> = ({
               </div>
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
-              {/* Sound toggle - hidden on very small screens */}
-              <div className="hidden xs:block">
-                <SoundSettingsPanel
-                  settings={sounds.settings}
-                  onToggleSound={sounds.toggleSound}
-                  onVolumeChange={sounds.setVolume}
-                  compact
-                />
-              </div>
+              <SoundSettingsPanel
+                settings={sounds.settings}
+                onToggleSound={sounds.toggleSound}
+                onVolumeChange={sounds.setVolume}
+                compact
+              />
               {/* Timer */}
               {timeRemaining !== null && (
                 <motion.div

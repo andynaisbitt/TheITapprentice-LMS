@@ -906,14 +906,12 @@ export const GhostModeGame: React.FC<GhostModeGameProps> = ({
               </div>
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
-              <div className="hidden xs:block">
-                <SoundSettingsPanel
-                  settings={sounds.settings}
-                  onToggleSound={sounds.toggleSound}
-                  onVolumeChange={sounds.setVolume}
-                  compact
-                />
-              </div>
+              <SoundSettingsPanel
+                settings={sounds.settings}
+                onToggleSound={sounds.toggleSound}
+                onVolumeChange={sounds.setVolume}
+                compact
+              />
               {timeRemaining !== null && (
                 <motion.div
                   className={`text-lg sm:text-xl md:text-2xl font-bold tabular-nums ${
