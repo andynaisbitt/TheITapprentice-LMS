@@ -5,7 +5,6 @@
  * Available on all pages, hidden by default
  */
 
-import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Home, Crown, ChevronRight } from 'lucide-react';
@@ -34,35 +33,38 @@ export const PublicSidebar: React.FC<PublicSidebarProps> = ({
   const { user, isAuthenticated } = useAuth();
   return (
     <AnimatePresence>
+      {/* Backdrop — keyed so AnimatePresence can animate its exit */}
       {isOpen && (
-        <>
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/50 z-40 hidden md:block"
-            onClick={onClose}
-            aria-hidden="true"
-          />
+        <motion.div
+          key="sidebar-backdrop"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 bg-black/50 z-40 hidden md:block"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
 
-          {/* Sidebar Drawer */}
-          <motion.aside
-            initial={{ x: '-100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '-100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="
-              fixed left-0 top-0 h-screen w-72
-              bg-white dark:bg-gray-900
-              border-r border-gray-200 dark:border-gray-800
-              flex flex-col
-              z-50
-              shadow-xl
-              hidden md:flex
-            "
-          >
+      {/* Sidebar Drawer — keyed so AnimatePresence can animate its exit */}
+      {isOpen && (
+        <motion.aside
+          key="sidebar-drawer"
+          initial={{ x: '-100%' }}
+          animate={{ x: 0 }}
+          exit={{ x: '-100%' }}
+          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+          className="
+            fixed left-0 top-0 h-screen w-72
+            bg-white dark:bg-gray-900
+            border-r border-gray-200 dark:border-gray-800
+            flex flex-col
+            z-50
+            shadow-xl
+            hidden md:flex
+          "
+        >
             {/* Header */}
             <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200 dark:border-gray-800">
               <Link
@@ -197,7 +199,6 @@ export const PublicSidebar: React.FC<PublicSidebarProps> = ({
               </p>
             </div>
           </motion.aside>
-        </>
       )}
     </AnimatePresence>
   );

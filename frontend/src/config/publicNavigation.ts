@@ -92,7 +92,6 @@ export const publicNavigationConfig: PublicNavSection[] = [
     label: 'Learn',
     icon: GraduationCap,
     category: 'learn',
-    hideIfEmpty: true,
     items: [
       {
         id: 'courses',
@@ -102,7 +101,6 @@ export const publicNavigationConfig: PublicNavSection[] = [
         subtitle: 'Structured Learning Paths',
         description: 'Comprehensive courses with interactive content and real-world projects.',
         category: 'learn',
-        requiresPlugin: 'courses',
         isPopular: true,
       },
       {
@@ -113,7 +111,6 @@ export const publicNavigationConfig: PublicNavSection[] = [
         subtitle: 'Quick Learning Guides',
         description: 'Step-by-step tutorials covering specific topics and technologies.',
         category: 'learn',
-        requiresPlugin: 'tutorials',
       },
       {
         id: 'quizzes',
@@ -123,7 +120,6 @@ export const publicNavigationConfig: PublicNavSection[] = [
         subtitle: 'Test Your Knowledge',
         description: 'Practice quizzes to reinforce learning and track your understanding.',
         category: 'learn',
-        requiresPlugin: 'quizzes',
       },
       {
         id: 'skills',
@@ -133,7 +129,6 @@ export const publicNavigationConfig: PublicNavSection[] = [
         subtitle: 'Track Your Progress',
         description: 'Monitor your skill development across different areas.',
         category: 'learn',
-        requiresPlugin: 'skills',
         isNew: true,
       },
     ],
@@ -143,7 +138,6 @@ export const publicNavigationConfig: PublicNavSection[] = [
     label: 'Practice',
     icon: Keyboard,
     category: 'practice',
-    hideIfEmpty: true,
     items: [
       {
         id: 'typing-practice',
@@ -153,7 +147,6 @@ export const publicNavigationConfig: PublicNavSection[] = [
         subtitle: 'Build Speed & Accuracy',
         description: 'Master typing with IT terminology. Build muscle memory with real-world commands!',
         category: 'practice',
-        requiresPlugin: 'typing_game',
         isPopular: true,
       },
       {
